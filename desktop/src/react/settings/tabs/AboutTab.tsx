@@ -80,13 +80,13 @@ export function AboutTab() {
     <div className={`${styles['settings-tab-content']} ${styles['active']}`} data-tab="about">
       {/* Hero：保留原 about-hero 独立视觉组件（icon + name + tagline + version + update + check 按钮） */}
       <div className={styles['about-hero']}>
-        <img className={styles['about-icon']} src={appIconUrl} alt="Hanako" />
-        <div className={styles['about-name']}>Hanako</div>
+        <img className={styles['about-icon']} src={appIconUrl} alt="Jarvis" />
+        <div className={styles['about-name']}>Jarvis</div>
         <div className={styles['about-tagline']}>{t('settings.about.tagline')}</div>
         {version && <div className={styles['about-version']}>v{version}</div>}
         <AutoUpdateStatus
           state={autoUpdate}
-          agentName={settingsConfig?.agent?.name || 'Hanako'}
+          agentName={settingsConfig?.agent?.name || 'Jarvis'}
           onInstall={handleInstall}
         />
         {(!autoUpdate || autoUpdate.status === 'idle' || autoUpdate.status === 'latest' || autoUpdate.status === 'error') && (

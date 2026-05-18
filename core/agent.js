@@ -76,7 +76,7 @@ export class Agent {
 
     // 身份（init 后从 config 填充）
     this.userName = "User";
-    this.agentName = "Hanako";
+    this.agentName = "Jarvis";
 
     // 运行时状态
     this._config = null;
@@ -139,7 +139,7 @@ export class Agent {
     this._config = loadConfig(this.configPath);
     const isZh = String(this._config.locale || "").startsWith("zh");
     this.userName = this._config.user?.name || (isZh ? "用户" : "User");
-    this.agentName = this._config.agent?.name || "Hanako";
+    this.agentName = this._config.agent?.name || "Jarvis";
     this._memoryMasterEnabled = this._config.memory?.enabled !== false;
     this._experienceEnabled = this._config.experience?.enabled === true;
   }
@@ -160,7 +160,7 @@ export class Agent {
     // 2. 身份 + 记忆总开关
     const isZh = String(this._config.locale || "").startsWith("zh");
     this.userName = this._config.user?.name || (isZh ? "用户" : "User");
-    this.agentName = this._config.agent?.name || "Hanako";
+    this.agentName = this._config.agent?.name || "Jarvis";
     this._memoryMasterEnabled = this._config.memory?.enabled !== false;
     this._experienceEnabled = this._config.experience?.enabled === true;
 
@@ -702,7 +702,7 @@ export class Agent {
 
     // 更新身份
     const isZh = String(this._config.locale || "").startsWith("zh");
-    if (partial.agent?.name) this.agentName = this._config.agent?.name || "Hanako";
+    if (partial.agent?.name) this.agentName = this._config.agent?.name || "Jarvis";
     if (partial.user?.name) this.userName = this._config.user?.name || (isZh ? "用户" : "User");
 
     // yuan 切换只需更新 config，buildSystemPrompt 会实时读模板
@@ -861,8 +861,8 @@ export class Agent {
     // 叙事顺序上先告诉模型"用户是谁"，再告诉它"你是谁、你和用户什么关系"。
     const parts = [
       isZh
-        ? "你运行在 OpenHanako 平台上，由 liliMozi 开发。项目主页：https://github.com/liliMozi/openhanako"
-        : "You are running on the OpenHanako platform, developed by liliMozi. Project page: https://github.com/liliMozi/openhanako",
+        ? "你运行在 OpenJarvis 平台上，由 liliMozi 开发。项目主页：https://github.com/liliMozi/openjarvis"
+        : "You are running on the OpenJarvis platform, developed by liliMozi. Project page: https://github.com/liliMozi/openjarvis",
     ];
     const platformPrompt = getPlatformPromptNote({ platform: process.platform });
     if (platformPrompt) {

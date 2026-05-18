@@ -375,7 +375,7 @@ export async function generateAgentId(utilConfig, name, agentsDir) {
 4. 直接输出 ID，不要解释
 
 示例：
-- "花子" → "hanako"
+- "贾维斯" → "jarvis"
 - "ミク" → "miku"
 - "小助手" → "helper"
 - "Alice" → "alice"`
@@ -387,7 +387,7 @@ Rules:
 4. Output the ID directly, no explanation
 
 Examples:
-- "花子" → "hanako"
+- "贾维斯" → "jarvis"
 - "ミク" → "miku"
 - "Helper" → "helper"
 - "Alice" → "alice"`,

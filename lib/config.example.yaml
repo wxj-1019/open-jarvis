@@ -5,7 +5,7 @@
 
 # 身份信息
 agent:
-  name: Hanako                           # 你的助手叫什么
+  name: Jarvis                           # 你的助手叫什么
   yuan: hanako                           # 源模板：hanako / butter / ming
 user:
   name: ""                               # 你的名字

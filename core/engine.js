@@ -1,5 +1,5 @@
 /**
- * HanaEngine — Hanako 的核心引擎（Thin Facade）
+ * HanaEngine — Jarvis 的核心引擎（Thin Facade）
  *
  * 持有所有 Manager，对外暴露统一 API。
  * 具体逻辑委托给：

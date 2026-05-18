@@ -1,27 +1,27 @@
 <p align="center">
-  <img src=".github/assets/banner.jpg" width="100%" alt="OpenHanako Banner">
+  <img src=".github/assets/banner.jpg" width="100%" alt="OpenJarvis Banner">
 </p>
 
 <p align="center">
-  <img src=".github/assets/Hanako-280.png" width="80" alt="Hanako">
+  <img src=".github/assets/Hanako-280.png" width="80" alt="Jarvis">
 </p>
 
-<h1 align="center">OpenHanako</h1>
+<h1 align="center">OpenJarvis</h1>
 
 <p align="center">A personal AI agent with memory and soul</p>
 
 <p align="center"><a href="README.md">中文版</a></p>
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey.svg)](https://github.com/liliMozi/openhanako/releases)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey.svg)](https://github.com/liliMozi/openjarvis/releases)
 
 ---
 
-## What is Hanako
+## What is Jarvis
 
-OpenHanako is a personal AI agent that is easier to use than traditional coding agents. It has memory, personality, and can act autonomously. Multiple agents can work together on your machine.
+OpenJarvis is a personal AI agent that is easier to use than traditional coding agents. It has memory, personality, and can act autonomously. Multiple agents can work together on your machine.
 
-As an assistant, it is gentle: no complex configuration files, no obscure jargon. Hanako is designed not just for coders, but for everyone who works at a computer.
+As an assistant, it is gentle: no complex configuration files, no obscure jargon. Jarvis is designed not just for coders, but for everyone who works at a computer.
 As a tool, it is powerful: it remembers everything you've said, operates your computer, browses the web, searches for information, reads and writes files, executes code, manages schedules, and can even learn new skills on its own.
 
 ## Features
@@ -55,26 +55,26 @@ As a tool, it is powerful: it remembers everything you've said, operates your co
 ## Screenshots
 
 <p align="center">
-  <img src=".github/assets/screenshot-main.jpg" width="100%" alt="Hanako Main Interface">
+  <img src=".github/assets/screenshot-main.jpg" width="100%" alt="Jarvis Main Interface">
 </p>
 
 ## Quick Start
 
 ### Download
 
-**macOS (Apple Silicon / Intel):** download the latest `.dmg` from [Releases](https://github.com/liliMozi/openhanako/releases).
+**macOS (Apple Silicon / Intel):** download the latest `.dmg` from [Releases](https://github.com/liliMozi/openjarvis/releases).
 
 The app is signed and notarized with an Apple Developer ID. macOS should allow it to launch directly.
 
-**Windows:** download the latest `.exe` installer from [Releases](https://github.com/liliMozi/openhanako/releases).
+**Windows:** download the latest `.exe` installer from [Releases](https://github.com/liliMozi/openjarvis/releases).
 
 > **Windows SmartScreen notice:** The installer is not yet code-signed. Windows Defender SmartScreen may show a warning on first run. Click **More info** → **Run anyway**. This is expected for unsigned builds.
 
-**Linux:** download the latest `.AppImage` or `.deb` from [Releases](https://github.com/liliMozi/openhanako/releases).
+**Linux:** download the latest `.AppImage` or `.deb` from [Releases](https://github.com/liliMozi/openjarvis/releases).
 
 ### First Run
 
-On first launch, an onboarding wizard will guide you through setup: choose a language, enter your name, connect a model provider (API key + base URL), and select three models — a **chat model** (main conversation), a **utility model** (lightweight tasks), and a **utility large model** (memory compilation and deep analysis). In settings you can also choose a **vision model** that lets text-only chat models work with image attachments through Vision Bridge. Hanako supports OpenAI-compatible providers, Anthropic-style providers, OAuth providers, and local models via Ollama.
+On first launch, an onboarding wizard will guide you through setup: choose a language, enter your name, connect a model provider (API key + base URL), and select three models — a **chat model** (main conversation), a **utility model** (lightweight tasks), and a **utility large model** (memory compilation and deep analysis). In settings you can also choose a **vision model** that lets text-only chat models work with image attachments through Vision Bridge. Jarvis supports OpenAI-compatible providers, Anthropic-style providers, OAuth providers, and local models via Ollama.
 
 ## Architecture
 
@@ -148,9 +148,9 @@ npm run typecheck
 
 ## Links
 
-- [Homepage](https://openhanako.com)
-- [Report an Issue](https://github.com/liliMozi/openhanako/issues)
-- [Security](https://github.com/liliMozi/openhanako/security)
+- [Homepage](https://openjarvis.com)
+- [Report an Issue](https://github.com/liliMozi/openjarvis/issues)
+- [Security](https://github.com/liliMozi/openjarvis/security)
 - [Security Policy](SECURITY.md)
 - [Plugin Development](PLUGINS.md)
 - [Contributing](CONTRIBUTING.md)

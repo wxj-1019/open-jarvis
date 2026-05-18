@@ -1,33 +1,33 @@
 <p align="center">
-  <img src=".github/assets/banner.jpg" width="100%" alt="OpenHanako Banner">
+  <img src=".github/assets/banner.jpg" width="100%" alt="OpenJarvis Banner">
 </p>
 
 <p align="center">
-  <img src=".github/assets/Hanako-280.png" width="80" alt="Hanako">
+  <img src=".github/assets/Hanako-280.png" width="80" alt="Jarvis">
 </p>
 
-<h1 align="center">OpenHanako</h1>
+<h1 align="center">OpenJarvis</h1>
 
 <p align="center">一个有记忆、有灵魂的私人 AI 助理</p>
 
 <p align="center"><a href="README_EN.md">English</a></p>
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey.svg)](https://github.com/liliMozi/openhanako/releases)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey.svg)](https://github.com/liliMozi/openjarvis/releases)
 
 ---
 
-## Hanako 是什么
+## 贾维斯 是什么
 
-OpenHanako 是一个更加易用的 AI agent，有记忆，有性格，会主动行动，还能多 Agent 在你的电脑上一同工作。
+OpenJarvis 是一个更加易用的 AI agent，有记忆，有性格，会主动行动，还能多 Agent 在你的电脑上一同工作。
 
-作为助手，Ta 是温柔的：不需要写复杂的配置，不需要理解晦涩的术语。Hanako 它不只面向 coder ，而是为每一个坐在电脑前工作的人设计的助手。
+作为助手，Ta 是温柔的：不需要写复杂的配置，不需要理解晦涩的术语。贾维斯 它不只面向 coder ，而是为每一个坐在电脑前工作的人设计的助手。
 作为工具，Ta 是强大的：记住你说过的每一件事，操作你的电脑，浏览网页，搜索信息，读写文件，执行代码，管理日程，还能自主学习新技能。
 
 我开这个项目的初衷是：弥合绝大多数人和 AI Agent 之间的缝隙，让强大的 Agent 能力不再只局限于命令行里。于是我做了比传统 Coding Agent 更多一些的优化：一方面是强化 Agent「像人」的属性，是你和他们沟通更自然；另一方面，因为我本职也是一介文员，所以我也针对日常办公场景做了很多工具性和流程性的优化，敬请探索。
-此外，Hanako 有比较完备的图形页面。
+此外，贾维斯 有比较完备的图形页面。
 
-如果你用过 claude code、codex、Manus 等 CLI 或是图形化的 Agent，你会在 Hanako 这里找到熟悉又新奇的感觉。
+如果你用过 claude code、codex、Manus 等 CLI 或是图形化的 Agent，你会在 贾维斯 这里找到熟悉又新奇的感觉。
 
 ## 功能特性
 
@@ -60,26 +60,26 @@ OpenHanako 是一个更加易用的 AI agent，有记忆，有性格，会主动
 ## 截图
 
 <p align="center">
-  <img src=".github/assets/screenshot-main.jpg" width="100%" alt="Hanako 主界面">
+  <img src=".github/assets/screenshot-main.jpg" width="100%" alt="贾维斯 主界面">
 </p>
 
 ## 快速开始
 
 ### 下载安装
 
-**macOS（Apple Silicon / Intel）**：从 [Releases](https://github.com/liliMozi/openhanako/releases) 下载最新 `.dmg`。
+**macOS（Apple Silicon / Intel）**：从 [Releases](https://github.com/liliMozi/openjarvis/releases) 下载最新 `.dmg`。
 
 应用已通过 Apple Developer ID 签名和公证，macOS 应该可以直接打开。
 
-**Windows**：从 [Releases](https://github.com/liliMozi/openhanako/releases) 下载最新 `.exe` 安装包。
+**Windows**：从 [Releases](https://github.com/liliMozi/openjarvis/releases) 下载最新 `.exe` 安装包。
 
 > **Windows SmartScreen 提示：** 安装包暂未经过代码签名，首次运行时 Windows Defender SmartScreen 可能会拦截，点击**更多信息** → **仍要运行**即可，未签名版本的正常现象。
 
-**Linux**：从 [Releases](https://github.com/liliMozi/openhanako/releases) 下载最新 `.AppImage` 或 `.deb`。
+**Linux**：从 [Releases](https://github.com/liliMozi/openjarvis/releases) 下载最新 `.AppImage` 或 `.deb`。
 
 ### 首次运行
 
-首次启动时，引导向导会带你完成配置：选择语言、输入你的名字、连接模型提供商（API key + base URL），并选择三个模型：**对话模型**（主对话）、**小工具模型**（轻量任务）、**大工具模型**（记忆编译和深度分析）。设置页还可以单独选择**视觉模型**，让文本模型通过 Vision Bridge 处理图片附件。Hanako 支持 OpenAI 兼容、Anthropic 风格、OAuth Provider 和 Ollama 本地模型等多类接入。
+首次启动时，引导向导会带你完成配置：选择语言、输入你的名字、连接模型提供商（API key + base URL），并选择三个模型：**对话模型**（主对话）、**小工具模型**（轻量任务）、**大工具模型**（记忆编译和深度分析）。设置页还可以单独选择**视觉模型**，让文本模型通过 Vision Bridge 处理图片附件。贾维斯 支持 OpenAI 兼容、Anthropic 风格、OAuth Provider 和 Ollama 本地模型等多类接入。
 目前也添加了 OpenAI 的 OAuth 登录，鉴于 Anthropic 会有封号风险，所以暂时不提供。
 
 ## 架构
@@ -154,9 +154,9 @@ npm run typecheck
 
 ## 链接
 
-- [官网](https://openhanako.com)
-- [提交 Issue](https://github.com/liliMozi/openhanako/issues)
-- [安全页](https://github.com/liliMozi/openhanako/security)
+- [官网](https://openjarvis.com)
+- [提交 Issue](https://github.com/liliMozi/openjarvis/issues)
+- [安全页](https://github.com/liliMozi/openjarvis/security)
 - [安全政策](SECURITY.md)
 - [插件开发指南](PLUGINS.md)
 - [贡献指南](CONTRIBUTING.md)

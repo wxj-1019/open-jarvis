@@ -780,14 +780,14 @@
       "updateChecking": "アップデートを確認中…",
       "updateDownloading": "{agentName}が新しいお家を準備中 {percent}%",
       "updateReadyInstall": "v{version} インストール準備完了",
-      "updateInstalling": "アップデートをインストール中です。Hanako は自動で再起動します…",
+      "updateInstalling": "アップデートをインストール中です。Jarvis は自動で再起動します…",
       "updateInstallManualHint": "「再起動して更新」を押すとインストールします。終了だけでは自動インストールしません",
       "updateInstall": "再起動して更新",
       "updateProgress": "{percent}%",
       "updateError": "アップデートの確認に失敗しました",
       "updateLatest": "最新バージョンです",
       "updateCheckBtn": "アップデートを確認",
-      "updateNeedInstall": "先に Hanako をアプリケーションフォルダに移動してください",
+      "updateNeedInstall": "先に Jarvis をアプリケーションフォルダに移動してください",
       "updateDiskSpace": "ディスク容量不足のため、アップデートをダウンロードできません",
       "launchAtLogin": "ログイン時に起動",
       "betaUpdates": "ベータ版アップデートを受け取る",
@@ -1723,7 +1723,7 @@
     "skillMissingName": "SKILL.md に name フィールドがありません",
     "skillNameInvalid": "スキル名が無効です（\"{name}\"）。英字、数字、アンダースコア、ハイフンのみ使用できます。",
     "skillPathMustBeAbsolute": "パスは絶対パスである必要があります: {path}",
-    "skillCannotAddSelfDir": "Hanako 自身のスキルディレクトリは追加できません",
+    "skillCannotAddSelfDir": "Jarvis 自身のスキルディレクトリは追加できません",
     "skillInvalidName": "無効なスキル名です",
     "skillExternalCannotDelete": "外部互換スキルはここからは削除できません",
     "skillNotExists": "スキルが存在しません",
@@ -1891,7 +1891,7 @@
   },
   "main": {
     "tray": {
-      "show": "Hanako を表示",
+      "show": "Jarvis を表示",
       "settings": "設定",
       "quit": "終了"
     },
@@ -1899,15 +1899,15 @@
       "selectFolder": "作業フォルダを選択",
       "selectSkill": "スキルを選択",
       "selectPlugin": "プラグインを選択",
-      "launchFailedTitle": "Hanako の起動に失敗しました",
-      "launchFailedBody": "Hanako v{version}\n\n{detail}\n\n詳細ログの保存先：\n{logPath}\n\nこのスクリーンショットまたはログファイルを開発者にお送りください。",
-      "serverRestartFailed": "Hanako v{version}\n\nServer がクラッシュし、再起動に失敗しました。\n{error}\n\nアプリケーションを再起動してください。",
-      "serverMultipleCrash": "Hanako v{version}\n\nServer が複数回クラッシュしました ({reason})。\n\nアプリケーションを再起動してください。",
+      "launchFailedTitle": "Jarvis の起動に失敗しました",
+      "launchFailedBody": "Jarvis v{version}\n\n{detail}\n\n詳細ログの保存先：\n{logPath}\n\nこのスクリーンショットまたはログファイルを開発者にお送りください。",
+      "serverRestartFailed": "Jarvis v{version}\n\nServer がクラッシュし、再起動に失敗しました。\n{error}\n\nアプリケーションを再起動してください。",
+      "serverMultipleCrash": "Jarvis v{version}\n\nServer が複数回クラッシュしました ({reason})。\n\nアプリケーションを再起動してください。",
       "serverStartTimeout": "Server の起動がタイムアウトしました",
       "serverKilledBySignal": "Server がシグナルで終了しました ({signal})",
       "serverExitedWithCode": "Server が終了しました。コード: {code}",
-      "serverFilesNotReady": "自動アップデートが完了したばかりで、新バージョンのファイルがまだディスクに書き込まれていません（{missing} が見つかりません）。{waited} 秒待機しましたが完了しませんでした。しばらくしてから Hanako を再起動してください。",
-      "serverModuleMissing": "Server 起動失敗：モジュール {module} が見つかりません。\n通常、自動アップデート完了直後にファイルがまだディスクに書き込み中の場合に発生します。\n推奨：1〜2 分待ってから Hanako を再起動してください。問題が続く場合は GitHub で報告してください。"
+      "serverFilesNotReady": "自動アップデートが完了したばかりで、新バージョンのファイルがまだディスクに書き込まれていません（{missing} が見つかりません）。{waited} 秒待機しましたが完了しませんでした。しばらくしてから Jarvis を再起動してください。",
+      "serverModuleMissing": "Server 起動失敗：モジュール {module} が見つかりません。\n通常、自動アップデート完了直後にファイルがまだディスクに書き込み中の場合に発生します。\n推奨：1〜2 分待ってから Jarvis を再起動してください。問題が続く場合は GitHub で報告してください。"
     },
     "notification": {
       "ready": "通知が有効になりました"
@@ -2079,7 +2079,7 @@
     },
     "updateSettings": {
       "label": "設定",
-      "description": "Hanako の設定を変更します。2つの操作があります：\n- search + query：キーワードで設定項目を検索し、現在の値と選択肢を確認\n- apply + key + value：指定した設定を変更（ユーザー確認が必要）\n\n正確なキーが分かっている場合は、検索をスキップして直接 apply できます。",
+      "description": "Jarvis の設定を変更します。2つの操作があります：\n- search + query：キーワードで設定項目を検索し、現在の値と選択肢を確認\n- apply + key + value：指定した設定を変更（ユーザー確認が必要）\n\n正確なキーが分かっている場合は、検索をスキップして直接 apply できます。",
       "actionDesc": "操作タイプ：search で設定を検索 / apply で設定を変更",
       "queryDesc": "検索キーワード（search 時に必須）",
       "keyDesc": "設定キー（search で取得）",
@@ -2168,7 +2168,7 @@
     "inputHelp": "/help でコマンド一覧を表示"
   },
   "sandbox": {
-    "blocked": "[セキュリティ] {reason}\n\nこの操作は Hanako のサンドボックスセキュリティポリシーによりブロックされました。これはコマンドがパスまたは権限の境界を越えたことを示します。まず現在のワークスペース、具体的なパス表記、対象ファイルが許可されたワークスペースまたは session パスに属するべきかを確認してください。ブロックされたパスと理由をユーザーに説明し、サンドボックス設定の変更はユーザーが明示的に決めた場合にだけ相談してください。",
+    "blocked": "[セキュリティ] {reason}\n\nこの操作は Jarvis のサンドボックスセキュリティポリシーによりブロックされました。これはコマンドがパスまたは権限の境界を越えたことを示します。まず現在のワークスペース、具体的なパス表記、対象ファイルが許可されたワークスペースまたは session パスに属するべきかを確認してください。ブロックされたパスと理由をユーザーに説明し、サンドボックス設定の変更はユーザーが明示的に決めた場合にだけ相談してください。",
     "noSudo": "sudo の使用は禁止されています",
     "noSu": "su によるユーザー切り替えは禁止されています",
     "noChmod": "ファイル権限の変更は禁止されています",

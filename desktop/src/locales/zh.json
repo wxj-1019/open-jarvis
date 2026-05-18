@@ -790,14 +790,14 @@
       "updateChecking": "正在检查更新…",
       "updateDownloading": "{agentName}正在准备新家 {percent}%",
       "updateReadyInstall": "v{version} 已就绪",
-      "updateInstalling": "正在安装更新，Hanako 会自动重启…",
+      "updateInstalling": "正在安装更新，Jarvis 会自动重启…",
       "updateInstallManualHint": "点「重启更新」后安装，直接退出不会自动安装",
       "updateInstall": "重启更新",
       "updateProgress": "{percent}%",
       "updateError": "检查更新失败",
       "updateLatest": "已是最新版本",
       "updateCheckBtn": "检查更新",
-      "updateNeedInstall": "请先将 Hanako 移动到应用程序文件夹",
+      "updateNeedInstall": "请先将 Jarvis 移动到应用程序文件夹",
       "updateDiskSpace": "磁盘空间不足，无法下载更新",
       "launchAtLogin": "开机自启",
       "betaUpdates": "接收测试版更新",
@@ -1768,7 +1768,7 @@
     "skillMissingName": "SKILL.md 中缺少 name 字段",
     "skillNameInvalid": "技能名称无效（\"{name}\"）。仅允许字母、数字、下划线和短横线。",
     "skillPathMustBeAbsolute": "路径必须是绝对路径: {path}",
-    "skillCannotAddSelfDir": "不能添加 Hanako 自身的技能目录",
+    "skillCannotAddSelfDir": "不能添加 Jarvis 自身的技能目录",
     "skillInvalidName": "无效的技能名称",
     "skillExternalCannotDelete": "外部兼容技能无法从此处删除",
     "skillNotExists": "技能不存在",
@@ -1937,7 +1937,7 @@
   },
   "main": {
     "tray": {
-      "show": "显示 Hanako",
+      "show": "显示 Jarvis",
       "settings": "设置",
       "quit": "退出"
     },
@@ -1945,17 +1945,17 @@
       "selectFolder": "选择工作文件夹",
       "selectSkill": "选择技能",
       "selectPlugin": "选择插件",
-      "launchFailedTitle": "Hanako 启动失败",
-      "launchFailedBody": "Hanako v{version}\n\n{detail}\n\n详细日志已保存到：\n{logPath}\n\n请将此截图或日志文件发送给开发者。",
-      "serverRestartFailed": "Hanako v{version}\n\nServer 崩溃后重启失败。\n{error}\n\n请重新启动应用。",
-      "serverMultipleCrash": "Hanako v{version}\n\nServer 多次崩溃 ({reason})。\n\n请重新启动应用。",
+      "launchFailedTitle": "Jarvis 启动失败",
+      "launchFailedBody": "Jarvis v{version}\n\n{detail}\n\n详细日志已保存到：\n{logPath}\n\n请将此截图或日志文件发送给开发者。",
+      "serverRestartFailed": "Jarvis v{version}\n\nServer 崩溃后重启失败。\n{error}\n\n请重新启动应用。",
+      "serverMultipleCrash": "Jarvis v{version}\n\nServer 多次崩溃 ({reason})。\n\n请重新启动应用。",
       "serverStartTimeout": "Server 启动超时",
       "serverKilledBySignal": "Server 被信号终止 ({signal})",
       "serverExitedWithCode": "Server 退出，code: {code}",
-      "serverFilesNotReady": "自动更新刚完成，新版本文件还在落地（缺少 {missing}），已等待 {waited}s 仍未就绪。请稍后重新启动 Hanako。",
-      "serverModuleMissing": "Server 启动时找不到模块 {module}。\n通常是自动更新刚完成、新版本文件还在写入磁盘导致的。\n建议：等待 1-2 分钟后重新启动 Hanako；若反复出现，请前往 GitHub 反馈。",
-      "installFailedTitle": "Hanako 更新",
-      "installFailedBody": "更新安装失败：\n{error}\n\n请重启 Hanako 后重试，或前往设置页面手动检查更新。"
+      "serverFilesNotReady": "自动更新刚完成，新版本文件还在落地（缺少 {missing}），已等待 {waited}s 仍未就绪。请稍后重新启动 Jarvis。",
+      "serverModuleMissing": "Server 启动时找不到模块 {module}。\n通常是自动更新刚完成、新版本文件还在写入磁盘导致的。\n建议：等待 1-2 分钟后重新启动 Jarvis；若反复出现，请前往 GitHub 反馈。",
+      "installFailedTitle": "Jarvis 更新",
+      "installFailedBody": "更新安装失败：\n{error}\n\n请重启 Jarvis 后重试，或前往设置页面手动检查更新。"
     },
     "notification": {
       "ready": "通知已就绪"
@@ -2132,7 +2132,7 @@
     },
     "updateSettings": {
       "label": "设置",
-      "description": "修改 Hanako 的设置。支持两种操作：\n- search + query：用关键词搜索设置项，查看当前值和可选项\n- apply + key + value：修改指定设置项，需用户确认\n\n如果已知确切 key，可以直接 apply 跳过搜索。",
+      "description": "修改 Jarvis 的设置。支持两种操作：\n- search + query：用关键词搜索设置项，查看当前值和可选项\n- apply + key + value：修改指定设置项，需用户确认\n\n如果已知确切 key，可以直接 apply 跳过搜索。",
       "actionDesc": "操作类型：search 搜索设置项 / apply 修改设置",
       "queryDesc": "搜索关键词（search 时必填）",
       "keyDesc": "设置项 key（通过 search 获取）",
@@ -2221,7 +2221,7 @@
     "inputHelp": "输入 /help 查看命令列表"
   },
   "sandbox": {
-    "blocked": "[安全策略] {reason}\n\n此操作被 Hanako 的沙盒安全策略阻止，表示命令越过了路径或权限边界。先检查当前工作台、具体路径写法，以及目标文件是否本来就应该放在允许的工作台或 session 路径内。请向用户说明被拦截的路径和原因；只有用户明确决定时，再讨论是否修改沙盒设置。",
+    "blocked": "[安全策略] {reason}\n\n此操作被 Jarvis 的沙盒安全策略阻止，表示命令越过了路径或权限边界。先检查当前工作台、具体路径写法，以及目标文件是否本来就应该放在允许的工作台或 session 路径内。请向用户说明被拦截的路径和原因；只有用户明确决定时，再讨论是否修改沙盒设置。",
     "noSudo": "禁止使用 sudo",
     "noSu": "禁止使用 su 切换用户",
     "noChmod": "禁止修改文件权限",

@@ -123,7 +123,7 @@ function seedDefaultAgent(agentsDir, productDir) {
   if (identitySrc) {
     const tmpl = fs.readFileSync(identitySrc, "utf-8");
     const filled = tmpl
-      .replace(/\{\{agentName\}\}/g, "Hanako")
+      .replace(/\{\{agentName\}\}/g, "Jarvis")
       .replace(/\{\{userName\}\}/g, "");
     fs.writeFileSync(path.join(agentDir, "identity.md"), filled, "utf-8");
   }
