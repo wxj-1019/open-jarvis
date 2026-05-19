@@ -9,7 +9,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 
 const DEFAULT_NAME = 'Jarvis';
 const YUAN_AVATARS: Record<string, string> = {
-  hanako: 'Hanako.png',
+  hanako: 'jarvis.png',
   butter: 'Butter.png',
   ming: 'Ming.png',
 };
@@ -32,7 +32,7 @@ const PARTICLE_MIN_DELAY = 1500;
 const PARTICLE_MAX_DELAY = 3000;
 
 export function SplashApp() {
-  const [avatarSrc, setAvatarSrc] = useState('assets/Hanako.png');
+  const [avatarSrc, setAvatarSrc] = useState('assets/jarvis.png');
   const [displayText, setDisplayText] = useState('');
   const [cursorVisible, setCursorVisible] = useState(true);
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
@@ -160,10 +160,10 @@ export function SplashApp() {
           if (base) {
             setAvatarSrc(`${base}?t=${Date.now()}`);
           } else if (splashInfo?.yuan) {
-            setAvatarSrc(`assets/${YUAN_AVATARS[splashInfo.yuan] || 'Hanako.png'}`);
+            setAvatarSrc(`assets/${YUAN_AVATARS[splashInfo.yuan] || 'jarvis.png'}`);
           }
         } else if (splashInfo?.yuan) {
-          setAvatarSrc(`assets/${YUAN_AVATARS[splashInfo.yuan] || 'Hanako.png'}`);
+          setAvatarSrc(`assets/${YUAN_AVATARS[splashInfo.yuan] || 'jarvis.png'}`);
         }
 
         if (splashInfo?.agentName) name = splashInfo.agentName;
