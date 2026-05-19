@@ -52,6 +52,7 @@ export function isVideoFile(name: string): boolean {
 export function formatSessionDate(isoStr: string): string {
   const t = window.t ?? ((p: string) => p);
   const date = new Date(isoStr);
+  if (isNaN(date.getTime())) return '';
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMin = Math.floor(diffMs / 60000);
@@ -66,6 +67,16 @@ export function formatSessionDate(isoStr: string): string {
   const m = date.getMonth() + 1;
   const d = date.getDate();
   return t('time.dateFormat', { m, d });
+}
+
+export function safeFormatSessionDate(rawDate: string | undefined | null): string {
+  if (!rawDate) return '';
+  try {
+    const d = new Date(rawDate);
+    return formatSessionDate(d.toISOString());
+  } catch {
+    return '';
+  }
 }
 
 export function cronToHuman(schedule: number | string): string {

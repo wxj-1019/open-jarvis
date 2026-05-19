@@ -4,7 +4,7 @@ import { usePanel } from '../hooks/use-panel';
 import { hanaFetch } from '../hooks/use-hana-fetch';
 import { fetchConfig, invalidateConfigCache } from '../hooks/use-config';
 import { loadSessions, switchSession } from '../stores/session-actions';
-import { formatSessionDate, injectCopyButtons, parseMoodFromContent } from '../utils/format';
+import { formatSessionDate, safeFormatSessionDate, injectCopyButtons, parseMoodFromContent } from '../utils/format';
 import { AgentAvatar, resolveAgentDisplayInfo } from '../utils/agent-display';
 import { getMd } from '../utils/markdown';
 import { useMermaidDiagrams } from '../hooks/use-mermaid-diagrams';
@@ -92,7 +92,7 @@ export function ActivityPanel() {
         : activity.type === 'subagent' ? t('activity.subagent')
         : (activity.label || t('activity.cron'));
       const timeStr = activity.startedAt
-        ? formatSessionDate(new Date(activity.startedAt).toISOString())
+        ? safeFormatSessionDate(activity.startedAt)
         : '';
       setDetail({
         activityId,
@@ -245,7 +245,7 @@ function ActivityCard({
         <span className={fp.actCardAgentName}>{displayInfo.displayName}</span>
         <span className={fp.actCardBadge}>{typeText}</span>
         <span className={fp.actCardTime}>
-          {a.startedAt ? formatSessionDate(new Date(a.startedAt).toISOString()) : ''}
+          {a.startedAt ? safeFormatSessionDate(a.startedAt) : ''}
         </span>
       </div>
       <div className={fp.actCardSummary}>

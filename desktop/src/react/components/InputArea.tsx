@@ -641,7 +641,7 @@ function InputAreaInner({ surface }: Required<InputAreaProps>) {
         setDraft(currentSessionPath, text);
       }
       // 内容超出可见区域时，自动滚动到光标位置
-      requestAnimationFrame(() => editor.commands.scrollIntoView());
+      requestAnimationFrame(() => editor?.commands?.scrollIntoView());
     };
     editor.on('update', handler);
     return () => { editor.off('update', handler); };
@@ -964,7 +964,7 @@ function InputAreaInner({ surface }: Required<InputAreaProps>) {
       const allFiles = [...(hasFiles ? inputFiles : [])];
       if (docForRender) allFiles.push({ path: docForRender.path, name: docForRender.name });
 
-      editor.commands.clearContent();
+      editor?.commands?.clearContent();
       if (currentSessionPath) clearDraft(currentSessionPath);
       clearAttachedFiles();
       const qs2 = useStore.getState().quotedSelection;
@@ -1019,7 +1019,7 @@ function InputAreaInner({ surface }: Required<InputAreaProps>) {
         data: { id: `user-${Date.now()}`, role: 'user', text, textHtml: renderMarkdown(text), timestamp: Date.now() },
       });
     }
-    editor.commands.clearContent();
+    editor?.commands?.clearContent();
     const sp = useStore.getState().currentSessionPath;
     if (sp) clearDraft(sp);
     ws.send(JSON.stringify({ type: 'steer', text, sessionPath: sp }));

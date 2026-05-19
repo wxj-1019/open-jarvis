@@ -149,7 +149,7 @@ function copyLegacyFiles(): Plugin {
       const outDir = path.resolve(__dirname, 'desktop/dist-renderer');
 
       const dirs = ['lib', 'modules', 'themes', 'assets', 'locales'];
-      const files = ['styles.css', 'animations.css', 'splash.css', 'mobile-manifest.webmanifest', 'mobile-sw.js', 'icon.png'];
+      const files = ['styles.css', 'animations.css', 'splash.css', 'settings.css', 'onboarding.css', 'browser-viewer.css', 'viewer-window.css', 'mobile-manifest.webmanifest', 'mobile-sw.js', 'icon.png'];
 
       for (const dir of dirs) {
         const src = path.join(srcDir, dir);
