@@ -27,6 +27,10 @@ const YUAN_COLORS: Record<string, string> = {
 const TYPING_SPEED = 65;
 const TYPING_PAUSE = 1800;
 
+const MAX_PARTICLES = 3;
+const PARTICLE_MIN_DELAY = 1500;
+const PARTICLE_MAX_DELAY = 3000;
+
 export function SplashApp() {
   const [avatarSrc, setAvatarSrc] = useState('assets/Hanako.png');
   const [displayText, setDisplayText] = useState('');
@@ -36,12 +40,15 @@ export function SplashApp() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [lines, setLines] = useState<string[]>([]);
   const [symbol, setSymbol] = useState(YUAN_SYMBOLS.hanako);
-  const [accentColor, setAccentColor] = useState(YUAN_COLORS.hanako);
+  const [animationPhase, setAnimationPhase] = useState<'entering' | 'awake' | 'breathing'>('entering');
 
   const linesRef = useRef<string[]>([]);
   const charIndexRef = useRef(0);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cursorTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const particleContainerRef = useRef<HTMLDivElement>(null);
+  const particleCountRef = useRef(0);
+  const particleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const params = new URLSearchParams(typeof location !== 'undefined' ? location.search : '');
   const mode = params.get('mode') || '';
@@ -54,6 +61,42 @@ export function SplashApp() {
     }
   }, []);
 
+  // 粒子生成
+  const spawnParticle = useCallback(() => {
+    if (particleCountRef.current >= MAX_PARTICLES) return;
+    if (!particleContainerRef.current) return;
+
+    const particle = document.createElement('div');
+    particle.className = 'splash-particle';
+
+    // 随机出生角度 (-60° ~ +60° from bottom)
+    const angle = (Math.random() * 120 - 60) * (Math.PI / 180);
+    const distance = 36 + Math.random() * 8;
+    const startX = 40 + Math.sin(angle) * distance;
+    const startY = 40 + Math.cos(angle) * distance;
+
+    particle.style.left = `${startX}px`;
+    particle.style.top = `${startY}px`;
+
+    const swing = (Math.random() > 0.5 ? 1 : -1) * (3 + Math.random() * 4);
+    particle.style.setProperty('--swing', `${swing}px`);
+
+    const duration = 2.5 + Math.random() * 1.5;
+    particle.style.animation = `particleFloat ${duration}s ease-in-out forwards`;
+
+    particleCountRef.current += 1;
+    particleContainerRef.current.appendChild(particle);
+
+    const onEnd = () => {
+      particle.remove();
+      particleCountRef.current -= 1;
+    };
+    particle.addEventListener('animationend', onEnd, { once: true });
+
+    const nextDelay = PARTICLE_MIN_DELAY + Math.random() * (PARTICLE_MAX_DELAY - PARTICLE_MIN_DELAY);
+    particleTimerRef.current = setTimeout(spawnParticle, nextDelay);
+  }, []);
+
   // 打字机核心逻辑
   const runTypewriter = useCallback(() => {
     if (linesRef.current.length === 0) return;
@@ -61,13 +104,12 @@ export function SplashApp() {
     const currentLine = linesRef.current[currentLineIndex];
 
     if (isDeleting) {
-      // 删除模式
+      setIsTyping(false);
       if (charIndexRef.current > 0) {
         charIndexRef.current -= 1;
         setDisplayText(currentLine.slice(0, charIndexRef.current));
         typingTimerRef.current = setTimeout(runTypewriter, TYPING_SPEED / 2.5);
       } else {
-        // 删除完成，切换到下一行
         setIsDeleting(false);
         setIsTyping(true);
         const nextIndex = (currentLineIndex + 1) % linesRef.current.length;
@@ -75,14 +117,13 @@ export function SplashApp() {
         typingTimerRef.current = setTimeout(runTypewriter, 300);
       }
     } else {
-      // 打字模式
+      setIsTyping(true);
       if (charIndexRef.current < currentLine.length) {
         charIndexRef.current += 1;
         setDisplayText(currentLine.slice(0, charIndexRef.current));
         const speed = TYPING_SPEED + (Math.random() * 30 - 15);
         typingTimerRef.current = setTimeout(runTypewriter, speed);
       } else {
-        // 打字完成，暂停后进入删除模式
         setIsTyping(false);
         typingTimerRef.current = setTimeout(() => {
           setIsDeleting(true);
@@ -91,6 +132,15 @@ export function SplashApp() {
       }
     }
   }, [currentLineIndex, isDeleting]);
+
+  // 同步 isTyping 到 body class
+  useEffect(() => {
+    if (isTyping) {
+      document.body.classList.add('splash-typing');
+    } else {
+      document.body.classList.remove('splash-typing');
+    }
+  }, [isTyping]);
 
   useEffect(() => {
     (async () => {
@@ -121,7 +171,10 @@ export function SplashApp() {
         if (splashInfo?.yuan) yuan = splashInfo.yuan;
 
         setSymbol(YUAN_SYMBOLS[yuan] || YUAN_SYMBOLS.hanako);
-        setAccentColor(YUAN_COLORS[yuan] || YUAN_COLORS.hanako);
+
+        // 设置 CSS 变量
+        const color = YUAN_COLORS[yuan] || YUAN_COLORS.hanako;
+        document.documentElement.style.setProperty('--splash-accent', color);
       } catch {}
 
       // 安装模式：固定文案，不打字机
@@ -164,6 +217,23 @@ export function SplashApp() {
 
       // 启动打字机
       typingTimerRef.current = setTimeout(runTypewriter, 600);
+
+      // 入场动画序列
+      const enterTimer = setTimeout(() => {
+        setAnimationPhase('awake');
+        document.body.classList.add('splash-phase-entering');
+
+        const awakeTimer = setTimeout(() => {
+          setAnimationPhase('breathing');
+          document.body.classList.remove('splash-phase-entering');
+          // 启动粒子系统
+          spawnParticle();
+        }, 3000);
+
+        return () => clearTimeout(awakeTimer);
+      }, 100);
+
+      return () => clearTimeout(enterTimer);
     })();
 
     // 光标闪烁
@@ -174,8 +244,15 @@ export function SplashApp() {
     return () => {
       clearTypingTimer();
       if (cursorTimerRef.current) clearInterval(cursorTimerRef.current);
+      if (particleTimerRef.current) clearTimeout(particleTimerRef.current);
+      if (particleContainerRef.current) {
+        particleContainerRef.current.innerHTML = '';
+      }
+      particleCountRef.current = 0;
+      document.body.classList.remove('splash-typing');
+      document.body.classList.remove('splash-phase-entering');
     };
-  }, [mode, installVersion, runTypewriter, clearTypingTimer]);
+  }, [mode, installVersion, runTypewriter, clearTypingTimer, spawnParticle]);
 
   // 当行索引变化时重置字符索引并启动打字
   useEffect(() => {
@@ -192,24 +269,25 @@ export function SplashApp() {
   return (
     <div className="splash-container">
       <div className="splash-avatar-wrap">
+        <div className="splash-avatar-glow" />
+        <div className="splash-avatar-ring-inner" />
+        <div className="splash-avatar-ring-outer" />
         <img
           className="splash-avatar"
           src={avatarSrc}
           alt=""
           draggable={false}
         />
-        <div className="splash-avatar-ring" style={{ borderColor: accentColor }} />
-        <div className="splash-avatar-glow" style={{ background: accentColor }} />
+        <div className="splash-avatar-eyelid" />
       </div>
       <div className="splash-text-row">
         <p className="splash-text">
           {displayText}
           <span
             className={`splash-cursor${showCursor ? ' visible' : ''}`}
-            style={{ backgroundColor: accentColor }}
           />
         </p>
-        <span className="splash-sakura" style={{ color: accentColor }}>{symbol}</span>
+        <span className="splash-sakura">{symbol}</span>
       </div>
       {mode !== 'installing' && lines.length > 0 && (
         <div className="splash-dots">
@@ -217,11 +295,11 @@ export function SplashApp() {
             <span
               key={i}
               className={`splash-dot${i === currentLineIndex ? ' active' : ''}`}
-              style={i === currentLineIndex ? { backgroundColor: accentColor } : undefined}
             />
           ))}
         </div>
       )}
+      <div ref={particleContainerRef} className="splash-particles" />
     </div>
   );
 }
