@@ -8,6 +8,7 @@
     "dmHint": "僅顯示主助手的私聊",
     "groupLabel": "頻道",
     "noMessages": "暫無訊息",
+    "selectHint": "選擇一個頻道或私訊開始對話",
     "nameExists": "該頻道名已存在",
     "membersCount": "位成員",
     "info": "頻道資訊",
@@ -518,6 +519,11 @@
       "done": "🧭 分身出發了",
       "failed": "🧭 分身出了岔子"
     },
+    "wait": {
+      "running": "⏳ {name} 正在等待結果",
+      "done": "⏳ 等待結束",
+      "failed": "⏳ 等待被中斷"
+    },
     "check_pending_tasks": {
       "running": "📋 {name} 正在找找沒做完的事兒",
       "done": "📋 {name} 找完了",
@@ -589,7 +595,8 @@
       "Ta 把散落的情緒重新收好",
       "{name} 聞到了某個下午的橘子味",
       "那些對話還帶著體溫"
-    ]
+    ],
+    "installing": "{name} 正在更新到 v{version}，請稍候……"
   },
   "settings": {
     "title": "設定",
@@ -605,6 +612,7 @@
       "agent": "助手",
       "me": "我",
       "providers": "供應商",
+      "media": "多媒體",
       "models": "模型",
       "memory": "記憶",
       "work": "工作台",
@@ -674,6 +682,11 @@
       "leavesOverlay": "晴天模式",
       "leavesOverlayHint": "沒事兒曬曬太陽"
     },
+    "interface": {
+      "system": "系統",
+      "hardwareAcceleration": "硬體加速",
+      "hardwareAccelerationHint": "使用顯示卡繪製視窗內容。關閉後會在下次啟動使用軟體渲染，可用於恢復 Windows 顯示卡驅動導致的啟動閃退。"
+    },
     "editor": {
       "title": "編輯器",
       "markdownBodyFontSize": "正文字號",
@@ -718,6 +731,8 @@
       "chatModelHint": "Ta 在對話與工作中使用的模型",
       "modelUnavailable": "目前不可用：{model}",
       "modelUnavailableHint": "目前模型已不在可用列表中，請重新選擇模型，或到供應商頁面重新儲存設定並讀取模型。",
+      "imageModel": "圖片模型",
+      "imageModelHint": "Ta 在圖片生成時使用的模型",
       "addAgent": "新建助手",
       "createTitle": "新建助手",
       "namePlaceholder": "起個名字",
@@ -780,21 +795,23 @@
       "updateChecking": "正在檢查更新…",
       "updateDownloading": "{agentName}正在準備新家 {percent}%",
       "updateReadyInstall": "v{version} 已就緒",
-      "updateInstalling": "正在安裝更新，Jarvis 會自動重新啟動…",
+      "updateInstalling": "正在安裝更新，Hanako 會自動重新啟動…",
       "updateInstallManualHint": "點「重啟更新」後安裝，直接退出不會自動安裝",
       "updateInstall": "重新啟動更新",
       "updateProgress": "{percent}%",
       "updateError": "檢查更新失敗",
       "updateLatest": "已是最新版本",
       "updateCheckBtn": "檢查更新",
-      "updateNeedInstall": "請先將 Jarvis 移動到應用程式資料夾",
+      "updateNeedInstall": "請先將 Hanako 移動到應用程式資料夾",
       "updateDiskSpace": "磁碟空間不足，無法下載更新",
       "launchAtLogin": "開機自啟",
       "betaUpdates": "接收測試版更新",
       "autoCheckUpdates": "自動檢查更新"
     },
     "access": {
+      "networkAccess": "區域網路存取",
       "mobileAccess": "手機存取",
+      "desktopAccess": "電腦存取",
       "lanToggle": "允許區域網路裝置存取",
       "lanHint": "開啟後，同一區域網路內的手機和電腦可以存取這台 Hana Server",
       "port": "固定連接埠",
@@ -806,6 +823,7 @@
       "statusHint": "用於確認目前服務實際監聽位置和手機可用地址",
       "runtimeEndpoint": "目前監聽",
       "effectiveMobileUrl": "目前生效地址",
+      "effectiveDesktopUrl": "電腦連線地址",
       "lanAddresses": "區域網路地址",
       "noLanAddresses": "未發現區域網路地址",
       "qrCode": "QR Code",
@@ -819,6 +837,23 @@
       "mobileKeyOnce": "密鑰只在產生後顯示一次，請妥善保存",
       "mobileKeyCreated": "已產生手機存取密鑰",
       "mobileKeyFailed": "產生失敗",
+      "desktopUrl": "電腦連線地址",
+      "desktopUrlLanHint": "在另一台電腦的 Hana 前端中填入這個地址",
+      "desktopUrlLocalHint": "目前僅允許本機存取，開啟區域網路後會顯示電腦可用地址",
+      "generateDesktopKey": "產生電腦存取密鑰",
+      "desktopKeyHint": "給另一台電腦的 Hana 前端手動連線使用",
+      "desktopKey": "電腦存取密鑰",
+      "desktopKeyOnce": "密鑰只在產生後顯示一次，請在另一台電腦上填入",
+      "desktopKeyCreated": "已產生電腦存取密鑰",
+      "desktopKeyFailed": "產生失敗",
+      "connectLanServer": "連線區域網路伺服器",
+      "remoteServerUrl": "伺服器位址",
+      "remoteServerUrlHint": "填入另一台電腦或 NAS 上 Hana Server 的地址",
+      "remoteServerKey": "存取密鑰",
+      "remoteServerKeyHint": "填入那台伺服器設定頁產生的電腦存取密鑰",
+      "remoteServerConnected": "已連線區域網路伺服器",
+      "remoteServerFailed": "連線失敗",
+      "pairedDevices": "已配對裝置",
       "noDevices": "暫無已配對裝置",
       "revoke": "撤銷",
       "revokeCredential": "撤銷密鑰",
@@ -933,6 +968,27 @@
       "remove": "移除",
       "deleteConfirm": "確定刪除供應商 {name}？相關模型將一併清除。"
     },
+    "media": {
+      "imageGeneration": "圖片生成",
+      "defaultModel": "預設圖片模型",
+      "credentialOk": "API Key 已設定（複用供應商設定）",
+      "credentialMissing": "未設定，前往供應商設定",
+      "addModel": "新增圖片模型",
+      "providerDefaults": "預設參數",
+      "size": "尺寸",
+      "format": "格式",
+      "quality": "品質",
+      "watermark": "浮水印",
+      "aspectRatio": "長寬比",
+      "speechRecognition": "語音辨識",
+      "speechSynthesis": "語音合成",
+      "comingSoon": "即將推出",
+      "noProvider": "請選擇一個供應商查看詳情",
+      "models": "圖片模型",
+      "globalDefault": "全域預設",
+      "followGlobal": "跟隨全域預設",
+      "default": "預設"
+    },
     "oauth": {
       "title": "快速登入",
       "login": "登入",
@@ -984,6 +1040,7 @@
       "searchProviderField": "搜尋引擎",
       "searchApiKey": "搜尋 API Key",
       "searchApiKeyHint": "啟用搜尋時請填寫所選 provider 的 API Key",
+      "searchApiKeysAutoHint": "Auto 會優先使用已設定的 Tavily、Brave、Serper，額度耗盡、報錯、空結果或相關性較弱時再回退到瀏覽器搜尋。",
       "searchApiKeyNotRequired": "瀏覽器搜尋不需要 API Key，會在本機背景開啟搜尋頁並整理結果。",
       "favorites": "收藏",
       "searchModel": "搜尋模型...",
@@ -1327,6 +1384,20 @@
       "qqAppId": "App ID",
       "qqAppSecret": "App Secret",
       "qqHint": "從 QQ 機器人開放平台（q.qq.com/qqbot）取得",
+      "wechat": "微信",
+      "wechatHint": "透過微信 iLink 協議接入個人號",
+      "wechatExclusive": "一個微信號只能綁定一個 Agent，綁定新 Agent 後舊的會自動失效",
+      "wechatScan": "掃碼登入",
+      "wechatRescan": "重新登入",
+      "wechatLoggedIn": "已登入",
+      "wechatNeedScan": "請先掃碼登入",
+      "wechatScanning": "請用微信掃描 QR Code",
+      "wechatScanned": "已掃碼，請在手機上確認",
+      "wechatExpired": "QR Code 已過期",
+      "wechatLoginSuccess": "登入成功",
+      "wechatLoginFailed": "登入失敗",
+      "wechatUnbind": "解除綁定",
+      "wechatUnbound": "已解除微信綁定",
       "connected": "已連線",
       "disconnected": "未連線",
       "error": "連線失敗",
@@ -1377,6 +1448,14 @@
       "title": "你好，我是 {name} ✿",
       "subtitle": "我是你的個人 AI 助手。\n來做一些簡單的設定，讓我們開始吧。",
       "next": "開始設定"
+    },
+    "remote": {
+      "link": "已有伺服器？使用區域網路連線",
+      "url": "伺服器位址",
+      "key": "存取密鑰",
+      "connect": "連線",
+      "connecting": "連線中...",
+      "failed": "連線區域網路伺服器失敗"
     },
     "name": {
       "title": "我該怎麼稱呼你？",
@@ -1569,6 +1648,7 @@
     "fileLabel": "檔案",
     "openWithDefault": "用預設應用程式打開",
     "refresh": "重新整理",
+    "newMarkdownFileName": "未命名.md",
     "newFolder": "新建資料夾",
     "ctx": {
       "open": "打開",
@@ -1584,6 +1664,7 @@
     "deleteConfirm": "要把「{name}」移到系統垃圾桶嗎？",
     "deleteSelectedConfirm": "要把選取的 {count} 項移到系統垃圾桶嗎？",
     "trashFailed": "移到系統垃圾桶失敗",
+    "createFailed": "建立失敗",
     "renameInvalid": "檔名不能包含路徑分隔符",
     "renameFailed": "重新命名失敗",
     "sort": {
@@ -1723,7 +1804,7 @@
     "skillMissingName": "SKILL.md 中缺少 name 欄位",
     "skillNameInvalid": "技能名稱無效（\"{name}\"）。僅允許字母、數字、底線和短橫線。",
     "skillPathMustBeAbsolute": "路徑必須是絕對路徑: {path}",
-    "skillCannotAddSelfDir": "不能新增 Jarvis 自身的技能目錄",
+    "skillCannotAddSelfDir": "不能新增 Hanako 自身的技能目錄",
     "skillInvalidName": "無效的技能名稱",
     "skillExternalCannotDelete": "外部相容技能無法從此處刪除",
     "skillNotExists": "技能不存在",
@@ -1812,6 +1893,7 @@
     "installSkillSizeLimit": "技能內容超過大小上限（{size}KB > {max}KB）",
     "installSkillNoUtility": "安全審查不可用：未設定 utility 模型，請在設定中配置輔助模型",
     "installSkillUtilityIncomplete": "安全審查不可用：輔助模型設定不完整（缺少 API key 或 base URL），請在設定中補全",
+    "installSkillSafetyPassed": "✓ 安全審查已通過",
     "installSkillSafetyEmpty": "安全審查回傳空回應",
     "installSkillSafetyUnexpected": "安全審查回傳未預期的格式: {reply}",
     "installSkillSafetyTimeout": "安全審查逾時或網路錯誤",
@@ -1891,7 +1973,7 @@
   },
   "main": {
     "tray": {
-      "show": "顯示 Jarvis",
+      "show": "顯示 Hanako",
       "settings": "設定",
       "quit": "結束"
     },
@@ -1899,15 +1981,17 @@
       "selectFolder": "選擇工作資料夾",
       "selectSkill": "選擇技能",
       "selectPlugin": "選擇插件",
-      "launchFailedTitle": "Jarvis 啟動失敗",
-      "launchFailedBody": "Jarvis v{version}\n\n{detail}\n\n詳細日誌已儲存至：\n{logPath}\n\n請將此截圖或日誌檔案傳送給開發者。",
-      "serverRestartFailed": "Jarvis v{version}\n\nServer 崩潰後重新啟動失敗。\n{error}\n\n請重新啟動應用程式。",
-      "serverMultipleCrash": "Jarvis v{version}\n\nServer 多次崩潰 ({reason})。\n\n請重新啟動應用程式。",
+      "launchFailedTitle": "Hanako 啟動失敗",
+      "launchFailedBody": "Hanako v{version}\n\n{detail}\n\n詳細日誌已儲存至：\n{logPath}\n\n請將此截圖或日誌檔案傳送給開發者。",
+      "serverRestartFailed": "Hanako v{version}\n\nServer 崩潰後重新啟動失敗。\n{error}\n\n請重新啟動應用程式。",
+      "serverMultipleCrash": "Hanako v{version}\n\nServer 多次崩潰 ({reason})。\n\n請重新啟動應用程式。",
       "serverStartTimeout": "Server 啟動逾時",
       "serverKilledBySignal": "Server 被訊號終止 ({signal})",
       "serverExitedWithCode": "Server 已結束，code: {code}",
-      "serverFilesNotReady": "自動更新剛完成，新版本檔案仍在寫入磁碟（缺少 {missing}），已等待 {waited} 秒仍未就緒。請稍後重新啟動 Jarvis。",
-      "serverModuleMissing": "Server 啟動失敗：找不到模組 {module}。\n通常是自動更新剛完成、新版本檔案仍在寫入磁碟所致。\n建議：等待 1-2 分鐘後重新啟動 Jarvis；若反覆出現，請至 GitHub 回報。"
+      "serverFilesNotReady": "自動更新剛完成，新版本檔案仍在寫入磁碟（缺少 {missing}），已等待 {waited} 秒仍未就緒。請稍後重新啟動 Hanako。",
+      "serverModuleMissing": "Server 啟動失敗：找不到模組 {module}。\n通常是自動更新剛完成、新版本檔案仍在寫入磁碟所致。\n建議：等待 1-2 分鐘後重新啟動 Hanako；若反覆出現，請至 GitHub 回報。",
+      "installFailedTitle": "Hanako 更新",
+      "installFailedBody": "更新安裝失敗：\n{error}\n\n請重新啟動 Hanako 後重試，或前往設定頁面手動檢查更新。"
     },
     "notification": {
       "ready": "通知已就緒"
@@ -2061,6 +2145,11 @@
       "filePathDesc": "（相容）單一個本機檔案的絕對路徑；新呼叫優先使用 filepaths。",
       "labelDesc": "（相容）顯示給使用者的檔案名稱，通常可以省略，預設使用檔名。"
     },
+    "wait": {
+      "label": "等待",
+      "description": "等待指定秒數。用於等待後台任務完成時保持 turn 活躍。",
+      "secondsDesc": "等待秒數（1-300）"
+    },
     "subagent": {
       "label": "啟動子 Agent",
       "description": "將任務派給子 agent 執行。可指定其他 agent（傳 agent 參數），不指定則自己分身執行。傳 agent=\"?\" 查看可用 agent 列表。\n\n你的判斷：\n- 如果目前還有可以並行推進的工作，繼續做\n- 如果必須拿到結果才能進行下一步，告訴使用者你已經派出去了、在等回覆，然後正常等待即可\n\n適用場景：\n- 需要大量搜尋、閱讀後總結為簡短結論的調研任務\n- 可以和目前思路並行的獨立子問題\n- 需要在多個方向同時探索的任務（可同時發起多個 subagent 呼叫）\n- 讓另一個 agent 從其專業視角處理任務\n不適用：需要修改檔案、執行命令等有副作用的操作\n\n重要：task 參數要寫清楚完整的指令和必要背景，子 agent 看不到目前的對話歷史。",
@@ -2079,7 +2168,7 @@
     },
     "updateSettings": {
       "label": "設定",
-      "description": "修改 Jarvis 的設定。支援兩種操作：\n- search + query：用關鍵字搜尋設定項，查看當前值和可選項\n- apply + key + value：修改指定設定項，需使用者確認\n\n如果已知確切 key，可以直接 apply 跳過搜尋。",
+      "description": "修改 Hanako 的設定。支援兩種操作：\n- search + query：用關鍵字搜尋設定項，查看當前值和可選項\n- apply + key + value：修改指定設定項，需使用者確認\n\n如果已知確切 key，可以直接 apply 跳過搜尋。",
       "actionDesc": "操作類型：search 搜尋設定項 / apply 修改設定",
       "queryDesc": "搜尋關鍵字（search 時必填）",
       "keyDesc": "設定項 key（透過 search 取得）",
@@ -2168,7 +2257,7 @@
     "inputHelp": "輸入 /help 查看命令列表"
   },
   "sandbox": {
-    "blocked": "[安全策略] {reason}\n\n此操作被 Jarvis 的沙盒安全策略阻止，表示命令越過了路徑或權限邊界。先檢查目前工作台、具體路徑寫法，以及目標檔案是否本來就應該放在允許的工作台或 session 路徑內。請向使用者說明被攔截的路徑和原因；只有使用者明確決定時，再討論是否修改沙盒設定。",
+    "blocked": "[安全策略] {reason}\n\n此操作被 Hanako 的沙盒安全策略阻止，表示命令越過了路徑或權限邊界。先檢查目前工作台、具體路徑寫法，以及目標檔案是否本來就應該放在允許的工作台或 session 路徑內。請向使用者說明被攔截的路徑和原因；只有使用者明確決定時，再討論是否修改沙盒設定。",
     "noSudo": "禁止使用 sudo",
     "noSu": "禁止使用 su 切換使用者",
     "noChmod": "禁止修改檔案權限",

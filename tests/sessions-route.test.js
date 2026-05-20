@@ -37,6 +37,8 @@ vi.mock("../core/message-utils.js", () => ({
   loadLatestAssistantSummaryFromSessionFile: vi.fn(async () => null),
   isValidSessionPath: vi.fn(() => true),
   isActiveSessionPath: vi.fn(() => true),
+  isActiveDesktopSessionPath: vi.fn(() => true),
+  isArchivedDesktopSessionPath: vi.fn(() => true),
 }));
 
 vi.mock("../core/session-turn-actions.js", () => ({
@@ -144,7 +146,7 @@ describe("sessions route", () => {
       cwd,
       true,
       undefined,
-      { workspaceFolders: [extra] },
+      { workspaceFolders: [extra], visibleInSessionList: true },
     );
     expect(data.workspaceFolders).toEqual([extra]);
     expect(hub.eventBus.emit).toHaveBeenCalledWith(
@@ -1290,5 +1292,26 @@ describe("sessions route", () => {
     expect(closeRes.status).toBe(200);
     expect(browserManagerMock.closeBrowserForSession).toHaveBeenCalledWith(sessionPath);
     expect(await closeRes.json()).toEqual({ ok: true, sessions: states });
+  });
+
+  it("emits browser_status when a browser session is closed through the route", async () => {
+    const { createSessionsRoute } = await import("../server/routes/sessions.js");
+    const app = new Hono();
+    const sessionPath = "/tmp/agents/hana/sessions/browser.jsonl";
+    const hub = { eventBus: { emit: vi.fn() } };
+
+    app.route("/api", createSessionsRoute({ agentsDir: "/tmp/agents" }, hub));
+
+    const res = await app.request("/api/browser/close-session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionPath }),
+    });
+
+    expect(res.status).toBe(200);
+    expect(hub.eventBus.emit).toHaveBeenCalledWith(
+      { type: "browser_status", running: false, url: null },
+      sessionPath,
+    );
   });
 });

@@ -51,6 +51,9 @@ import {
 } from "../../lib/conversations/agent-phone-projection.js";
 import { resolveAgent } from "../utils/resolve-agent.js";
 import { findModel } from "../../shared/model-ref.js";
+import { createModuleLogger } from "../../lib/debug-log.js";
+
+const log = createModuleLogger("channel");
 
 function normalizeOptionalPositiveInt(value, fieldName) {
   if (value === undefined || value === null || value === "") return null;
@@ -66,6 +69,28 @@ function readOptionalPositiveInt(value) {
   const num = Number(value);
   if (!Number.isFinite(num) || num <= 0) return null;
   return Math.floor(num);
+}
+
+function requestedAgentId(c) {
+  const value = c.req.query("agentId");
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function resolveConversationOwnerAgent(engine, c) {
+  if (requestedAgentId(c)) {
+    return resolveAgent(engine, c);
+  }
+
+  const primaryAgentId = engine.getPrimaryAgentId?.() || null;
+  if (!primaryAgentId) {
+    return resolveAgent(engine, c);
+  }
+
+  const agent = engine.getAgent(primaryAgentId);
+  if (!agent) {
+    throw new Error(`primary agent "${primaryAgentId}" not found`);
+  }
+  return agent;
 }
 
 function normalizePhoneSettingsPayload(body = {}) {
@@ -175,7 +200,7 @@ export function createChannelsRoute(engine, hub) {
 
   async function readConversationPhoneSettings(id, c) {
     if (id.startsWith("dm:")) {
-      const agent = resolveAgent(engine, c);
+      const agent = resolveConversationOwnerAgent(engine, c);
       const projection = readAgentPhoneProjection(getAgentPhoneProjectionPath(agent.agentDir, id));
       return {
         mode: normalizeAgentPhoneToolMode(projection.meta.toolMode),
@@ -210,7 +235,7 @@ export function createChannelsRoute(engine, hub) {
         err.status = 400;
         throw err;
       }
-      const agent = resolveAgent(engine, c);
+      const agent = resolveConversationOwnerAgent(engine, c);
       await updateAgentPhoneProjectionMeta({
         agentDir: agent.agentDir,
         agentId: agent.id,
@@ -533,7 +558,7 @@ export function createChannelsRoute(engine, hub) {
 
       const triggerDelivery = hub.triggerChannelDelivery || hub.triggerChannelTriage;
       triggerDelivery.call(hub, name, { mentionedAgents })?.catch(err =>
-        console.error(`[channel] 触发手机送达失败: ${err.message}`)
+        log.error(`触发手机送达失败: ${err.message}`)
       );
 
       return c.json({ ok: true, timestamp: result.timestamp });

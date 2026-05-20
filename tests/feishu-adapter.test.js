@@ -1,5 +1,5 @@
 import { Readable } from "node:stream";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockContactUserGet = vi.fn();
 const mockImageGet = vi.fn();
@@ -9,8 +9,10 @@ const mockMessageUpdate = vi.fn();
 const mockImageCreate = vi.fn();
 const mockFileCreate = vi.fn();
 const mockWsStart = vi.fn();
+const mockWsClose = vi.fn();
 
 let registeredHandlers = {};
+let mockWsInstances = [];
 
 vi.mock("@larksuiteoapi/node-sdk", () => {
   class MockEventDispatcher {
@@ -23,13 +25,16 @@ vi.mock("@larksuiteoapi/node-sdk", () => {
   class MockWSClient {
     constructor() {
       this.wsConfig = { wsInstance: { readyState: 1 } };
+      mockWsInstances.push(this);
     }
 
     start(...args) {
       return mockWsStart(...args);
     }
 
-    close() {}
+    close(...args) {
+      return mockWsClose(...args);
+    }
   }
 
   class MockClient {
@@ -66,8 +71,15 @@ vi.mock("@larksuiteoapi/node-sdk", () => {
   };
 });
 
+const moduleLoggerMock = vi.hoisted(() => ({
+  log: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+}));
+
 vi.mock("../lib/debug-log.js", () => ({
   debugLog: () => null,
+  createModuleLogger: () => moduleLoggerMock,
 }));
 
 import { createFeishuAdapter } from "../lib/bridge/feishu-adapter.js";
@@ -80,9 +92,19 @@ function markdownPostContent(text) {
   });
 }
 
+async function flushPromises() {
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
+function latestWsClient() {
+  return mockWsInstances[mockWsInstances.length - 1];
+}
+
 describe("createFeishuAdapter", () => {
   beforeEach(() => {
     registeredHandlers = {};
+    mockWsInstances = [];
     mockContactUserGet.mockReset();
     mockImageGet.mockReset();
     mockMessageResourceGet.mockReset();
@@ -91,6 +113,10 @@ describe("createFeishuAdapter", () => {
     mockImageCreate.mockReset();
     mockFileCreate.mockReset();
     mockWsStart.mockReset();
+    mockWsClose.mockReset();
+    moduleLoggerMock.log.mockClear();
+    moduleLoggerMock.warn.mockClear();
+    moduleLoggerMock.error.mockClear();
 
     mockWsStart.mockResolvedValue(undefined);
     mockContactUserGet.mockResolvedValue({
@@ -101,6 +127,64 @@ describe("createFeishuAdapter", () => {
         },
       },
     });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("keeps monitoring the Feishu websocket after the initial connection", async () => {
+    vi.useFakeTimers();
+    const onStatus = vi.fn();
+    const adapter = createFeishuAdapter({
+      appId: "app-id",
+      appSecret: "app-secret",
+      agentId: "hana",
+      onMessage: vi.fn(),
+      onStatus,
+    });
+
+    await flushPromises();
+    await vi.advanceTimersByTimeAsync(500);
+    expect(onStatus).toHaveBeenCalledWith("connected");
+
+    const wsClient = latestWsClient();
+    wsClient.wsConfig.wsInstance.readyState = 3;
+    onStatus.mockClear();
+
+    await vi.advanceTimersByTimeAsync(30_000);
+
+    expect(onStatus).toHaveBeenCalledWith("error", "WebSocket disconnected");
+    adapter.stop();
+  });
+
+  it("nudges the Feishu websocket client to restart when health check sees a closed socket", async () => {
+    vi.useFakeTimers();
+    const onStatus = vi.fn();
+    const adapter = createFeishuAdapter({
+      appId: "app-id",
+      appSecret: "app-secret",
+      agentId: "hana",
+      onMessage: vi.fn(),
+      onStatus,
+    });
+
+    await flushPromises();
+    await vi.advanceTimersByTimeAsync(500);
+    expect(mockWsStart).toHaveBeenCalledTimes(1);
+
+    const wsClient = latestWsClient();
+    wsClient.wsConfig.wsInstance.readyState = 3;
+
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(mockWsStart).toHaveBeenCalledTimes(2);
+
+    await flushPromises();
+    wsClient.wsConfig.wsInstance.readyState = 1;
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(onStatus).toHaveBeenLastCalledWith("connected");
+    adapter.stop();
   });
 
   it("keeps message_id on inbound image attachments", async () => {
@@ -140,6 +224,152 @@ describe("createFeishuAdapter", () => {
           _messageId: "om_fake_msg_001",
         }),
       ],
+    }));
+  });
+
+  it("normalizes inbound post rich text into readable text and attachments", async () => {
+    const onMessage = vi.fn();
+
+    createFeishuAdapter({
+      appId: "app-id",
+      appSecret: "app-secret",
+      agentId: "hana",
+      onMessage,
+    });
+
+    await registeredHandlers["im.message.receive_v1"]({
+      message: {
+        message_id: "om_post_001",
+        message_type: "post",
+        content: JSON.stringify({
+          zh_cn: {
+            title: "标题",
+            content: [
+              [
+                { tag: "text", text: "你好 " },
+                { tag: "at", user_name: "小明", user_id: "ou_ming" },
+                { tag: "a", text: "链接", href: "https://example.com" },
+                { tag: "md", text: "**粗体**" },
+              ],
+              [
+                { tag: "img", image_key: "img_post_001" },
+                { tag: "media", file_key: "file_post_001", file_name: "clip.mp4", duration: 3000 },
+              ],
+            ],
+          },
+        }),
+        chat_id: "oc_fake_chat_001",
+        chat_type: "p2p",
+      },
+      sender: {
+        sender_type: "user",
+        sender_id: {
+          open_id: "ou_123",
+          user_id: "ou_123",
+        },
+      },
+    });
+
+    expect(onMessage).toHaveBeenCalledWith(expect.objectContaining({
+      text: "你好 @小明链接**粗体**",
+      attachments: [
+        expect.objectContaining({
+          type: "image",
+          platformRef: "img_post_001",
+          _messageId: "om_post_001",
+        }),
+        expect.objectContaining({
+          type: "video",
+          platformRef: "file_post_001",
+          filename: "clip.mp4",
+          duration: 3,
+          _messageId: "om_post_001",
+        }),
+      ],
+    }));
+  });
+
+  it("falls back to the first available post locale and keeps media-only posts", async () => {
+    const onMessage = vi.fn();
+
+    createFeishuAdapter({
+      appId: "app-id",
+      appSecret: "app-secret",
+      agentId: "hana",
+      onMessage,
+    });
+
+    await registeredHandlers["im.message.receive_v1"]({
+      message: {
+        message_id: "om_post_002",
+        message_type: "post",
+        content: JSON.stringify({
+          ja_jp: {
+            content: [
+              [{ tag: "img", image_key: "img_only_001" }],
+            ],
+          },
+        }),
+        chat_id: "oc_fake_chat_001",
+        chat_type: "p2p",
+      },
+      sender: {
+        sender_type: "user",
+        sender_id: {
+          open_id: "ou_123",
+          user_id: "ou_123",
+        },
+      },
+    });
+
+    expect(onMessage).toHaveBeenCalledWith(expect.objectContaining({
+      text: "",
+      attachments: [
+        expect.objectContaining({
+          type: "image",
+          platformRef: "img_only_001",
+          _messageId: "om_post_002",
+        }),
+      ],
+    }));
+  });
+
+  it("surfaces unsupported Feishu message content instead of silently dropping it", async () => {
+    const onMessage = vi.fn();
+
+    createFeishuAdapter({
+      appId: "app-id",
+      appSecret: "app-secret",
+      agentId: "hana",
+      onMessage,
+    });
+
+    await registeredHandlers["im.message.receive_v1"]({
+      message: {
+        message_id: "om_unknown_001",
+        message_type: "post",
+        content: JSON.stringify({
+          zh_cn: {
+            content: [
+              [{ tag: "widget", text: "hidden" }],
+            ],
+          },
+        }),
+        chat_id: "oc_fake_chat_001",
+        chat_type: "p2p",
+      },
+      sender: {
+        sender_type: "user",
+        sender_id: {
+          open_id: "ou_123",
+          user_id: "ou_123",
+        },
+      },
+    });
+
+    expect(moduleLoggerMock.warn).toHaveBeenCalledWith(expect.stringContaining("Unsupported Feishu post tag: widget"));
+    expect(onMessage).toHaveBeenCalledWith(expect.objectContaining({
+      text: "[Unsupported Feishu post tag: widget]",
     }));
   });
 
@@ -465,6 +695,8 @@ describe("createFeishuAdapter", () => {
       mode: "edit_message",
       scopes: ["dm"],
       maxChars: 150_000,
+      renderer: "post",
+      receiptMode: "fold_into_stream",
     });
 
     const state = await adapter.startStreamReply("oc_chat", "first");
@@ -494,5 +726,36 @@ describe("createFeishuAdapter", () => {
         content: markdownPostContent("final"),
       },
     });
+  });
+
+  it("parses Feishu stream message ids from every SDK response shape", async () => {
+    mockMessageCreate.mockResolvedValueOnce({ message_id: "om_stream_direct" });
+    const adapter = createFeishuAdapter({
+      appId: "app-id",
+      appSecret: "app-secret",
+      agentId: "hana",
+      onMessage: vi.fn(),
+    });
+
+    await expect(adapter.startStreamReply("oc_chat", "first")).resolves.toEqual({
+      messageId: "om_stream_direct",
+    });
+  });
+
+  it("marks created Feishu stream messages without message_id as non-updatable instead of throwing", async () => {
+    mockMessageCreate.mockResolvedValueOnce({ data: {} });
+    const adapter = createFeishuAdapter({
+      appId: "app-id",
+      appSecret: "app-secret",
+      agentId: "hana",
+      onMessage: vi.fn(),
+    });
+
+    const state = await adapter.startStreamReply("oc_chat", "first");
+    await adapter.updateStreamReply("oc_chat", state, "second");
+    await adapter.finishStreamReply("oc_chat", state, "final");
+
+    expect(state).toEqual({ messageId: null, missingMessageId: true });
+    expect(mockMessageUpdate).not.toHaveBeenCalled();
   });
 });

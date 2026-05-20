@@ -186,4 +186,96 @@ describe("chat route model switch guard", () => {
 
     handlers.onClose({}, ws);
   });
+
+  it("broadcasts browser_status events emitted outside tool execution", () => {
+    let createHandlers;
+    let subscriber;
+    const upgradeWebSocket = vi.fn((factory) => {
+      createHandlers = factory;
+      return () => new Response(null);
+    });
+    const hub = {
+      subscribe: vi.fn((fn) => {
+        subscriber = fn;
+      }),
+      send: vi.fn(async () => {}),
+    };
+    const engine = {
+      agentName: "Hana",
+      abortAllStreaming: vi.fn(async () => {}),
+      getSessionByPath: vi.fn(() => ({ entries: [] })),
+      isSessionStreaming: vi.fn(() => false),
+      isSessionSwitching: vi.fn(() => false),
+      steerSession: vi.fn(() => false),
+      slashDispatcher: null,
+    };
+
+    createChatRoute(engine, hub, { upgradeWebSocket });
+    const handlers = createHandlers({});
+    const ws = { readyState: 1, send: vi.fn() };
+    handlers.onOpen({}, ws);
+
+    subscriber?.({
+      type: "browser_status",
+      running: false,
+      url: null,
+    }, "/tmp/browser-session.jsonl");
+
+    const payloads = ws.send.mock.calls.map(([raw]) => JSON.parse(raw));
+    expect(payloads).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        type: "browser_status",
+        running: false,
+        url: null,
+        sessionPath: "/tmp/browser-session.jsonl",
+      }),
+    ]));
+
+    handlers.onClose({}, ws);
+  });
+
+  it("does not serialize broadcast payloads for closed clients", () => {
+    let createHandlers;
+    let subscriber;
+    const upgradeWebSocket = vi.fn((factory) => {
+      createHandlers = factory;
+      return () => new Response(null);
+    });
+    const hub = {
+      subscribe: vi.fn((fn) => {
+        subscriber = fn;
+      }),
+      send: vi.fn(async () => {}),
+    };
+    const engine = {
+      agentName: "Hana",
+      abortAllStreaming: vi.fn(async () => {}),
+      getSessionByPath: vi.fn(() => ({ entries: [] })),
+      isSessionStreaming: vi.fn(() => false),
+      isSessionSwitching: vi.fn(() => false),
+      steerSession: vi.fn(() => false),
+      slashDispatcher: null,
+    };
+
+    createChatRoute(engine, hub, { upgradeWebSocket });
+    const handlers = createHandlers({});
+    const closedWs = { readyState: 3, send: vi.fn() };
+    handlers.onOpen({}, closedWs);
+
+    const toxicSession = {
+      toJSON() {
+        throw new Error("closed clients must not force serialization");
+      },
+    };
+
+    expect(() => {
+      subscriber?.({
+        type: "session_created",
+        session: toxicSession,
+      }, "/tmp/closed-client-session.jsonl");
+    }).not.toThrow();
+    expect(closedWs.send).not.toHaveBeenCalled();
+
+    handlers.onClose({}, closedWs);
+  });
 });

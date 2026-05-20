@@ -32,6 +32,7 @@ vi.mock("../lib/debug-log.js", () => ({
 }));
 
 import { SessionCoordinator } from "../core/session-coordinator.js";
+import { VisionBridge, VISION_CONTEXT_START } from "../core/vision-bridge.js";
 
 describe("SessionCoordinator", () => {
   let tempDir;
@@ -99,6 +100,117 @@ describe("SessionCoordinator", () => {
     expect(agent.setMemoryEnabled).toHaveBeenCalledWith(false);
     expect(createAgentSessionMock).toHaveBeenCalledOnce();
     expect(createAgentSessionMock.mock.calls[0][0].resourceLoader.getSystemPrompt()).toBe("MEMORY OFF");
+  });
+
+  it("injects restored vision sidecar notes without reading stale Pi context getters", async () => {
+    const sessionFile = path.join(tempDir, "vision-restore.jsonl");
+    const imagePath = path.join(tempDir, "upload.png");
+    const textOnlyModel = { id: "deepseek-chat", provider: "deepseek", input: ["text"] };
+    const callText = vi.fn(async () => [
+      "image_overview: A screenshot with a red error banner.",
+      "user_request_answer: The error banner is the relevant visual detail.",
+      "evidence: red banner.",
+      "uncertainty: none.",
+    ].join("\n"));
+    const visionBridge = new VisionBridge({
+      resolveVisionConfig: () => ({
+        model: { id: "qwen-vl", provider: "dashscope", input: ["text", "image"] },
+        api: "openai-completions",
+        api_key: "sk-test",
+        base_url: "https://example.test/v1",
+      }),
+      callText,
+    });
+    await visionBridge.prepare({
+      sessionPath: sessionFile,
+      targetModel: textOnlyModel,
+      text: `[attached_image: ${imagePath}]\nwhat is this?`,
+      images: [{ type: "image", data: "BASE64", mimeType: "image/png" }],
+      imageAttachmentPaths: [imagePath],
+    });
+    const agent = {
+      id: "hana",
+      agentDir: tempDir,
+      sessionDir: tempDir,
+      sessionMemoryEnabled: true,
+      memoryMasterEnabled: true,
+      config: { locale: "zh-CN" },
+      setMemoryEnabled: vi.fn(),
+      buildSystemPrompt: () => "BASE",
+      tools: [],
+    };
+    sessionManagerCreateMock.mockReturnValue({
+      getCwd: () => tempDir,
+      getSessionFile: () => sessionFile,
+    });
+    createAgentSessionMock.mockResolvedValueOnce({
+      session: {
+        sessionManager: { getSessionFile: () => sessionFile },
+        subscribe: vi.fn(() => vi.fn()),
+        setActiveToolsByName: vi.fn(),
+        model: textOnlyModel,
+      },
+    });
+
+    const coordinator = new SessionCoordinator({
+      agentsDir: tempDir,
+      getAgent: () => agent,
+      getActiveAgentId: () => "hana",
+      getModels: () => ({
+        currentModel: textOnlyModel,
+        authStorage: {},
+        modelRegistry: {},
+        resolveThinkingLevel: () => "medium",
+      }),
+      getResourceLoader: () => ({
+        getSystemPrompt: () => "BASE",
+        getAppendSystemPrompt: () => [],
+        getExtensions: () => ({ extensions: [], errors: [] }),
+      }),
+      getSkills: () => null,
+      buildTools: () => ({ tools: [], customTools: [] }),
+      emitEvent: () => {},
+      getHomeCwd: () => tempDir,
+      agentIdFromSessionPath: () => "hana",
+      switchAgentOnly: async () => {},
+      getConfig: () => ({}),
+      getPrefs: () => ({ getThinkingLevel: () => "medium" }),
+      getAgents: () => new Map(),
+      getActivityStore: () => null,
+      getAgentById: () => agent,
+      listAgents: () => [],
+      getEngine: () => ({
+        isVisionAuxiliaryEnabled: () => true,
+        getVisionBridge: () => visionBridge,
+        getSessionFile: vi.fn(),
+        getSessionFileByPath: vi.fn(),
+      }),
+    });
+
+    await coordinator.createSession(null, tempDir, true);
+
+    const resourceLoader = createAgentSessionMock.mock.calls.at(-1)[0].resourceLoader;
+    const extension = resourceLoader.getExtensions().extensions
+      .find((entry) => entry.path === "hana-desktop-vision-context-injection");
+    const handler = extension.handlers.get("context")[0];
+    const staleCtx = {
+      get sessionManager() {
+        throw new Error("stale session manager");
+      },
+      get model() {
+        throw new Error("stale model");
+      },
+    };
+
+    const result = await handler({
+      messages: [{
+        role: "user",
+        content: [{ type: "text", text: `[attached_image: ${imagePath}]\nwhat is this?` }],
+      }],
+    }, staleCtx);
+
+    expect(result.messages[0].content[0].text).toContain(VISION_CONTEXT_START);
+    expect(result.messages[0].content[0].text).toContain("image_overview");
   });
 
   it("lists sessions from a lightweight projection without delegating to the Pi SDK full scan", async () => {
@@ -254,6 +366,195 @@ describe("SessionCoordinator", () => {
     expect(sessionManagerListMock).not.toHaveBeenCalled();
     expect(sessions[0].messageCount).toBe(2);
     expect(sessions[0].modified.toISOString()).toBe("2026-05-17T08:02:00.000Z");
+  });
+
+  it("lists user-created pending sessions before their JSONL projection exists", async () => {
+    const agentsDir = path.join(tempDir, "agents");
+    const sessionDir = path.join(agentsDir, "hana", "sessions");
+    fs.mkdirSync(sessionDir, { recursive: true });
+    const sessionPath = path.join(sessionDir, "pending.jsonl");
+    const sessionManager = {
+      getCwd: () => "/tmp/workspace",
+      getSessionFile: () => sessionPath,
+    };
+    const model = { id: "deepseek-chat", provider: "deepseek", name: "DeepSeek Chat" };
+    const agent = {
+      id: "hana",
+      name: "Hana",
+      agentName: "Hana",
+      sessionDir,
+      sessionMemoryEnabled: true,
+      memoryMasterEnabled: true,
+      setMemoryEnabled: vi.fn(),
+      buildSystemPrompt: () => "BASE",
+      tools: [],
+      config: {},
+    };
+    sessionManagerCreateMock.mockReturnValue(sessionManager);
+    createAgentSessionMock.mockResolvedValueOnce({
+      session: {
+        sessionManager,
+        model,
+        subscribe: vi.fn(() => vi.fn()),
+        setActiveToolsByName: vi.fn(),
+      },
+    });
+
+    const coordinator = new SessionCoordinator({
+      agentsDir,
+      getAgent: () => agent,
+      getActiveAgentId: () => "hana",
+      getModels: () => ({
+        currentModel: model,
+        authStorage: {},
+        modelRegistry: {},
+        resolveThinkingLevel: () => "medium",
+      }),
+      getResourceLoader: () => ({
+        getSystemPrompt: () => "BASE",
+        getAppendSystemPrompt: () => [],
+        getExtensions: () => ({ extensions: [], errors: [] }),
+      }),
+      getSkills: () => null,
+      buildTools: () => ({ tools: [], customTools: [] }),
+      emitEvent: () => {},
+      getHomeCwd: () => tempDir,
+      agentIdFromSessionPath: () => "hana",
+      switchAgentOnly: async () => {},
+      getConfig: () => ({}),
+      getPrefs: () => ({ getThinkingLevel: () => "medium" }),
+      getAgents: () => new Map(),
+      getActivityStore: () => null,
+      getAgentById: () => agent,
+      listAgents: () => [{ id: "hana", name: "Hana" }],
+    });
+
+    await coordinator.createSession(null, "/tmp/workspace", true, null, {
+      visibleInSessionList: true,
+    });
+
+    const sessions = await coordinator.listSessions();
+
+    expect(sessionManagerListMock).not.toHaveBeenCalled();
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]).toMatchObject({
+      path: sessionPath,
+      title: null,
+      firstMessage: "",
+      messageCount: 0,
+      cwd: "/tmp/workspace",
+      agentId: "hana",
+      agentName: "Hana",
+      modelId: "deepseek-chat",
+      modelProvider: "deepseek",
+      pinnedAt: null,
+    });
+  });
+
+  it("treats auxiliary vision preparation as streaming before provider prompt starts", async () => {
+    const agentsDir = path.join(tempDir, "agents");
+    const sessionDir = path.join(agentsDir, "hana", "sessions");
+    fs.mkdirSync(sessionDir, { recursive: true });
+    const sessionPath = path.join(sessionDir, "vision-pending.jsonl");
+    const sessionManager = {
+      getCwd: () => "/tmp/workspace",
+      getSessionFile: () => sessionPath,
+    };
+    const model = {
+      id: "deepseek-vision",
+      provider: "deepseek",
+      name: "DeepSeek Vision",
+      input: ["image"],
+    };
+    const session = {
+      sessionManager,
+      model,
+      isStreaming: false,
+      prompt: vi.fn(async () => {}),
+      subscribe: vi.fn(() => vi.fn()),
+      setActiveToolsByName: vi.fn(),
+    };
+    const agent = {
+      id: "hana",
+      name: "Hana",
+      agentName: "Hana",
+      sessionDir,
+      sessionMemoryEnabled: true,
+      memoryMasterEnabled: true,
+      setMemoryEnabled: vi.fn(),
+      buildSystemPrompt: () => "BASE",
+      tools: [],
+      config: {},
+    };
+    let releasePrepare;
+    const prepareStarted = new Promise((resolve) => {
+      releasePrepare = resolve;
+    });
+    let finishPrepare;
+    const prepareCanFinish = new Promise((resolve) => {
+      finishPrepare = resolve;
+    });
+    const visionBridge = {
+      prepare: vi.fn(async () => {
+        releasePrepare();
+        await prepareCanFinish;
+        return { text: "prepared image context", images: [] };
+      }),
+    };
+
+    sessionManagerCreateMock.mockReturnValue(sessionManager);
+    createAgentSessionMock.mockResolvedValueOnce({ session });
+
+    const coordinator = new SessionCoordinator({
+      agentsDir,
+      getAgent: () => agent,
+      getActiveAgentId: () => "hana",
+      getModels: () => ({
+        currentModel: model,
+        authStorage: {},
+        modelRegistry: {},
+        resolveThinkingLevel: () => "medium",
+      }),
+      getResourceLoader: () => ({
+        getSystemPrompt: () => "BASE",
+        getAppendSystemPrompt: () => [],
+        getExtensions: () => ({ extensions: [], errors: [] }),
+      }),
+      getSkills: () => null,
+      buildTools: () => ({ tools: [], customTools: [] }),
+      emitEvent: () => {},
+      getHomeCwd: () => tempDir,
+      getEngine: () => ({
+        isVisionAuxiliaryEnabled: () => true,
+        getVisionBridge: () => visionBridge,
+        log: { warn: vi.fn() },
+      }),
+      agentIdFromSessionPath: () => "hana",
+      switchAgentOnly: async () => {},
+      getConfig: () => ({}),
+      getPrefs: () => ({ getThinkingLevel: () => "medium" }),
+      getAgents: () => new Map(),
+      getActivityStore: () => null,
+      getAgentById: () => agent,
+      listAgents: () => [{ id: "hana", name: "Hana" }],
+    });
+    await coordinator.createSession(null, "/tmp/workspace", true, null, {
+      visibleInSessionList: true,
+    });
+
+    const promptPromise = coordinator.promptSession(sessionPath, "describe image", {
+      images: [{ type: "image", data: "ZmFrZQ==", mimeType: "image/png" }],
+    });
+    await prepareStarted;
+
+    const streamingDuringPrepare = coordinator.isSessionStreaming(sessionPath);
+    const listedDuringPrepare = (await coordinator.listSessions()).some((s) => s.path === sessionPath);
+
+    finishPrepare();
+    await promptPromise;
+    expect(streamingDuringPrepare).toBe(true);
+    expect(listedDuringPrepare).toBe(true);
+    expect(session.prompt).toHaveBeenCalledWith("prepared image context", undefined);
   });
 
   it("builds session tools with sandbox workspace pinned to the effective cwd", async () => {
@@ -1541,6 +1842,77 @@ describe("SessionCoordinator", () => {
       "search_memory",
     ]);
     expect(createAgentSessionMock.mock.calls[0][0].customTools.map((tool) => tool.name)).toContain("search_memory");
+  });
+
+  it("executeIsolated activates a cold target agent before reading its runtime tools", async () => {
+    const sessionFile = path.join(tempDir, "isolated-cold-agent.jsonl");
+    const calls = [];
+    const getToolsSnapshot = vi.fn(() => {
+      calls.push("tools");
+      return [{ name: "write" }];
+    });
+    const agent = {
+      id: "cold-agent",
+      agentDir: path.join(tempDir, "agents", "cold-agent"),
+      sessionDir: path.join(tempDir, "agents", "cold-agent", "sessions"),
+      agentName: "cold-agent",
+      memoryMasterEnabled: true,
+      config: { models: { chat: { id: "default-model", provider: "test" } } },
+      systemPrompt: "BACKGROUND PROMPT",
+      getToolsSnapshot,
+    };
+    const ensureAgentRuntime = vi.fn(async (agentId) => {
+      calls.push("ensure");
+      expect(agentId).toBe("cold-agent");
+      return agent;
+    });
+
+    sessionManagerCreateMock.mockReturnValue({
+      getCwd: () => tempDir,
+      getSessionFile: () => sessionFile,
+    });
+    createAgentSessionMock.mockResolvedValue({
+      session: {
+        sessionManager: { getSessionFile: () => sessionFile },
+        subscribe: vi.fn(() => vi.fn()),
+        prompt: vi.fn(async () => {}),
+        abort: vi.fn(),
+      },
+    });
+
+    const coordinator = new SessionCoordinator({
+      agentsDir: path.join(tempDir, "agents"),
+      getAgent: () => ({ id: "focus" }),
+      getActiveAgentId: () => "focus",
+      getModels: () => ({
+        authStorage: {},
+        modelRegistry: {},
+        defaultModel: { id: "default-model", provider: "test" },
+        availableModels: [{ id: "default-model", provider: "test" }],
+        resolveExecutionModel: (model) => model,
+        resolveThinkingLevel: () => "medium",
+      }),
+      getResourceLoader: () => ({ getSystemPrompt: () => "prompt", getAppendSystemPrompt: () => [] }),
+      getSkills: () => ({ getSkillsForAgent: () => [] }),
+      buildTools: (_cwd, customTools) => ({ tools: [], customTools }),
+      emitEvent: () => {},
+      getHomeCwd: () => tempDir,
+      agentIdFromSessionPath: () => null,
+      switchAgentOnly: async () => {},
+      getConfig: () => ({}),
+      getPrefs: () => ({ getThinkingLevel: () => "medium" }),
+      getAgents: () => new Map([["cold-agent", agent]]),
+      getActivityStore: () => null,
+      getAgentById: (agentId) => (agentId === "cold-agent" ? agent : null),
+      ensureAgentRuntime,
+      listAgents: () => [],
+    });
+
+    await coordinator.executeIsolated("background check", { agentId: "cold-agent" });
+
+    expect(ensureAgentRuntime).toHaveBeenCalledOnce();
+    expect(getToolsSnapshot).toHaveBeenCalledOnce();
+    expect(calls).toEqual(["ensure", "tools"]);
   });
 
   it("executeIsolated runs background tools in operate mode instead of ask mode", async () => {

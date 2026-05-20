@@ -8,6 +8,7 @@
     "dmHint": "プライマリエージェントのみ",
     "groupLabel": "チャンネル",
     "noMessages": "メッセージはまだありません",
+    "selectHint": "チャンネルまたはダイレクトメッセージを選んで会話を始めましょう",
     "nameExists": "このチャンネル名はすでに使われています",
     "membersCount": " 人のメンバー",
     "info": "チャンネル情報",
@@ -518,6 +519,11 @@
       "done": "🧭 分身を送り出した",
       "failed": "🧭 分身がトラブった"
     },
+    "wait": {
+      "running": "⏳ {name} は結果を待っています",
+      "done": "⏳ 待機が終わりました",
+      "failed": "⏳ 待機が中断されました"
+    },
     "check_pending_tasks": {
       "running": "📋 {name} はやり残しを探している",
       "done": "📋 {name} 確認おわり",
@@ -589,7 +595,8 @@
       "散らばった気持ちを集めました",
       "{name} はある午後のオレンジの香りがしました",
       "あの会話はまだ温もりを残しています"
-    ]
+    ],
+    "installing": "{name} を v{version} に更新しています。少々お待ちください……"
   },
   "settings": {
     "title": "設定",
@@ -605,6 +612,7 @@
       "agent": "エージェント",
       "me": "自分",
       "providers": "プロバイダー",
+      "media": "メディア",
       "models": "モデル",
       "memory": "記憶",
       "work": "ワークスペース",
@@ -674,6 +682,11 @@
       "leavesOverlay": "晴れモード",
       "leavesOverlayHint": "たまには日向ぼっこしよう"
     },
+    "interface": {
+      "system": "システム",
+      "hardwareAcceleration": "ハードウェアアクセラレーション",
+      "hardwareAccelerationHint": "GPU でウィンドウを描画します。オフにすると次回起動からソフトウェア描画を使い、Windows の GPU ドライバー起因の起動クラッシュ復旧に役立ちます。"
+    },
     "editor": {
       "title": "エディター",
       "markdownBodyFontSize": "本文サイズ",
@@ -718,6 +731,8 @@
       "chatModelHint": "会話とタスクに使用するモデル",
       "modelUnavailable": "利用不可: {model}",
       "modelUnavailableHint": "現在のモデルは利用可能リストにありません。別のモデルを選ぶか、プロバイダーページで設定を保存し直してモデルを取得してください。",
+      "imageModel": "画像モデル",
+      "imageModelHint": "画像生成で使用するモデル",
       "addAgent": "新しいエージェント",
       "createTitle": "新しいエージェント",
       "namePlaceholder": "名前をつけてください",
@@ -780,21 +795,23 @@
       "updateChecking": "アップデートを確認中…",
       "updateDownloading": "{agentName}が新しいお家を準備中 {percent}%",
       "updateReadyInstall": "v{version} インストール準備完了",
-      "updateInstalling": "アップデートをインストール中です。Jarvis は自動で再起動します…",
+      "updateInstalling": "アップデートをインストール中です。Hanako は自動で再起動します…",
       "updateInstallManualHint": "「再起動して更新」を押すとインストールします。終了だけでは自動インストールしません",
       "updateInstall": "再起動して更新",
       "updateProgress": "{percent}%",
       "updateError": "アップデートの確認に失敗しました",
       "updateLatest": "最新バージョンです",
       "updateCheckBtn": "アップデートを確認",
-      "updateNeedInstall": "先に Jarvis をアプリケーションフォルダに移動してください",
+      "updateNeedInstall": "先に Hanako をアプリケーションフォルダに移動してください",
       "updateDiskSpace": "ディスク容量不足のため、アップデートをダウンロードできません",
       "launchAtLogin": "ログイン時に起動",
       "betaUpdates": "ベータ版アップデートを受け取る",
       "autoCheckUpdates": "アップデートを自動で確認"
     },
     "access": {
+      "networkAccess": "LAN アクセス",
       "mobileAccess": "モバイルアクセス",
+      "desktopAccess": "コンピューターアクセス",
       "lanToggle": "LAN デバイスを許可",
       "lanHint": "同じ LAN 上のスマートフォンやコンピューターからこの Hana Server にアクセスできます",
       "port": "固定ポート",
@@ -806,6 +823,7 @@
       "statusHint": "サーバーの実際の待ち受け先と有効なモバイル URL を確認します",
       "runtimeEndpoint": "現在の待ち受け",
       "effectiveMobileUrl": "有効な URL",
+      "effectiveDesktopUrl": "コンピューター URL",
       "lanAddresses": "LAN アドレス",
       "noLanAddresses": "LAN アドレスが見つかりません",
       "qrCode": "QR コード",
@@ -819,6 +837,23 @@
       "mobileKeyOnce": "キーは生成直後に一度だけ表示されます",
       "mobileKeyCreated": "モバイルアクセスキーを生成しました",
       "mobileKeyFailed": "生成に失敗しました",
+      "desktopUrl": "コンピューター URL",
+      "desktopUrlLanHint": "別の Hana デスクトップフロントエンドにこのアドレスを入力します",
+      "desktopUrlLocalHint": "LAN アクセスを有効にするまではこのコンピューターだけが接続できます",
+      "generateDesktopKey": "コンピューターアクセスキーを生成",
+      "desktopKeyHint": "別の Hana デスクトップフロントエンドから手動接続するときに使います",
+      "desktopKey": "コンピューターアクセスキー",
+      "desktopKeyOnce": "キーは生成直後に一度だけ表示されます",
+      "desktopKeyCreated": "コンピューターアクセスキーを生成しました",
+      "desktopKeyFailed": "生成に失敗しました",
+      "connectLanServer": "LAN サーバーに接続",
+      "remoteServerUrl": "サーバー URL",
+      "remoteServerUrlHint": "別のコンピューターまたは NAS の Hana Server URL を入力します",
+      "remoteServerKey": "アクセスキー",
+      "remoteServerKeyHint": "そのサーバーの設定ページで生成したコンピューターアクセスキーを入力します",
+      "remoteServerConnected": "LAN サーバーに接続しました",
+      "remoteServerFailed": "接続に失敗しました",
+      "pairedDevices": "ペアリング済みデバイス",
       "noDevices": "ペアリング済みデバイスはありません",
       "revoke": "取り消す",
       "revokeCredential": "キーを取り消す",
@@ -933,6 +968,27 @@
       "remove": "削除",
       "deleteConfirm": "プロバイダー {name} を削除しますか？関連するモデルも削除されます。"
     },
+    "media": {
+      "imageGeneration": "画像生成",
+      "defaultModel": "デフォルト画像モデル",
+      "credentialOk": "API Key 設定済み（プロバイダー設定を共用）",
+      "credentialMissing": "未設定です。プロバイダー設定へ移動してください",
+      "addModel": "画像モデルを追加",
+      "providerDefaults": "デフォルトパラメータ",
+      "size": "サイズ",
+      "format": "形式",
+      "quality": "品質",
+      "watermark": "ウォーターマーク",
+      "aspectRatio": "アスペクト比",
+      "speechRecognition": "音声認識",
+      "speechSynthesis": "音声合成",
+      "comingSoon": "近日公開",
+      "noProvider": "プロバイダーを選択して詳細を表示",
+      "models": "画像モデル",
+      "globalDefault": "グローバルデフォルト",
+      "followGlobal": "グローバルデフォルトに従う",
+      "default": "デフォルト"
+    },
     "oauth": {
       "title": "クイックログイン",
       "login": "ログイン",
@@ -984,6 +1040,7 @@
       "searchProviderField": "検索エンジン",
       "searchApiKey": "検索 API Key",
       "searchApiKeyHint": "選択した検索プロバイダーの API Key を入力してください",
+      "searchApiKeysAutoHint": "Auto は設定済みの Tavily、Brave、Serper を優先し、上限、エラー、空結果、関連度不足の場合はブラウザー検索へフォールバックします。",
       "searchApiKeyNotRequired": "ブラウザー検索に API Key は不要です。ローカルのバックグラウンドで検索ページを開き、結果を整形します。",
       "favorites": "お気に入り",
       "searchModel": "モデルを検索...",
@@ -1327,6 +1384,20 @@
       "qqAppId": "App ID",
       "qqAppSecret": "App Secret",
       "qqHint": "QQ ボットオープンプラットフォーム（q.qq.com/qqbot）から取得",
+      "wechat": "WeChat",
+      "wechatHint": "WeChat iLink プロトコルで個人アカウントに接続",
+      "wechatExclusive": "1 つの WeChat アカウントは 1 つの Agent にのみ紐付けできます。新しい Agent を紐付けると、以前のものは自動的に無効になります",
+      "wechatScan": "QR コードでログイン",
+      "wechatRescan": "再ログイン",
+      "wechatLoggedIn": "ログイン済み",
+      "wechatNeedScan": "先に QR コードでログインしてください",
+      "wechatScanning": "WeChat で QR コードをスキャンしてください",
+      "wechatScanned": "スキャン完了。スマートフォンで確認してください",
+      "wechatExpired": "QR コードの有効期限が切れました",
+      "wechatLoginSuccess": "ログインに成功しました",
+      "wechatLoginFailed": "ログインに失敗しました",
+      "wechatUnbind": "紐付けを解除",
+      "wechatUnbound": "WeChat の紐付けを解除しました",
       "connected": "接続済み",
       "disconnected": "未接続",
       "error": "接続に失敗しました",
@@ -1377,6 +1448,14 @@
       "title": "こんにちは、{name} です ✿",
       "subtitle": "あなた専用の AI アシスタントです。\n簡単なセットアップから始めましょう。",
       "next": "はじめる"
+    },
+    "remote": {
+      "link": "既存のサーバーがありますか？LAN で接続",
+      "url": "サーバー URL",
+      "key": "アクセスキー",
+      "connect": "接続",
+      "connecting": "接続中...",
+      "failed": "LAN サーバーへの接続に失敗しました"
     },
     "name": {
       "title": "なんとお呼びすればいいですか？",
@@ -1569,6 +1648,7 @@
     "fileLabel": "ファイル",
     "openWithDefault": "デフォルトアプリで開く",
     "refresh": "再読み込み",
+    "newMarkdownFileName": "無題.md",
     "newFolder": "新しいフォルダ",
     "ctx": {
       "open": "開く",
@@ -1584,6 +1664,7 @@
     "deleteConfirm": "「{name}」をシステムのゴミ箱に移動しますか？",
     "deleteSelectedConfirm": "選択した {count} 件をシステムのゴミ箱に移動しますか？",
     "trashFailed": "システムのゴミ箱への移動に失敗しました",
+    "createFailed": "作成に失敗しました",
     "renameInvalid": "ファイル名にパス区切り文字は使えません",
     "renameFailed": "名前の変更に失敗しました",
     "sort": {
@@ -1723,7 +1804,7 @@
     "skillMissingName": "SKILL.md に name フィールドがありません",
     "skillNameInvalid": "スキル名が無効です（\"{name}\"）。英字、数字、アンダースコア、ハイフンのみ使用できます。",
     "skillPathMustBeAbsolute": "パスは絶対パスである必要があります: {path}",
-    "skillCannotAddSelfDir": "Jarvis 自身のスキルディレクトリは追加できません",
+    "skillCannotAddSelfDir": "Hanako 自身のスキルディレクトリは追加できません",
     "skillInvalidName": "無効なスキル名です",
     "skillExternalCannotDelete": "外部互換スキルはここからは削除できません",
     "skillNotExists": "スキルが存在しません",
@@ -1812,6 +1893,7 @@
     "installSkillSizeLimit": "スキルの内容がサイズ上限を超えています（{size}KB > {max}KB）",
     "installSkillNoUtility": "安全レビュー不可：utility モデルが設定されていません。設定で補助モデルを設定してください",
     "installSkillUtilityIncomplete": "安全レビュー不可：補助モデルの設定が不完全です（API key または base URL が不足）。設定で補完してください",
+    "installSkillSafetyPassed": "✓ 安全レビューに合格しました",
     "installSkillSafetyEmpty": "安全レビューが空のレスポンスを返しました",
     "installSkillSafetyUnexpected": "安全レビューが予期しない形式を返しました: {reply}",
     "installSkillSafetyTimeout": "安全レビューがタイムアウトまたはネットワークエラー",
@@ -1891,7 +1973,7 @@
   },
   "main": {
     "tray": {
-      "show": "Jarvis を表示",
+      "show": "Hanako を表示",
       "settings": "設定",
       "quit": "終了"
     },
@@ -1899,15 +1981,17 @@
       "selectFolder": "作業フォルダを選択",
       "selectSkill": "スキルを選択",
       "selectPlugin": "プラグインを選択",
-      "launchFailedTitle": "Jarvis の起動に失敗しました",
-      "launchFailedBody": "Jarvis v{version}\n\n{detail}\n\n詳細ログの保存先：\n{logPath}\n\nこのスクリーンショットまたはログファイルを開発者にお送りください。",
-      "serverRestartFailed": "Jarvis v{version}\n\nServer がクラッシュし、再起動に失敗しました。\n{error}\n\nアプリケーションを再起動してください。",
-      "serverMultipleCrash": "Jarvis v{version}\n\nServer が複数回クラッシュしました ({reason})。\n\nアプリケーションを再起動してください。",
+      "launchFailedTitle": "Hanako の起動に失敗しました",
+      "launchFailedBody": "Hanako v{version}\n\n{detail}\n\n詳細ログの保存先：\n{logPath}\n\nこのスクリーンショットまたはログファイルを開発者にお送りください。",
+      "serverRestartFailed": "Hanako v{version}\n\nServer がクラッシュし、再起動に失敗しました。\n{error}\n\nアプリケーションを再起動してください。",
+      "serverMultipleCrash": "Hanako v{version}\n\nServer が複数回クラッシュしました ({reason})。\n\nアプリケーションを再起動してください。",
       "serverStartTimeout": "Server の起動がタイムアウトしました",
       "serverKilledBySignal": "Server がシグナルで終了しました ({signal})",
       "serverExitedWithCode": "Server が終了しました。コード: {code}",
-      "serverFilesNotReady": "自動アップデートが完了したばかりで、新バージョンのファイルがまだディスクに書き込まれていません（{missing} が見つかりません）。{waited} 秒待機しましたが完了しませんでした。しばらくしてから Jarvis を再起動してください。",
-      "serverModuleMissing": "Server 起動失敗：モジュール {module} が見つかりません。\n通常、自動アップデート完了直後にファイルがまだディスクに書き込み中の場合に発生します。\n推奨：1〜2 分待ってから Jarvis を再起動してください。問題が続く場合は GitHub で報告してください。"
+      "serverFilesNotReady": "自動アップデートが完了したばかりで、新バージョンのファイルがまだディスクに書き込まれていません（{missing} が見つかりません）。{waited} 秒待機しましたが完了しませんでした。しばらくしてから Hanako を再起動してください。",
+      "serverModuleMissing": "Server 起動失敗：モジュール {module} が見つかりません。\n通常、自動アップデート完了直後にファイルがまだディスクに書き込み中の場合に発生します。\n推奨：1〜2 分待ってから Hanako を再起動してください。問題が続く場合は GitHub で報告してください。",
+      "installFailedTitle": "Hanako アップデート",
+      "installFailedBody": "アップデートのインストールに失敗しました：\n{error}\n\nHanako を再起動してからもう一度お試しください。または設定ページで手動でアップデートを確認してください。"
     },
     "notification": {
       "ready": "通知が有効になりました"
@@ -2061,6 +2145,11 @@
       "filePathDesc": "（互換）単一ローカルファイルの絶対パス。新しい呼び出しでは filepaths を優先してください。",
       "labelDesc": "（互換）ユーザーに表示するファイル名。通常は省略でき、既定でファイル名が使われます。"
     },
+    "wait": {
+      "label": "待機",
+      "description": "指定した秒数だけ待機します。バックグラウンドタスクの完了を待つ間、ターンをアクティブに保つために使います。",
+      "secondsDesc": "待機する秒数（1〜300）"
+    },
     "subagent": {
       "label": "サブエージェントを起動",
       "description": "タスクをサブエージェントに委任します。別の agent を指定するか（agent パラメータ）、省略すると自分が分身として実行します。agent=\"?\" で利用可能な agent 一覧を確認できます。\n\nあなたの判断：\n- 並行して進められる作業があれば、続けてください\n- 結果がないと次に進めない場合は、ユーザーにタスクを送信済みで返信待ちであることを伝え、そのまま待ってください\n\n適している場面：\n- 大量の検索・読解の後に簡潔な結論にまとめる調査タスク\n- 現在の作業と並行できる独立したサブ問題\n- 複数の方向を同時に探索する必要があるタスク（複数の subagent を同時に呼び出せます）\n- 別の agent が専門的な視点でタスクを処理するケース\n適さない場面：ファイル変更やコマンド実行など副作用のある操作\n\n重要：task パラメータには完全な指示と必要な背景情報を含めてください。サブエージェントは現在の会話履歴を参照できません。",
@@ -2079,7 +2168,7 @@
     },
     "updateSettings": {
       "label": "設定",
-      "description": "Jarvis の設定を変更します。2つの操作があります：\n- search + query：キーワードで設定項目を検索し、現在の値と選択肢を確認\n- apply + key + value：指定した設定を変更（ユーザー確認が必要）\n\n正確なキーが分かっている場合は、検索をスキップして直接 apply できます。",
+      "description": "Hanako の設定を変更します。2つの操作があります：\n- search + query：キーワードで設定項目を検索し、現在の値と選択肢を確認\n- apply + key + value：指定した設定を変更（ユーザー確認が必要）\n\n正確なキーが分かっている場合は、検索をスキップして直接 apply できます。",
       "actionDesc": "操作タイプ：search で設定を検索 / apply で設定を変更",
       "queryDesc": "検索キーワード（search 時に必須）",
       "keyDesc": "設定キー（search で取得）",
@@ -2168,7 +2257,7 @@
     "inputHelp": "/help でコマンド一覧を表示"
   },
   "sandbox": {
-    "blocked": "[セキュリティ] {reason}\n\nこの操作は Jarvis のサンドボックスセキュリティポリシーによりブロックされました。これはコマンドがパスまたは権限の境界を越えたことを示します。まず現在のワークスペース、具体的なパス表記、対象ファイルが許可されたワークスペースまたは session パスに属するべきかを確認してください。ブロックされたパスと理由をユーザーに説明し、サンドボックス設定の変更はユーザーが明示的に決めた場合にだけ相談してください。",
+    "blocked": "[セキュリティ] {reason}\n\nこの操作は Hanako のサンドボックスセキュリティポリシーによりブロックされました。これはコマンドがパスまたは権限の境界を越えたことを示します。まず現在のワークスペース、具体的なパス表記、対象ファイルが許可されたワークスペースまたは session パスに属するべきかを確認してください。ブロックされたパスと理由をユーザーに説明し、サンドボックス設定の変更はユーザーが明示的に決めた場合にだけ相談してください。",
     "noSudo": "sudo の使用は禁止されています",
     "noSu": "su によるユーザー切り替えは禁止されています",
     "noChmod": "ファイル権限の変更は禁止されています",

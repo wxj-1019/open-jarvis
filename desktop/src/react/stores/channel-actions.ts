@@ -32,19 +32,23 @@ export async function loadChannels(): Promise<void> {
       isDM: false,
     }));
 
-    const dms: Channel[] = (dmData.dms || []).map((dm: any) => ({
-      id: `dm:${dm.peerId}`,
-      name: dm.peerName || dm.peerId,
-      members: [dm.peerId],
-      lastMessage: dm.lastMessage || '',
-      lastSender: dm.lastSender || '',
-      lastTimestamp: dm.lastTimestamp || '',
-      newMessageCount: 0,
-      messageCount: dm.messageCount || 0,
-      isDM: true,
-      peerId: dm.peerId,
-      peerName: dm.peerName,
-    }));
+    const dms: Channel[] = (dmData.dms || []).map((dm: any) => {
+      const dmOwnerId = dm.ownerAgentId || dmData.ownerAgentId || undefined;
+      return {
+        id: `dm:${dm.peerId}`,
+        name: dm.peerName || dm.peerId,
+        members: [dm.peerId],
+        lastMessage: dm.lastMessage || '',
+        lastSender: dm.lastSender || '',
+        lastTimestamp: dm.lastTimestamp || '',
+        newMessageCount: 0,
+        messageCount: dm.messageCount || 0,
+        isDM: true,
+        dmOwnerId,
+        peerId: dm.peerId,
+        peerName: dm.peerName,
+      };
+    });
 
     const allChannels = [...channels, ...dms];
     const totalUnread = allChannels.reduce((sum, ch) => sum + (ch.newMessageCount || 0), 0);
@@ -110,6 +114,16 @@ function normalizeAgentPhoneToolMode(mode: unknown): AgentPhoneToolMode {
   return mode === 'write' ? 'write' : 'read_only';
 }
 
+function conversationOwnerQuery(conversationId: string): string {
+  if (!conversationId.startsWith('dm:')) return '';
+  const channel = useStore.getState().channels.find((ch: Channel) => ch.id === conversationId);
+  return channel?.dmOwnerId ? `?agentId=${encodeURIComponent(channel.dmOwnerId)}` : '';
+}
+
+function conversationPhoneSettingsUrl(conversationId: string): string {
+  return `/api/conversations/${encodeURIComponent(conversationId)}/agent-phone-settings${conversationOwnerQuery(conversationId)}`;
+}
+
 function normalizeNullablePositiveInt(value: unknown): number | null {
   const num = Number(value);
   if (!Number.isFinite(num) || num <= 0) return null;
@@ -168,7 +182,7 @@ export async function loadConversationAgentPhoneSettings(conversationId: string)
   const s = useStore.getState();
   if (!conversationId || !hasServerConnection(s)) return;
   try {
-    const res = await hanaFetch(`/api/conversations/${encodeURIComponent(conversationId)}/agent-phone-settings`);
+    const res = await hanaFetch(conversationPhoneSettingsUrl(conversationId));
     if (!res.ok) {
       applyAgentPhoneSettings({
         mode: 'read_only',
@@ -207,7 +221,7 @@ export async function saveConversationAgentPhoneSettings(patch: Partial<AgentPho
   const s = useStore.getState();
   const conversationId = s.currentChannel;
   if (!conversationId || !hasServerConnection(s)) return;
-  const res = await hanaFetch(`/api/conversations/${encodeURIComponent(conversationId)}/agent-phone-settings`, {
+  const res = await hanaFetch(conversationPhoneSettingsUrl(conversationId), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -235,14 +249,16 @@ export async function openChannel(channelId: string, isDM?: boolean): Promise<vo
   const ch = s.channels.find((c: Channel) => c.id === channelId);
   const isThisDM = isDM ?? ch?.isDM ?? false;
   const t = window.t;
+  const cachedMessages = s.channelMessageCache[channelId] || [];
 
   // 立刻切换 + 清空旧数据，防止残留上一个频道的内容
   // DM 时从 channel 列表提取 peerId，即使 API 失败也能显示 agent 信息
   const peerId = isThisDM ? (ch?.peerId || channelId.replace('dm:', '')) : '';
   const peerName = isThisDM ? (ch?.name || peerId) : '';
+  const dmOwnerId = isThisDM ? ch?.dmOwnerId : undefined;
   useStore.setState({
     currentChannel: channelId,
-    channelMessages: [],
+    channelMessages: cachedMessages,
     channelMembers: isThisDM ? [peerId] : [],
     channelHeaderName: isThisDM ? peerName : '',
     channelHeaderMembersText: '',
@@ -252,13 +268,29 @@ export async function openChannel(channelId: string, isDM?: boolean): Promise<vo
 
   try {
     if (isThisDM) {
-      const res = await hanaFetch(`/api/dm/${encodeURIComponent(peerId)}`);
+      const ownerQuery = dmOwnerId ? `?agentId=${encodeURIComponent(dmOwnerId)}` : '';
+      const res = await hanaFetch(`/api/dm/${encodeURIComponent(peerId)}${ownerQuery}`);
       if (res.ok) {
         const data = await res.json();
+        const responseOwnerId = data.ownerAgentId || dmOwnerId;
+        const messages = data.messages || [];
+        const fresh = useStore.getState();
         useStore.setState({
-          channelMessages: data.messages || [],
+          channelMessages: messages,
+          channelMessageCache: {
+            ...fresh.channelMessageCache,
+            [channelId]: messages,
+          },
+          channelMessageCacheDirty: {
+            ...fresh.channelMessageCacheDirty,
+            [channelId]: false,
+          },
           channelHeaderName: data.peerName || peerName,
           channelInfoName: data.peerName || peerName,
+          channels: responseOwnerId
+            ? fresh.channels.map((channel: Channel) =>
+              channel.id === channelId ? { ...channel, dmOwnerId: responseOwnerId } : channel)
+            : fresh.channels,
         });
       }
       // 404 = 没有历史，基本信息已在上方设置，不需要额外处理
@@ -268,8 +300,18 @@ export async function openChannel(channelId: string, isDM?: boolean): Promise<vo
       const data = await res.json();
       const members = data.members || [];
       const displayMembers = [useStore.getState().userName || 'user', ...members];
+      const messages = data.messages || [];
+      const fresh = useStore.getState();
       useStore.setState({
-        channelMessages: data.messages || [],
+        channelMessages: messages,
+        channelMessageCache: {
+          ...fresh.channelMessageCache,
+          [channelId]: messages,
+        },
+        channelMessageCacheDirty: {
+          ...fresh.channelMessageCacheDirty,
+          [channelId]: false,
+        },
         channelMembers: members,
         channelHeaderName: `# ${data.name || channelId}`,
         channelHeaderMembersText: `${displayMembers.length} ${t('channel.membersCount')}`,
@@ -278,7 +320,7 @@ export async function openChannel(channelId: string, isDM?: boolean): Promise<vo
       });
 
       // Mark as read
-      const msgs = data.messages || [];
+      const msgs = messages;
       const lastMsg = msgs[msgs.length - 1];
       if (lastMsg) {
         hanaFetch(`/api/channels/${encodeURIComponent(channelId)}/read`, {
@@ -318,11 +360,46 @@ function sortChannelsByRecent(channels: Channel[]): Channel[] {
   );
 }
 
+function sameCachedMessage(a: ChannelMessage, b: ChannelMessage): boolean {
+  return sameChannelMessage(a, b);
+}
+
+export function markChannelMessagesDirty(channelId: string): void {
+  if (!channelId) return;
+  const state = useStore.getState();
+  useStore.setState({
+    channelMessageCacheDirty: {
+      ...state.channelMessageCacheDirty,
+      [channelId]: true,
+    },
+  });
+}
+
+export async function hydrateCurrentChannelIfNeeded(): Promise<void> {
+  const state = useStore.getState();
+  const channelId = state.currentChannel;
+  if (!channelId) return;
+
+  const cached = state.channelMessageCache[channelId];
+  const dirty = state.channelMessageCacheDirty[channelId] === true;
+  if (cached) {
+    useStore.setState({ channelMessages: cached });
+  }
+  if (!cached || dirty) {
+    const channel = state.channels.find((item: Channel) => item.id === channelId);
+    await openChannel(channelId, channel?.isDM);
+  }
+}
+
 // ══════════════════════════════════════════════════════
 // 增量追加频道消息
 // ══════════════════════════════════════════════════════
 
-export function appendChannelMessage(channelId: string, message: ChannelMessage): void {
+export function appendChannelMessage(
+  channelId: string,
+  message: ChannelMessage,
+  options: { markRead?: boolean } = { markRead: true },
+): void {
   if (
     !channelId
     || typeof message?.sender !== 'string'
@@ -332,9 +409,13 @@ export function appendChannelMessage(channelId: string, message: ChannelMessage)
 
   const state = useStore.getState();
   const isCurrentChannel = state.currentChannel === channelId;
-  const alreadyInCurrent = isCurrentChannel
-    ? state.channelMessages.some((m: ChannelMessage) => sameChannelMessage(m, message))
-    : false;
+  const cachedMessages = state.channelMessageCache[channelId];
+  const baseMessages = cachedMessages || (isCurrentChannel ? state.channelMessages : []);
+  const alreadyInCache = baseMessages.some((m: ChannelMessage) => sameCachedMessage(m, message));
+  const nextMessages = alreadyInCache ? baseMessages : [...baseMessages, message];
+  const shouldMarkRead = isCurrentChannel && options.markRead === true;
+  const nextCacheDirty = state.channelMessageCacheDirty[channelId] === true
+    || (!cachedMessages && !isCurrentChannel);
 
   let unreadDelta = 0;
   let readDelta = 0;
@@ -347,11 +428,11 @@ export function appendChannelMessage(channelId: string, message: ChannelMessage)
       && channel.lastMessage === message.body.slice(0, 60);
 
     const previousUnread = channel.newMessageCount || 0;
-    const nextUnread = isCurrentChannel
+    const nextUnread = shouldMarkRead
       ? 0
       : previousUnread + (isDuplicatePreview ? 0 : 1);
 
-    if (isCurrentChannel) {
+    if (shouldMarkRead) {
       readDelta = previousUnread;
     } else {
       unreadDelta += nextUnread - previousUnread;
@@ -369,16 +450,24 @@ export function appendChannelMessage(channelId: string, message: ChannelMessage)
 
   const patch: Partial<ReturnType<typeof useStore.getState>> = {
     channels: sortChannelsByRecent(updatedChannels),
+    channelMessageCache: {
+      ...state.channelMessageCache,
+      [channelId]: nextMessages,
+    },
+    channelMessageCacheDirty: {
+      ...state.channelMessageCacheDirty,
+      [channelId]: nextCacheDirty,
+    },
     channelTotalUnread: Math.max(0, state.channelTotalUnread + unreadDelta - readDelta),
   };
 
-  if (isCurrentChannel && !alreadyInCurrent) {
-    patch.channelMessages = [...state.channelMessages, message];
+  if (isCurrentChannel) {
+    patch.channelMessages = nextMessages;
   }
 
   useStore.setState(patch);
 
-  if (isCurrentChannel) {
+  if (shouldMarkRead) {
     Promise.resolve(hanaFetch(`/api/channels/${encodeURIComponent(channelId)}/read`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

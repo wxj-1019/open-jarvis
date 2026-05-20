@@ -26,6 +26,10 @@ const { readTextFileSnapshot, writeTextFileIfUnchanged } = require("./file-text-
 const chokidar = require("chokidar");
 const { wrapIpcHandler, wrapIpcBestEffortHandler, wrapIpcOn } = require('./ipc-wrapper.cjs');
 const themeRegistry = require('./src/shared/theme-registry.cjs');
+const {
+  completeOnboardingAndOpenMain,
+  submitOnboardingCompleteIntent,
+} = require("./src/shared/onboarding-completion.cjs");
 const { resolveTrashItemPath } = require("./src/shared/trash-item-path.cjs");
 const { redactLogText } = require("../shared/log-redactor.cjs");
 const {
@@ -50,6 +54,17 @@ const {
   proxyConfigToEnvironment,
   withForcedLocalProxyBypass,
 } = require("../shared/network-proxy.cjs");
+const {
+  applyGpuStartupPolicy,
+  buildGpuStartupDiagnostics,
+  markGpuStartupFailed,
+  markGpuStartupPending,
+  markGpuStartupPhase,
+  markGpuStartupReady,
+  recordGpuChildProcessGone,
+  recordGpuInfoUpdate,
+  resolveGpuStartupPolicy,
+} = require("./src/shared/gpu-startup-policy.cjs");
 
 const APP_USER_MODEL_ID = "com.hanako.app"; // Keep in sync with package.json build.appId.
 
@@ -196,6 +211,60 @@ configureClientSingleInstance(app, {
 if (process.platform === "win32") {
   app.setAppUserModelId(APP_USER_MODEL_ID);
 }
+
+const gpuStartupPolicy = resolveGpuStartupPolicy({
+  hanakoHome,
+  platform: process.platform,
+  argv: process.argv,
+  env: process.env,
+});
+applyGpuStartupPolicy(app, gpuStartupPolicy);
+if (!gpuStartupPolicy.hardwareAccelerationEnabled) {
+  console.warn(`[desktop] GPU safe mode enabled (${gpuStartupPolicy.reason}); hardware acceleration disabled for this launch`);
+}
+const desktopStartupId = `${Date.now()}-${process.pid}`;
+if (process.platform === "win32") {
+  markGpuStartupPending({
+    hanakoHome,
+    platform: process.platform,
+    phase: "electron-starting",
+    startupId: desktopStartupId,
+  });
+}
+
+app.on("child-process-gone", (_event, details) => {
+  if (process.platform !== "win32") return;
+  if (!recordGpuChildProcessGone({
+    hanakoHome,
+    platform: process.platform,
+    policy: gpuStartupPolicy,
+    details,
+  })) {
+    return;
+  }
+  const reason = `${details?.reason || "unknown"} (code: ${details?.exitCode ?? "unknown"})`;
+  console.error(`[desktop] GPU process exited unexpectedly: ${reason}`);
+  try {
+    writeCrashLog(`GPU process exited unexpectedly: ${reason}`);
+  } catch (err) {
+    console.error("[desktop] 写入 GPU crash.log 失败:", err.message);
+  }
+});
+
+app.on("gpu-info-update", () => {
+  if (process.platform !== "win32") return;
+  try {
+    if (typeof app.getGPUFeatureStatus === "function") {
+      recordGpuInfoUpdate({
+        hanakoHome,
+        platform: process.platform,
+        featureStatus: app.getGPUFeatureStatus(),
+      });
+    }
+  } catch (err) {
+    console.warn("[desktop] GPU info update 记录失败:", err.message);
+  }
+});
 
 let splashWindow = null;
 let mainWindow = null;
@@ -438,35 +507,26 @@ function hasExistingConfig() {
   return false;
 }
 
-/**
- * 一次性迁移：为 onboarding 功能上线前的老用户补写 setupComplete 标记。
- * 判断依据：agents/ 下存在至少一个含 config.yaml 的目录 → 用户配置过 agent → 老用户。
- * 补写后后续启动直接走 isSetupComplete() 快速路径，不再弹任何 onboarding 窗口。
- */
-function migrateSetupComplete() {
-  if (isSetupComplete()) return;
+function hasLegacyProviderConfig() {
   // 判断依据：added-models.yaml 存在且含有真实 api_key → 老用户配置过 provider。
   // 不能只看 agents/*/config.yaml 是否存在，因为 ensureFirstRun 会为全新用户
   // 播种默认 agent（含 config.yaml），导致新用户被误判为老用户而跳过 onboarding。
   try {
     const modelsPath = path.join(hanakoHome, "added-models.yaml");
-    if (!fs.existsSync(modelsPath)) return;
+    if (!fs.existsSync(modelsPath)) return false;
     const content = fs.readFileSync(modelsPath, "utf-8");
-    if (!/api_key:\s*["']?[^"'\s]+/.test(content)) return;
+    return /api_key:\s*["']?[^"'\s]+/.test(content);
   } catch {
-    return;
+    return false;
   }
-  const prefsPath = path.join(hanakoHome, "user", "preferences.json");
-  try {
-    let prefs = {};
-    try { prefs = JSON.parse(fs.readFileSync(prefsPath, "utf-8")); } catch {}
-    prefs.setupComplete = true;
-    fs.mkdirSync(path.dirname(prefsPath), { recursive: true });
-    fs.writeFileSync(prefsPath, JSON.stringify(prefs, null, 2) + "\n", "utf-8");
-    console.log("[desktop] 检测到老用户（已有 agent 配置），自动补写 setupComplete");
-  } catch (err) {
-    console.error("[desktop] migrateSetupComplete failed:", err);
-  }
+}
+
+async function migrateSetupCompleteViaServerIfNeeded() {
+  if (isSetupComplete()) return false;
+  if (!hasLegacyProviderConfig()) return false;
+  await submitOnboardingCompleteIntent({ serverPort, serverToken });
+  console.log("[desktop] 检测到老用户（已有 agent 配置），已通过 server 标记 setupComplete");
+  return true;
 }
 
 // ── 启动 Server ──
@@ -518,6 +578,8 @@ async function waitForProcessExit(proc, pid, timeoutMs) {
 const {
   ensureServerFilesReady,
   isModuleResolutionError,
+  parsePortInUseStartupError,
+  extractRootServerStartupError,
   SERVER_INFO_FIRST_WAIT_MS,
   shouldKeepWaitingForServerInfo,
 } = require("./src/shared/server-readiness.cjs");
@@ -581,6 +643,65 @@ function pollServerInfo(infoPath, {
   });
 }
 
+async function verifyReusableServerInfo(existingInfo) {
+  const port = Number(existingInfo?.port);
+  const token = typeof existingInfo?.token === "string" ? existingInfo.token : "";
+  const pid = Number(existingInfo?.pid);
+  if (!Number.isInteger(port) || port <= 0 || !token || !Number.isInteger(pid)) {
+    return { reusable: false, trusted: false, terminate: false, reason: "invalid server-info shape" };
+  }
+
+  const currentVersion = app.getVersion();
+  const headers = { Authorization: `Bearer ${existingInfo.token}` };
+  let health = null;
+  let identity = null;
+  try {
+    const healthRes = await fetch(`http://127.0.0.1:${port}/api/health`, {
+      headers,
+      signal: AbortSignal.timeout(2000),
+    });
+    if (!healthRes.ok) {
+      return { reusable: false, trusted: false, terminate: false, reason: `health returned ${healthRes.status}` };
+    }
+    health = await healthRes.json().catch(() => null);
+  } catch (err) {
+    return { reusable: false, trusted: false, terminate: false, reason: `health failed: ${err.message}` };
+  }
+
+  try {
+    const identityRes = await fetch(`http://127.0.0.1:${port}/api/server/identity`, {
+      headers,
+      signal: AbortSignal.timeout(2000),
+    });
+    if (!identityRes.ok) {
+      return { reusable: false, trusted: false, terminate: false, reason: `identity returned ${identityRes.status}` };
+    }
+    identity = await identityRes.json().catch(() => null);
+  } catch (err) {
+    return { reusable: false, trusted: false, terminate: false, reason: `identity failed: ${err.message}` };
+  }
+
+  if (!identity || !identity.studioId) {
+    return { reusable: false, trusted: false, terminate: false, reason: "identity missing studioId" };
+  }
+
+  const healthVersion = health?.version;
+  const identityVersion = identity?.version;
+  const serverInfoVersion = existingInfo.version;
+  const versionMatches = (!serverInfoVersion || serverInfoVersion === currentVersion)
+    && (!healthVersion || healthVersion === currentVersion)
+    && (!identityVersion || identityVersion === currentVersion);
+  if (!versionMatches) {
+    return { reusable: false, trusted: true, terminate: true, reason: "version mismatch", health, identity };
+  }
+
+  if (existingInfo.studioId && existingInfo.studioId !== identity.studioId) {
+    return { reusable: false, trusted: true, terminate: false, reason: "studio identity mismatch", health, identity };
+  }
+
+  return { reusable: true, trusted: true, terminate: false, reason: "ok", health, identity };
+}
+
 async function startServer() {
   const serverInfoPath = path.join(hanakoHome, "server-info.json");
 
@@ -596,41 +717,27 @@ async function startServer() {
     })();
 
     if (pidAlive) {
-      // 版本校验：server-info 中的 version 必须与当前 app 版本一致，
-      // 否则是更新后残存的旧 server，必须杀掉重启
-      const currentVersion = app.getVersion();
-      const serverVersion = existingInfo.version;
-      if (serverVersion && serverVersion !== currentVersion) {
-        console.log(`[desktop] 旧 server 版本不匹配（server: ${serverVersion}, app: ${currentVersion}），终止旧 server`);
+      const verification = await verifyReusableServerInfo(existingInfo);
+      if (verification.reusable) {
+        console.log(`[desktop] 复用已运行的 server，端口: ${existingInfo.port}, 版本: ${existingInfo.version || "unknown"}, studio: ${verification.identity.studioId}`);
+        serverPort = existingInfo.port;
+        serverToken = existingInfo.token;
+        reusedServerPid = existingInfo.pid;
+        return; // 跳过启动
+      }
+
+      if (verification.terminate) {
+        console.log(`[desktop] 可信旧 server 不可复用（${verification.reason}），正在终止 PID ${existingInfo.pid}`);
+        killPid(existingInfo.pid);
+        const deadline = Date.now() + 2000;
+        while (Date.now() < deadline) {
+          try { process.kill(existingInfo.pid, 0); } catch { break; }
+          await new Promise(r => setTimeout(r, 100));
+        }
+        killPid(existingInfo.pid, true);
       } else {
-        // PID 存活且版本匹配（或无版本字段的老 server），尝试 health check
-        let reused = false;
-        try {
-          const res = await fetch(`http://127.0.0.1:${existingInfo.port}/api/health`, {
-            headers: { Authorization: `Bearer ${existingInfo.token}` },
-            signal: AbortSignal.timeout(2000),
-          });
-          if (res.ok) {
-            console.log(`[desktop] 复用已运行的 server，端口: ${existingInfo.port}, 版本: ${serverVersion || "unknown"}`);
-            serverPort = existingInfo.port;
-            serverToken = existingInfo.token;
-            reusedServerPid = existingInfo.pid;
-            reused = true;
-          }
-        } catch { /* health check 网络抖动，继续 kill 旧 server */ }
-
-        if (reused) return; // 跳过启动
+        console.warn(`[desktop] server-info 不可信，拒绝复用且不自动终止 PID ${existingInfo.pid}: ${verification.reason}`);
       }
-
-      // PID 存活但 health 失败（无响应或异常）：主动 kill，避免双 server 并存
-      console.log(`[desktop] 旧 server (PID ${existingInfo.pid}) 无响应，正在终止...`);
-      killPid(existingInfo.pid);
-      const deadline = Date.now() + 2000;
-      while (Date.now() < deadline) {
-        try { process.kill(existingInfo.pid, 0); } catch { break; }
-        await new Promise(r => setTimeout(r, 100));
-      }
-      killPid(existingInfo.pid, true);
     }
 
     // PID 已死或已 kill，删除脏文件
@@ -665,6 +772,14 @@ async function startServer() {
       return;
     } catch (err) {
       lastErr = err;
+      const portConflict = parsePortInUseStartupError(_serverLogs);
+      if (portConflict) {
+        const friendly = new Error(formatPortInUseStartupError(portConflict));
+        friendly.code = "PORT_IN_USE";
+        friendly.startupError = portConflict;
+        friendly.cause = err;
+        throw friendly;
+      }
       const missingModule = isModuleResolutionError(_serverLogs);
       const canRetry = missingModule && attempt === 0;
       if (!canRetry) {
@@ -963,7 +1078,30 @@ function buildServerCrashDiagnostics() {
     items.push(`Manual debug: open cmd.exe, cd to "${serverDir}", run hana-server.cmd`);
   }
 
+  items.push(buildGpuStartupDiagnostics({ hanakoHome, policy: gpuStartupPolicy, app }));
+
   return items.join("\n");
+}
+
+function formatPortInUseStartupError(conflict) {
+  const host = conflict?.host || "unknown";
+  const port = conflict?.port ?? "unknown";
+  const networkMode = conflict?.networkMode || "unknown";
+  const suggestions = Array.isArray(conflict?.suggestions) && conflict.suggestions.length
+    ? `\n\n${conflict.suggestions.map(item => `- ${item}`).join("\n")}`
+    : "";
+  return `PORT_IN_USE: ${host}:${port} is already in use (network mode: ${networkMode}).${suggestions}`;
+}
+
+function buildLaunchFailureDialogDetail(err, crashInfo) {
+  const structuredPortConflict = err?.startupError?.code === "PORT_IN_USE"
+    ? formatPortInUseStartupError(err.startupError)
+    : null;
+  const rootServerError = structuredPortConflict || extractRootServerStartupError(_serverLogs);
+  const tail = crashInfo.length > 800 ? "...\n" + crashInfo.slice(-800) : crashInfo;
+  if (!rootServerError) return tail;
+  if (tail.includes(rootServerError)) return tail;
+  return `${rootServerError}\n\n${tail}`;
 }
 
 function writeCrashLog(errorMessage) {
@@ -1000,6 +1138,14 @@ function writeCrashLog(errorMessage) {
 
 // ── 创建启动窗口 ──
 function createSplashWindow() {
+  if (process.platform === "win32") {
+    markGpuStartupPhase({
+      hanakoHome,
+      platform: process.platform,
+      phase: "launching-splash",
+      startupId: desktopStartupId,
+    });
+  }
   splashWindow = new BrowserWindow({
     width: 380,
     height: 280,
@@ -1019,6 +1165,14 @@ function createSplashWindow() {
   loadWindowURL(splashWindow, "splash");
 
   splashWindow.once("ready-to-show", () => {
+    if (process.platform === "win32") {
+      markGpuStartupPhase({
+        hanakoHome,
+        platform: process.platform,
+        phase: "splash-ready",
+        startupId: desktopStartupId,
+      });
+    }
     splashWindow.show();
   });
 
@@ -1710,6 +1864,42 @@ function _notifyViewerUrl(url) {
   }
 }
 
+async function closeBrowserSessionViaServer(sessionPath) {
+  if (!sessionPath) throw new Error("No active browser session");
+  if (!serverPort || !serverToken) throw new Error("Server is not ready");
+  const res = await fetch(`http://127.0.0.1:${serverPort}/api/browser/close-session`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${serverToken}`,
+    },
+    body: JSON.stringify({ sessionPath }),
+    signal: AbortSignal.timeout(5000),
+  });
+  if (!res.ok) {
+    let detail = "";
+    try { detail = await res.text(); } catch {}
+    throw new Error(`Browser close request failed with HTTP ${res.status}${detail ? `: ${detail}` : ""}`);
+  }
+}
+
+function encodeCapturedPageToJpegBase64(image, quality, label = "screenshot") {
+  if (!image || (typeof image.isEmpty === "function" && image.isEmpty())) {
+    const emptyImageMessage = label === "screenshot"
+      ? "Browser screenshot capture returned an empty image. The browser display surface may be unavailable."
+      : `Browser ${label} capture returned an empty image. The browser display surface may be unavailable.`;
+    throw new Error(emptyImageMessage);
+  }
+  const jpeg = image.toJPEG(quality);
+  if (!Buffer.isBuffer(jpeg) || jpeg.length === 0) {
+    const noDataMessage = label === "screenshot"
+      ? "Browser screenshot capture returned no image data. The browser display surface may be unavailable."
+      : `Browser ${label} capture returned no image data. The browser display surface may be unavailable.`;
+    throw new Error(noDataMessage);
+  }
+  return jpeg.toString("base64");
+}
+
 async function handleBrowserCommand(cmd, params) {
   switch (cmd) {
 
@@ -1952,8 +2142,7 @@ async function handleBrowserCommand(cmd, params) {
     case "screenshot": {
       return await _withLiveWebContents(params.sessionPath, async (wc) => {
         const img = await wc.capturePage();
-        const jpeg = img.toJPEG(75);
-        return { base64: jpeg.toString("base64") };
+        return { base64: encodeCapturedPageToJpegBase64(img, 75, "screenshot") };
       });
     }
 
@@ -1962,8 +2151,7 @@ async function handleBrowserCommand(cmd, params) {
       return await _withLiveWebContents(params.sessionPath, async (wc) => {
         const img = await wc.capturePage();
         const resized = img.resize({ width: 400 });
-        const jpeg = resized.toJPEG(60);
-        return { base64: jpeg.toString("base64") };
+        return { base64: encodeCapturedPageToJpegBase64(resized, 60, "thumbnail") };
       });
     }
 
@@ -2546,7 +2734,11 @@ wrapIpcBestEffortHandler("close-browser-viewer", () => {
   if (browserViewerWindow && !browserViewerWindow.isDestroyed()) browserViewerWindow.close();
 });
 wrapIpcBestEffortHandler("browser-emergency-stop", () => {
-  // 紧急停止：销毁当前浏览器实例，释放 AI 控制
+  // 有 session 归属时必须经过 server 的 BrowserManager，保持 UI 和运行时状态一致。
+  if (_currentBrowserSession) {
+    return closeBrowserSessionViaServer(_currentBrowserSession);
+  }
+  // 兼容无 sessionPath 的旧浏览器实例：没有 server 状态可同步，只能本地清理。
   if (_browserWebView) {
     if (browserViewerWindow && !browserViewerWindow.isDestroyed()) {
       try { browserViewerWindow.contentView.removeChildView(_browserWebView); } catch {}
@@ -3150,19 +3342,13 @@ wrapIpcBestEffortHandler("debug-open-onboarding-preview", () => {
   createOnboardingWindow({ preview: "1" });
 });
 
-// Onboarding 完成后，写标记 → 创建主窗口
-wrapIpcHandler("onboarding-complete", () => {
-  const prefsPath = path.join(hanakoHome, "user", "preferences.json");
-  try {
-    let prefs = {};
-    try { prefs = JSON.parse(fs.readFileSync(prefsPath, "utf-8")); } catch {}
-    prefs.setupComplete = true;
-    fs.writeFileSync(prefsPath, JSON.stringify(prefs, null, 2) + "\n", "utf-8");
-  } catch (err) {
-    console.error("[desktop] Failed to write setupComplete:", err);
-  }
-  // 创建主窗口（隐藏），前端 init 完成后通过 app-ready 显示
-  createMainWindow();
+// Onboarding 完成后，经 server PreferencesManager 持久化，成功后才创建主窗口。
+wrapIpcHandler("onboarding-complete", async () => {
+  await completeOnboardingAndOpenMain({
+    serverPort,
+    serverToken,
+    createMainWindow,
+  });
 });
 
 // ── 窗口控制 IPC（Windows/Linux 自绘标题栏用）──
@@ -3183,6 +3369,15 @@ wrapIpcHandler("window-is-maximized", (event) => {
 
 // 前端初始化完成后调用，关闭 splash / onboarding，显示主窗口
 wrapIpcBestEffortHandler("app-ready", () => {
+  if (process.platform === "win32") {
+    markGpuStartupReady({
+      hanakoHome,
+      platform: process.platform,
+      startupId: desktopStartupId,
+      phase: "app-ready",
+    });
+  }
+
   if (mainWindow && !_startHiddenAtLogin) {
     mainWindow.show();
   }
@@ -3211,7 +3406,6 @@ wrapIpcBestEffortHandler("app-ready", () => {
 // ── App 生命周期 ──
 app.whenReady().then(async () => {
   try {
-    migrateSetupComplete();
     _startHiddenAtLogin = getAutoLaunchStatus({ app }).openedAtLogin === true && isSetupComplete();
 
     // 1. 立刻显示启动窗口，同时异步获取 login shell PATH。登录项后台启动时跳过 splash。
@@ -3223,8 +3417,24 @@ app.whenReady().then(async () => {
     await applyDesktopNetworkProxy(readNetworkProxyPreference(), { reason: "startup" });
 
     // 2. 后台启动 server（PATH 已就绪）
+    if (process.platform === "win32") {
+      markGpuStartupPhase({
+        hanakoHome,
+        platform: process.platform,
+        phase: "server-starting",
+        startupId: desktopStartupId,
+      });
+    }
     console.log("[desktop] 启动 Hanako Server...");
     await startServer();
+    if (process.platform === "win32") {
+      markGpuStartupPhase({
+        hanakoHome,
+        platform: process.platform,
+        phase: "server-ready",
+        startupId: desktopStartupId,
+      });
+    }
     console.log(`[desktop] Server 就绪，端口: ${serverPort}`);
     monitorServer();
     setupBrowserCommands();
@@ -3241,17 +3451,42 @@ app.whenReady().then(async () => {
     }
 
     // 4. 检测是否需要 onboarding
-    if (isSetupComplete()) {
+    const migratedSetupComplete = await migrateSetupCompleteViaServerIfNeeded();
+    if (isSetupComplete() || migratedSetupComplete) {
       // 已完成配置：直接创建主窗口
       createMainWindow();
+      if (process.platform === "win32") {
+        markGpuStartupPhase({
+          hanakoHome,
+          platform: process.platform,
+          phase: "main-window-created",
+          startupId: desktopStartupId,
+        });
+      }
     } else if (hasExistingConfig()) {
       // 老用户：已有 api_key，跳过填写直接看教程
       console.log("[desktop] 检测到已有配置，跳到教程页");
       createOnboardingWindow({ skipToTutorial: "1" });
+      if (process.platform === "win32") {
+        markGpuStartupPhase({
+          hanakoHome,
+          platform: process.platform,
+          phase: "onboarding-window-created",
+          startupId: desktopStartupId,
+        });
+      }
     } else {
       // 全新用户：完整 onboarding 向导
       console.log("[desktop] 首次启动，显示 Onboarding 向导");
       createOnboardingWindow();
+      if (process.platform === "win32") {
+        markGpuStartupPhase({
+          hanakoHome,
+          platform: process.platform,
+          phase: "onboarding-window-created",
+          startupId: desktopStartupId,
+        });
+      }
     }
 
     // 5. 后台检查更新（不阻塞启动）
@@ -3266,15 +3501,22 @@ app.whenReady().then(async () => {
     checkForUpdates().catch(() => {});
   } catch (err) {
     console.error("[desktop] 启动失败:", err.message);
+    if (process.platform === "win32") {
+      markGpuStartupFailed({
+        hanakoHome,
+        platform: process.platform,
+        startupId: desktopStartupId,
+        reason: err.message || "startup-failed",
+      });
+    }
     // 写入 crash.log 并获取详细日志
     const crashInfo = writeCrashLog(err.message);
-    // 截取最后 800 字符放进 dialog（太长会显示不全）
-    const tail = crashInfo.length > 800 ? "...\n" + crashInfo.slice(-800) : crashInfo;
+    const detail = buildLaunchFailureDialogDetail(err, crashInfo);
     dialog.showErrorBox(
       mt("dialog.launchFailedTitle", null, "Hanako Launch Failed"),
       mt("dialog.launchFailedBody", {
         version: app?.getVersion?.() || "unknown",
-        detail: tail,
+        detail,
         logPath: path.join(hanakoHome, "crash.log"),
       })
     );

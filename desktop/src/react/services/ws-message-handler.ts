@@ -16,6 +16,7 @@ import { loadDeskFiles } from '../stores/desk-actions';
 import {
   appendChannelMessage as appendChannelMessageAction,
   loadChannels as loadChannelsAction,
+  markChannelMessagesDirty as markChannelMessagesDirtyAction,
   openChannel as openChannelAction,
   upsertConversationAgentActivity as upsertConversationAgentActivityAction,
 } from '../stores/channel-actions';
@@ -114,6 +115,31 @@ function hasOptimisticCurrentSession(): boolean {
   const sessionPath = state.currentSessionPath;
   if (!sessionPath) return false;
   return !!state.sessions.find((s: any) => s.path === sessionPath && s._optimistic);
+}
+
+function resolvePrimaryAgentId(state: any): string | null {
+  const primary = Array.isArray(state.agents)
+    ? state.agents.find((agent: any) => agent?.isPrimary === true)
+    : null;
+  return typeof primary?.id === 'string' && primary.id ? primary.id : null;
+}
+
+function resolveDmPeerIdForEvent(state: any, msg: any): string | null {
+  const channels = Array.isArray(state.channels) ? state.channels : [];
+  const known = channels.find((channel: any) => {
+    if (!channel?.isDM || !channel.dmOwnerId || !channel.peerId) return false;
+    return (
+      (msg.from === channel.dmOwnerId && msg.to === channel.peerId)
+      || (msg.to === channel.dmOwnerId && msg.from === channel.peerId)
+    );
+  });
+  if (known?.peerId) return known.peerId;
+
+  const ownerId = resolvePrimaryAgentId(state) || state.currentAgentId || null;
+  if (!ownerId) return typeof msg.from === 'string' ? msg.from : null;
+  if (msg.from === ownerId && typeof msg.to === 'string') return msg.to;
+  if (msg.to === ownerId && typeof msg.from === 'string') return msg.from;
+  return null;
 }
 
 function applyTodoToolEnd(msg: any): void {
@@ -530,12 +556,17 @@ export function handleServerMessage(msg: any): void {
 
     case 'channel_new_message': {
       const store = useStore.getState();
-      const isViewing = store.currentTab === 'channels' && store.currentChannel === msg.channelName && document.visibilityState === 'visible';
-      if (msg.channelName && isViewing && msg.message) {
-        appendChannelMessageAction(msg.channelName, msg.message);
-      } else if (msg.channelName && isViewing) {
+      const isVisibleCurrentChannel =
+        store.currentTab === 'channels'
+        && store.currentChannel === msg.channelName
+        && document.visibilityState === 'visible';
+      if (msg.channelName && msg.message) {
+        appendChannelMessageAction(msg.channelName, msg.message, { markRead: isVisibleCurrentChannel });
+      } else if (msg.channelName && isVisibleCurrentChannel) {
+        markChannelMessagesDirtyAction(msg.channelName);
         openChannelAction(msg.channelName);
       } else if (msg.channelName) {
+        markChannelMessagesDirtyAction(msg.channelName);
         loadChannelsAction();
       }
       break;
@@ -543,10 +574,11 @@ export function handleServerMessage(msg: any): void {
 
     case 'dm_new_message': {
       const store2 = useStore.getState();
-      const currentAgentId = store2.currentAgentId;
-      const peerId = currentAgentId && msg.from === currentAgentId && msg.to
-        ? msg.to
-        : msg.from;
+      const peerId = resolveDmPeerIdForEvent(store2, msg);
+      if (!peerId) {
+        loadChannelsAction();
+        break;
+      }
       const dmId = `dm:${peerId}`;
       const isViewingDM = store2.currentTab === 'channels' && store2.currentChannel === dmId && document.visibilityState === 'visible';
       if (isViewingDM) {

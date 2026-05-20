@@ -5,6 +5,7 @@
  * PUT  /api/preferences/models  — 更新全局模型 + 搜索配置
  * GET  /api/preferences/appearance  — 读取跨前端外观偏好
  * PUT  /api/preferences/appearance  — 更新跨前端外观偏好
+ * POST /api/preferences/setup-complete — 提交首次配置完成意图
  * GET  /api/preferences/computer-use  — 读取 Computer Use provider/approval 状态
  * PUT  /api/preferences/computer-use  — 更新 Computer Use 全局设置
  * POST /api/preferences/computer-use/request-permissions — 请求系统权限
@@ -22,6 +23,10 @@ import {
   normalizeWorkspaceUiSurface,
 } from "../../shared/workspace-ui-state.js";
 import {
+  SEARCH_API_PROVIDER_IDS,
+  normalizeSearchApiKeys,
+} from "../../shared/search-providers.js";
+import {
   normalizeSharedModelsPatch,
   sharedModelsPatchRequiresModelSync,
 } from "../../core/config-coordinator.js";
@@ -31,7 +36,7 @@ import {
   isComputerUsePlatformSupported,
   selectedComputerProviderId,
 } from "../../core/computer-use/platform-support.js";
-import { collectSecretPatchPaths, maskSecretValue, resolveSecretPatch } from "../../shared/secret-custody.js";
+import { collectSecretPatchPaths, isMaskedSecretValue, maskSecretValue, resolveSecretPatch } from "../../shared/secret-custody.js";
 import { denySecretMutationWithoutScope, denyWithoutScope } from "../http/capability-guard.js";
 import { recordSecurityAuditEvent } from "../http/security-audit.js";
 
@@ -50,6 +55,45 @@ function disabledComputerUseStatus(settings, { platform = process.platform } = {
   };
 }
 
+function maskSearchApiKeys(apiKeys) {
+  const normalized = normalizeSearchApiKeys(apiKeys);
+  return Object.fromEntries(
+    Object.entries(normalized).map(([provider, key]) => [provider, maskSecretValue(key)]),
+  );
+}
+
+function resolveSearchApiKeysPatch(patch, existing) {
+  const saved = normalizeSearchApiKeys(existing);
+  if (!patch || typeof patch !== "object" || Array.isArray(patch)) return saved;
+  const out = { ...saved };
+  for (const provider of SEARCH_API_PROVIDER_IDS) {
+    if (!Object.prototype.hasOwnProperty.call(patch, provider)) continue;
+    const value = patch[provider];
+    if (isMaskedSecretValue(value)) {
+      if (saved[provider]) out[provider] = saved[provider];
+      continue;
+    }
+    if (typeof value !== "string" || !value.trim()) {
+      delete out[provider];
+      continue;
+    }
+    out[provider] = value.trim();
+  }
+  return out;
+}
+
+function resolveSearchPreferencePatch(patch, existing) {
+  const resolved = resolveSecretPatch({
+    patch,
+    existing,
+    secretKeys: ["api_key"],
+  });
+  if (patch?.api_keys !== undefined) {
+    resolved.api_keys = resolveSearchApiKeysPatch(patch.api_keys, existing?.api_keys || {});
+  }
+  return resolved;
+}
+
 export function createPreferencesRoute(engine, { platform = process.platform } = {}) {
   const route = new Hono();
 
@@ -65,6 +109,7 @@ export function createPreferencesRoute(engine, { platform = process.platform } =
         search: {
           provider: search.provider || "",
           api_key: maskSecretValue(search.api_key || ""),
+          api_keys: maskSearchApiKeys(search.api_keys || {}),
         },
         utility_api: {
           provider: utilityApi.provider || "",
@@ -86,7 +131,7 @@ export function createPreferencesRoute(engine, { platform = process.platform } =
       }
       const settingsDenied = denyWithoutScope(c, "settings.write");
       if (settingsDenied) return settingsDenied;
-      const secretFields = collectSecretPatchPaths(body, ["api_key"]);
+      const secretFields = collectSecretPatchPaths(body, ["api_key", "api_keys"]);
       const secretDenied = denySecretMutationWithoutScope(c, secretFields);
       if (secretDenied) return secretDenied;
 
@@ -118,11 +163,7 @@ export function createPreferencesRoute(engine, { platform = process.platform } =
 
       // 搜索配置
       if (body.search) {
-        engine.setSearchConfig(resolveSecretPatch({
-          patch: body.search,
-          existing: engine.getSearchConfig?.() || {},
-          secretKeys: ["api_key"],
-        }));
+        engine.setSearchConfig(resolveSearchPreferencePatch(body.search, engine.getSearchConfig?.() || {}));
         sections.push("search");
       }
 
@@ -178,6 +219,20 @@ export function createPreferencesRoute(engine, { platform = process.platform } =
       return c.json({ ok: true, appearance });
     } catch (err) {
       return c.json({ error: err.message }, 400);
+    }
+  });
+
+  route.post("/preferences/setup-complete", async (c) => {
+    try {
+      const result = typeof engine.markSetupComplete === "function"
+        ? engine.markSetupComplete()
+        : engine.preferences?.markSetupComplete?.();
+      if (result?.setupComplete !== true) {
+        throw new Error("setup completion manager is unavailable");
+      }
+      return c.json({ ok: true, setupComplete: true });
+    } catch (err) {
+      return c.json({ error: err.message }, 500);
     }
   });
 

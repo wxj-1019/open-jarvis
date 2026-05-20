@@ -16,8 +16,12 @@ import { parseSkillMetadata } from "../../lib/skills/skill-metadata.js";
 import { createSkillSourceIdentity } from "../../lib/skills/skill-file-identity.js";
 import { WORKSPACE_SKILL_DIRS } from "../../shared/workspace-skill-paths.js";
 import { t } from "../i18n.js";
-import { resolveAgent } from "../utils/resolve-agent.js";
 import { realPath, isSensitivePath } from "../utils/path-security.js";
+import { readAuthPrincipal } from "../http/capability-guard.js";
+import { isLocalOwnerPrincipal } from "../http/route-security.js";
+import { createModuleLogger } from "../../lib/debug-log.js";
+
+const log = createModuleLogger("desk");
 
 /** 安全路径校验：target 必须在 baseDir 内部（解析 symlink 后比较） */
 function isInsidePath(target, baseDir) {
@@ -58,6 +62,16 @@ function defaultDeskDir(engine) {
   return engine.defaultDeskCwd || engine.homeCwd || engine.deskCwd;
 }
 
+function isPlainEntryName(value) {
+  return typeof value === "string"
+    && value.length > 0
+    && value.trim() === value
+    && value !== "."
+    && value !== ".."
+    && !value.includes("/")
+    && !value.includes("\\");
+}
+
 function workspaceSkillSource(skillDir, fallbackName) {
   const skillFile = path.join(skillDir, "SKILL.md");
   let skillName = fallbackName;
@@ -73,6 +87,27 @@ function workspaceSkillSource(skillDir, fallbackName) {
     filePath: skillFile,
     baseDir: skillDir,
   });
+}
+
+function getStudioCronStore(engine) {
+  return engine.getStudioCronStore?.() || null;
+}
+
+function normalizeRouteExecutionContext(value, actorAgentId) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return {
+    kind: typeof value.kind === "string" && value.kind.trim() ? value.kind.trim() : "api_request",
+    cwd: typeof value.cwd === "string" && value.cwd.trim() ? value.cwd : null,
+    workspaceFolders: Array.isArray(value.workspaceFolders)
+      ? value.workspaceFolders.filter(p => typeof p === "string" && p.trim())
+      : [],
+    sourceSessionPath: typeof value.sourceSessionPath === "string" && value.sourceSessionPath.trim()
+      ? value.sourceSessionPath
+      : null,
+    createdByAgentId: typeof value.createdByAgentId === "string" && value.createdByAgentId.trim()
+      ? value.createdByAgentId
+      : actorAgentId,
+  };
 }
 
 /** 列出工作台目录下的文件（异步） */
@@ -100,7 +135,7 @@ async function listWorkspaceFiles(dir) {
           };
         } catch (err) {
           // ENOENT = 文件在 readdir 后被删除，正常跳过；其他错误也跳过单项不影响整体
-          if (err.code !== "ENOENT") console.warn(`[desk] stat failed for ${e.name}: ${err.message}`);
+          if (err.code !== "ENOENT") log.warn(`stat failed for ${e.name}: ${err.message}`);
           return null;
         }
       })
@@ -140,7 +175,7 @@ async function searchWorkspaceFiles(root, query, {
       entries = await fs.promises.readdir(dir, { withFileTypes: true });
     } catch (err) {
       if (err.code !== "ENOENT" && err.code !== "EACCES") {
-        console.warn(`[desk] search readdir failed for ${dir}: ${err.message}`);
+        log.warn(`search readdir failed for ${dir}: ${err.message}`);
       }
       return;
     }
@@ -167,7 +202,7 @@ async function searchWorkspaceFiles(root, query, {
             mtime: stat.mtime.toISOString(),
           });
         } catch (err) {
-          if (err.code !== "ENOENT") console.warn(`[desk] search stat failed for ${entry.name}: ${err.message}`);
+          if (err.code !== "ENOENT") log.warn(`search stat failed for ${entry.name}: ${err.message}`);
         }
       }
 
@@ -317,14 +352,14 @@ export function createDeskRoute(engine, hub) {
 
   /** 列出 cron 任务 */
   route.get("/desk/cron", async (c) => {
-    const store = resolveAgent(engine, c).cronStore;
+    const store = getStudioCronStore(engine);
     if (!store) return c.json({ jobs: [] });
     return c.json({ jobs: store.listJobs() });
   });
 
   /** 操作 cron 任务 */
   route.post("/desk/cron", async (c) => {
-    const store = resolveAgent(engine, c).cronStore;
+    const store = getStudioCronStore(engine);
     if (!store) return c.json({ error: "Desk not initialized" });
 
     const body = await safeJson(c);
@@ -347,7 +382,25 @@ export function createDeskRoute(engine, hub) {
           }
           params.schedule = minutes * 60_000;
         }
-        const job = store.addJob({ type, schedule: params.schedule, prompt: params.prompt, label: params.label, model: params.model });
+        const actorAgentId = typeof params.actorAgentId === "string" && params.actorAgentId.trim()
+          ? params.actorAgentId.trim()
+          : null;
+        const executionContext = normalizeRouteExecutionContext(params.executionContext, actorAgentId);
+        if (!actorAgentId || !executionContext) {
+          return c.json({ error: "actorAgentId and executionContext required" }, 400);
+        }
+        if (typeof engine.getAgent === "function" && !engine.getAgent(actorAgentId)) {
+          return c.json({ error: `agent not found: ${actorAgentId}` }, 404);
+        }
+        const job = store.addJob({
+          type,
+          schedule: params.schedule,
+          prompt: params.prompt,
+          label: params.label,
+          model: params.model,
+          actorAgentId,
+          executionContext,
+        });
         return c.json({ ok: true, job, jobs: store.listJobs() });
       }
 
@@ -659,6 +712,14 @@ export function createDeskRoute(engine, hub) {
 
     switch (action) {
       case "upload": {
+        // upload 接受调用方提供的绝对源路径列表，把本机文件复制进 desk。
+        // 该语义只为桌面 owner 端的本机拖拽设计；远端 paired 设备不应能借此
+        // 把 desk dir 之外的任意可读路径（~/Documents、Library、shell init 等）
+        // 拷进工作区再读回。远端要上传文件应走 /api/mobile/workbench/upload 的
+        // multipart 通道。
+        if (!isLocalOwnerPrincipal(readAuthPrincipal(c))) {
+          return c.json({ error: "upload by absolute path requires local owner" }, 403);
+        }
         if (!Array.isArray(paths) || paths.length === 0) {
           return c.json({ error: "paths required" });
         }
@@ -693,15 +754,18 @@ export function createDeskRoute(engine, hub) {
         if (!name || content === undefined) {
           return c.json({ error: "name and content required" });
         }
-        const createTarget = path.join(dir, path.basename(name));
+        if (!isPlainEntryName(name)) return c.json({ error: "invalid name" });
+        const createTarget = path.join(dir, name);
         if (!isInsidePath(createTarget, dir)) return c.json({ error: "invalid name" });
+        if (fs.existsSync(createTarget)) return c.json({ error: "target already exists" });
         fs.writeFileSync(createTarget, content, "utf-8");
         return c.json({ ok: true, files: await listWorkspaceFiles(dir) });
       }
 
       case "mkdir": {
         if (!name) return c.json({ error: "name required" });
-        const mkTarget = path.join(dir, path.basename(name));
+        if (!isPlainEntryName(name)) return c.json({ error: "invalid name" });
+        const mkTarget = path.join(dir, name);
         if (!isInsidePath(mkTarget, dir)) return c.json({ error: "invalid name" });
         if (fs.existsSync(mkTarget)) return c.json({ error: "already exists" });
         fs.mkdirSync(mkTarget, { recursive: true });
@@ -710,8 +774,9 @@ export function createDeskRoute(engine, hub) {
 
       case "rename": {
         if (!oldName || !newName) return c.json({ error: "oldName and newName required" });
-        const src = path.join(dir, path.basename(oldName));
-        const dest = path.join(dir, path.basename(newName));
+        if (!isPlainEntryName(oldName) || !isPlainEntryName(newName)) return c.json({ error: "invalid name" });
+        const src = path.join(dir, oldName);
+        const dest = path.join(dir, newName);
         if (!isInsidePath(src, dir) || !isInsidePath(dest, dir)) return c.json({ error: "invalid name" });
         if (!fs.existsSync(src)) return c.json({ error: "not found" });
         if (fs.existsSync(dest)) return c.json({ error: "target already exists" });
