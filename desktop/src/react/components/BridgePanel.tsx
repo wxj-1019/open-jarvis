@@ -378,7 +378,7 @@ export function BridgePanel() {
                         <div className={fp.bridgeContactName}>{identity.name}</div>
                         {s.lastActive && (
                           <div className={fp.bridgeContactTime}>
-                            {formatSessionDate(new Date(s.lastActive).toISOString())}
+                            {safeFormatSessionDate(s.lastActive)}
                           </div>
                         )}
                       </div>

@@ -1,34 +1,148 @@
 /**
  * SplashApp.tsx — 启动画面
  *
- * 头像 + 旋转文字轮播 + 樱花图标。
+ * 头像呼吸动画 + 打字机文字轮播 + 底部进度点。
  * 不依赖 server（splash 显示时 server 还没启动），数据来源全部是 IPC + 本地文件。
  */
 
-import { useState, useEffect, useRef } from 'react';
-import { getYuanVisual } from '../../../../shared/yuan-visuals.js';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
-const DEFAULT_NAME = 'Hanako';
-const DEFAULT_VISUAL = getYuanVisual('hanako');
+const DEFAULT_NAME = 'Jarvis';
+const YUAN_AVATARS: Record<string, string> = {
+  hanako: 'jarvis.png',
+  butter: 'Butter.png',
+  ming: 'Ming.png',
+};
+const YUAN_SYMBOLS: Record<string, string> = {
+  hanako: '\u273F',  // ✿
+  butter: '\u274A',  // ❊
+  ming: '\u25C8',    // ◈
+};
+const YUAN_COLORS: Record<string, string> = {
+  hanako: '#537D96',
+  butter: '#5BA88C',
+  ming: '#8BA4B4',
+};
+
+const TYPING_SPEED = 65;
+const TYPING_PAUSE = 1800;
+
+const MAX_PARTICLES = 3;
+const PARTICLE_MIN_DELAY = 1500;
+const PARTICLE_MAX_DELAY = 3000;
 
 export function SplashApp() {
-  const [avatarSrc, setAvatarSrc] = useState('assets/Hanako.png');
-  const [text, setText] = useState('');
-  const [switching, setSwitching] = useState(false);
-  const [symbol, setSymbol] = useState(DEFAULT_VISUAL.symbol);
-  const [accentColor, setAccentColor] = useState(DEFAULT_VISUAL.accent);
-  const linesRef = useRef<string[]>([]);
-  const indexRef = useRef(0);
+  const [avatarSrc, setAvatarSrc] = useState('assets/jarvis.png');
+  const [displayText, setDisplayText] = useState('');
+  const [cursorVisible, setCursorVisible] = useState(true);
+  const [currentLineIndex, setCurrentLineIndex] = useState(0);
+  const [isTyping, setIsTyping] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [lines, setLines] = useState<string[]>([]);
+  const [symbol, setSymbol] = useState(YUAN_SYMBOLS.hanako);
+  const [animationPhase, setAnimationPhase] = useState<'entering' | 'awake' | 'breathing'>('entering');
 
-  // 复用同一个窗口承载两种模式：默认启动动画 / 更新安装中提示。
-  // 安装模式固定文案、关闭轮播，避免用户误以为还在"启动中"。
+  const linesRef = useRef<string[]>([]);
+  const charIndexRef = useRef(0);
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cursorTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const particleContainerRef = useRef<HTMLDivElement>(null);
+  const particleCountRef = useRef(0);
+  const particleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const params = new URLSearchParams(typeof location !== 'undefined' ? location.search : '');
   const mode = params.get('mode') || '';
   const installVersion = params.get('version') || '';
 
-  useEffect(() => {
-    let timer: ReturnType<typeof setInterval> | undefined;
+  const clearTypingTimer = useCallback(() => {
+    if (typingTimerRef.current) {
+      clearTimeout(typingTimerRef.current);
+      typingTimerRef.current = null;
+    }
+  }, []);
 
+  // 粒子生成
+  const spawnParticle = useCallback(() => {
+    if (particleCountRef.current >= MAX_PARTICLES) return;
+    if (!particleContainerRef.current) return;
+
+    const particle = document.createElement('div');
+    particle.className = 'splash-particle';
+
+    // 随机出生角度 (-60° ~ +60° from bottom)
+    const angle = (Math.random() * 120 - 60) * (Math.PI / 180);
+    const distance = 36 + Math.random() * 8;
+    const startX = 40 + Math.sin(angle) * distance;
+    const startY = 40 + Math.cos(angle) * distance;
+
+    particle.style.left = `${startX}px`;
+    particle.style.top = `${startY}px`;
+
+    const swing = (Math.random() > 0.5 ? 1 : -1) * (3 + Math.random() * 4);
+    particle.style.setProperty('--swing', `${swing}px`);
+
+    const duration = 2.5 + Math.random() * 1.5;
+    particle.style.animation = `particleFloat ${duration}s ease-in-out forwards`;
+
+    particleCountRef.current += 1;
+    particleContainerRef.current.appendChild(particle);
+
+    const onEnd = () => {
+      particle.remove();
+      particleCountRef.current -= 1;
+    };
+    particle.addEventListener('animationend', onEnd, { once: true });
+
+    const nextDelay = PARTICLE_MIN_DELAY + Math.random() * (PARTICLE_MAX_DELAY - PARTICLE_MIN_DELAY);
+    particleTimerRef.current = setTimeout(spawnParticle, nextDelay);
+  }, []);
+
+  // 打字机核心逻辑
+  const runTypewriter = useCallback(() => {
+    if (linesRef.current.length === 0) return;
+
+    const currentLine = linesRef.current[currentLineIndex];
+
+    if (isDeleting) {
+      setIsTyping(false);
+      if (charIndexRef.current > 0) {
+        charIndexRef.current -= 1;
+        setDisplayText(currentLine.slice(0, charIndexRef.current));
+        typingTimerRef.current = setTimeout(runTypewriter, TYPING_SPEED / 2.5);
+      } else {
+        setIsDeleting(false);
+        setIsTyping(true);
+        const nextIndex = (currentLineIndex + 1) % linesRef.current.length;
+        setCurrentLineIndex(nextIndex);
+        typingTimerRef.current = setTimeout(runTypewriter, 300);
+      }
+    } else {
+      setIsTyping(true);
+      if (charIndexRef.current < currentLine.length) {
+        charIndexRef.current += 1;
+        setDisplayText(currentLine.slice(0, charIndexRef.current));
+        const speed = TYPING_SPEED + (Math.random() * 30 - 15);
+        typingTimerRef.current = setTimeout(runTypewriter, speed);
+      } else {
+        setIsTyping(false);
+        typingTimerRef.current = setTimeout(() => {
+          setIsDeleting(true);
+          typingTimerRef.current = setTimeout(runTypewriter, TYPING_SPEED);
+        }, TYPING_PAUSE);
+      }
+    }
+  }, [currentLineIndex, isDeleting]);
+
+  // 同步 isTyping 到 body class
+  useEffect(() => {
+    if (isTyping) {
+      document.body.classList.add('splash-typing');
+    } else {
+      document.body.classList.remove('splash-typing');
+    }
+  }, [isTyping]);
+
+  useEffect(() => {
     (async () => {
       let locale = 'zh';
       let name = DEFAULT_NAME;
@@ -46,85 +160,146 @@ export function SplashApp() {
           if (base) {
             setAvatarSrc(`${base}?t=${Date.now()}`);
           } else if (splashInfo?.yuan) {
-            setAvatarSrc(`assets/${getYuanVisual(splashInfo.yuan).avatar}`);
+            setAvatarSrc(`assets/${YUAN_AVATARS[splashInfo.yuan] || 'jarvis.png'}`);
           }
         } else if (splashInfo?.yuan) {
-          setAvatarSrc(`assets/${getYuanVisual(splashInfo.yuan).avatar}`);
+          setAvatarSrc(`assets/${YUAN_AVATARS[splashInfo.yuan] || 'jarvis.png'}`);
         }
 
         if (splashInfo?.agentName) name = splashInfo.agentName;
         if (splashInfo?.locale?.startsWith('en')) locale = 'en';
         if (splashInfo?.yuan) yuan = splashInfo.yuan;
 
-        const visual = getYuanVisual(yuan);
-        setSymbol(visual.symbol);
-        setAccentColor(visual.accent);
+        setSymbol(YUAN_SYMBOLS[yuan] || YUAN_SYMBOLS.hanako);
+
+        // 设置 CSS 变量
+        const color = YUAN_COLORS[yuan] || YUAN_COLORS.hanako;
+        document.documentElement.style.setProperty('--splash-accent', color);
       } catch {}
 
-      // 安装模式：固定文案，不进轮播
+      // 安装模式：固定文案，不打字机
       if (mode === 'installing') {
         const data = await fetch(`./locales/${locale}.json`).then(r => r.json()).catch(() => null);
         const tpl = data?.splash?.installing
           || (locale === 'en'
             ? '{name} is updating to v{version}, please wait…'
             : '{name} 正在更新到 v{version}，请稍候…');
-        setText(tpl.replaceAll('{name}', name).replaceAll('{version}', installVersion || ''));
+        setDisplayText(tpl.replaceAll('{name}', name).replaceAll('{version}', installVersion || ''));
+        setIsTyping(false);
         return;
       }
 
       // 加载语言包
-      let lines: string[];
+      let loadedLines: string[];
       try {
         const res = await fetch(`./locales/${locale}.json`);
         const data = await res.json();
         const yuanLines = data.yuan?.splash?.[yuan];
         const defaultLines = data.splash?.lines;
         const raw = Array.isArray(yuanLines) ? yuanLines : defaultLines;
-        lines = raw ? raw.map((l: string) => l.replaceAll('{name}', name)) : [];
+        loadedLines = raw ? raw.map((l: string) => l.replaceAll('{name}', name)) : [];
       } catch {
-        lines = [];
+        loadedLines = [];
       }
 
-      if (!lines.length) {
-        lines = [
+      if (!loadedLines.length) {
+        loadedLines = [
           `${name} remembers the evening light`,
           'Some words sprouted in her memory',
           'She found your silhouette in memories',
         ];
       }
 
-      // 打乱顺序
-      lines.sort(() => Math.random() - 0.5);
-      linesRef.current = lines;
-      indexRef.current = 0;
-      setText(lines[0]);
+      loadedLines.sort(() => Math.random() - 0.5);
+      linesRef.current = loadedLines;
+      setLines(loadedLines);
+      charIndexRef.current = 0;
 
-      // 轮播
-      timer = setInterval(() => {
-        indexRef.current = (indexRef.current + 1) % linesRef.current.length;
-        setSwitching(true);
-        setTimeout(() => {
-          setText(linesRef.current[indexRef.current]);
-          setSwitching(false);
-        }, 400);
-      }, 3000);
+      // 启动打字机
+      typingTimerRef.current = setTimeout(runTypewriter, 600);
+
+      // 入场动画序列
+      const enterTimer = setTimeout(() => {
+        setAnimationPhase('awake');
+        document.body.classList.add('splash-phase-entering');
+
+        const awakeTimer = setTimeout(() => {
+          setAnimationPhase('breathing');
+          document.body.classList.remove('splash-phase-entering');
+          // 启动粒子系统
+          spawnParticle();
+        }, 3000);
+
+        return () => clearTimeout(awakeTimer);
+      }, 100);
+
+      return () => clearTimeout(enterTimer);
     })();
 
-    return () => { if (timer) clearInterval(timer); };
-  }, [mode, installVersion]);
+    // 光标闪烁
+    cursorTimerRef.current = setInterval(() => {
+      setCursorVisible(v => !v);
+    }, 530);
+
+    return () => {
+      clearTypingTimer();
+      if (cursorTimerRef.current) clearInterval(cursorTimerRef.current);
+      if (particleTimerRef.current) clearTimeout(particleTimerRef.current);
+      if (particleContainerRef.current) {
+        particleContainerRef.current.innerHTML = '';
+      }
+      particleCountRef.current = 0;
+      document.body.classList.remove('splash-typing');
+      document.body.classList.remove('splash-phase-entering');
+    };
+  }, [mode, installVersion, runTypewriter, clearTypingTimer, spawnParticle]);
+
+  // 当行索引变化时重置字符索引并启动打字
+  useEffect(() => {
+    if (mode === 'installing') return;
+    if (linesRef.current.length === 0) return;
+    charIndexRef.current = 0;
+    clearTypingTimer();
+    typingTimerRef.current = setTimeout(runTypewriter, 300);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentLineIndex]);
+
+  const showCursor = mode !== 'installing' && (isTyping || cursorVisible);
 
   return (
     <div className="splash-container">
-      <img
-        className="splash-avatar"
-        src={avatarSrc}
-        alt=""
-        draggable={false}
-      />
-      <div className="splash-text-row">
-        <p className={`splash-text${switching ? ' switching' : ''}`}>{text}</p>
-        <span className="splash-sakura" style={{ color: accentColor }}>{symbol}</span>
+      <div className="splash-avatar-wrap">
+        <div className="splash-avatar-glow" />
+        <div className="splash-avatar-ring-inner" />
+        <div className="splash-avatar-ring-outer" />
+        <img
+          className="splash-avatar"
+          src={avatarSrc}
+          alt=""
+          draggable={false}
+        />
+        <div className="splash-avatar-eyelid" />
       </div>
+      <div className="splash-text-row">
+        <p className="splash-text">
+          {displayText}
+          <span
+            className={`splash-cursor${showCursor ? ' visible' : ''}`}
+          />
+        </p>
+        <span className="splash-sakura">{symbol}</span>
+      </div>
+      {mode !== 'installing' && lines.length > 0 && (
+        <div className="splash-dots">
+          {lines.map((_, i) => (
+            <span
+              key={i}
+              className={`splash-dot${i === currentLineIndex ? ' active' : ''}`}
+            />
+          ))}
+        </div>
+      )}
+      <div ref={particleContainerRef} className="splash-particles" />
     </div>
   );
 }

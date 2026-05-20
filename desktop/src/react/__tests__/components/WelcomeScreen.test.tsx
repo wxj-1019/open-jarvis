@@ -31,7 +31,7 @@ const translations: Record<string, string | string[] | Record<string, { avatar: 
   'welcome.memoryOn': '记忆',
   'welcome.memoryOff': '此次聊天不参考记忆',
   'welcome.memoryDisabled': '记忆已关闭',
-  'yuan.types': { hanako: { avatar: 'Hanako.png' } },
+  'yuan.types': { hanako: { avatar: 'jarvis.png' } },
 };
 
 describe('WelcomeScreen workspace picker', () => {

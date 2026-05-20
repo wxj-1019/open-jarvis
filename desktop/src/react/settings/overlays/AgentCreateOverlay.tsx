@@ -152,7 +152,7 @@ export function AgentCreateOverlay() {
                   disabled={creating || planning}
                   onClick={() => setYuan(key)}
                 >
-                  <img className="yuan-chip-avatar" src={`assets/${meta.avatar || 'Hanako.png'}`} draggable={false} />
+                  <img className="yuan-chip-avatar" src={`assets/${meta.avatar || 'jarvis.png'}`} draggable={false} />
                   <div className="yuan-chip-info">
                     <span className="yuan-chip-name">{key}</span>
                     <span className="yuan-chip-desc">{meta.label || ''}</span>

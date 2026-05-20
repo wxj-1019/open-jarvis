@@ -116,7 +116,7 @@ async function buildScreenshotPayloadForMessages(
       msg.avatarDataUrl = avatars.user;
     }
 
-    for (const block of msg.blocks) {
+    for (const block of msg.blocks || []) {
       if (block.type !== 'image' || !block.content || block.content.startsWith('data:')) continue;
       const cached = imageCache.get(block.content);
       if (cached) {
