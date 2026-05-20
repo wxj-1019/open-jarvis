@@ -66,6 +66,7 @@ export function SplashApp() {
     if (particleCountRef.current >= MAX_PARTICLES) return;
     if (!particleContainerRef.current) return;
 
+    // eslint-disable-next-line no-restricted-syntax
     const particle = document.createElement('div');
     particle.className = 'splash-particle';
 

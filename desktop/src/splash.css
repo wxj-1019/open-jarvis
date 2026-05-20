@@ -150,13 +150,7 @@ body::after {
   user-select: none;
   position: relative;
   z-index: 2;
-  animation: breathe 3s ease-in-out infinite;
   will-change: transform, opacity, filter;
-}
-
-@keyframes breathe {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
 }
 
 /* z-index: 3 眼睑层 */
@@ -288,23 +282,9 @@ body::after {
 }
 
 /* ── 打字响应状态 ── */
-.splash-typing .splash-avatar {
-  animation: breatheTyping 2s ease-in-out infinite;
-}
-
-@keyframes breatheTyping {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.08); }
-}
-
 .splash-typing .splash-avatar-glow {
   filter: blur(14px) saturate(1.3);
   opacity: 0.22;
-}
-
-.splash-typing .splash-avatar-eyelid {
-  transform: scaleY(0.45);
-  opacity: 1;
 }
 
 .splash-typing .splash-sakura {
