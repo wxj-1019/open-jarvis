@@ -51,6 +51,4 @@ export async function retryWithBackoff(fn, { maxRetries = DEFAULT_MAX_RETRIES, b
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
-
-  throw lastError;
 }

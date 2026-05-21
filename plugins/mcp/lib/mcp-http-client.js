@@ -206,7 +206,6 @@ export class McpStreamableHttpClient {
           this.sessionId = "";
           this._initialized = false;
           await this.initialize();
-          this._initialized = true;
           return this._request(method, params, { initializing: false, retryOnSessionExpired: false });
         }
         throw err;
@@ -253,6 +252,10 @@ export class McpStreamableHttpClient {
   async stop() {
     this._closed = true;
     this._initialized = false;
+    for (const item of this._requestQueue) {
+      item.reject(new Error("MCP connector stopped"));
+    }
+    this._requestQueue.length = 0;
     if (this.sessionId) {
       const sessionId = this.sessionId;
       this.sessionId = "";
