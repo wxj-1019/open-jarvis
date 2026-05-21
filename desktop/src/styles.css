@@ -144,8 +144,9 @@ body.font-sans {
 }
 
 *::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
+    width: 3px;
+    height: 3px;
+    transition: width var(--duration-fast), height var(--duration-fast);
 }
 
 *::-webkit-scrollbar-track {
@@ -153,12 +154,17 @@ body.font-sans {
 }
 
 *::-webkit-scrollbar-thumb {
-    background: rgba(128, 128, 128, 0.2);
-    border-radius: 2px;
+    background: rgba(128, 128, 128, 0.25);
+    border-radius: var(--radius-sm);
 }
 
-*::-webkit-scrollbar-thumb:hover {
-    background: rgba(128, 128, 128, 0.4);
+*:hover::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+    background: rgba(128, 128, 128, 0.45);
 }
 
 html, body {
@@ -340,6 +346,9 @@ html[data-platform="linux"] .tb-toggle-right {
 /* ── 浮动卡片（hover toggle 时弹出精简列表） ── */
 .float-card {
     position: fixed;
+    top: var(--float-top);
+    left: var(--float-left);
+    right: var(--float-right);
     z-index: 300;
     width: 240px;
     max-height: 420px;

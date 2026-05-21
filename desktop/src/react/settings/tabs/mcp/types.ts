@@ -30,12 +30,42 @@ export interface McpConnector {
   autoStart?: boolean;
   status: McpConnectorStatus;
   tools: McpTool[];
+  resources?: McpResource[];
+  prompts?: McpPrompt[];
+  serverCapabilities?: Record<string, any>;
+  serverInfo?: { name?: string; version?: string };
+  toolCount?: number;
+  resourceCount?: number;
+  promptCount?: number;
   authType?: McpAuthType;
   authStatus?: string;
   authorizationToken?: string;
   oauthClientId?: string;
   oauthClientSecret?: string;
   oauth?: McpOAuthState;
+}
+
+export interface McpResource {
+  uri: string;
+  name: string;
+  description?: string;
+  mimeType?: string;
+  annotations?: {
+    audience?: string[];
+    priority?: number;
+  };
+}
+
+export interface McpPrompt {
+  name: string;
+  description?: string;
+  arguments?: McpPromptArgument[];
+}
+
+export interface McpPromptArgument {
+  name: string;
+  description?: string;
+  required?: boolean;
 }
 
 export interface McpAgentConnectorConfig {

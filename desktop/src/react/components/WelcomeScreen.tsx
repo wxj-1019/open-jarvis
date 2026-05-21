@@ -125,17 +125,21 @@ function WelcomeInner() {
 function WelcomeAvatar({ info }: {
   info: AgentDisplayInfo;
 }) {
+  const { t } = useI18n();
   const handleClick = useCallback(() => {
     openSettingsModal('agent');
   }, []);
 
   return (
-    <AgentAvatar
-      info={info}
-      className={styles.welcomeAvatar}
-      alt={info.displayName}
-      onClick={handleClick}
-    />
+    <div className={styles.welcomeAvatarWrap}>
+      <AgentAvatar
+        info={info}
+        className={styles.welcomeAvatar}
+        alt={info.displayName}
+        onClick={handleClick}
+      />
+      <span className={styles.welcomeAvatarTooltip}>{t('welcome.changeAgent')}</span>
+    </div>
   );
 }
 

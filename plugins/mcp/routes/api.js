@@ -1,3 +1,5 @@
+import { searchRegistryServers, getRegistryServerDetail, getRegistryCategories } from "../lib/mcp-registry.js";
+
 export default function registerMcpRoutes(app, ctx) {
   const runtime = () => ctx._mcpRuntime;
 
@@ -167,7 +169,7 @@ export default function registerMcpRoutes(app, ctx) {
         code: url.searchParams.get("code") || "",
         error: url.searchParams.get("error") || "",
       });
-      return c.html(htmlPage("Connector connected", "You can close this window and return to Hana."));
+      return c.html(htmlPage("Connector connected", "You can close this window and return to Jarvis."));
     } catch (err) {
       return c.html(htmlPage("Connector OAuth failed", err.message), 400);
     }
@@ -177,6 +179,132 @@ export default function registerMcpRoutes(app, ctx) {
     const rt = runtime();
     if (!rt) return c.json({ error: "not initialized" }, 503);
     return c.json(rt.getOAuthStatus(c.req.param("sessionId")));
+  });
+
+  // ─── New routes: ping, resources, prompts ───
+
+  async function pingConnector(c) {
+    const rt = runtime();
+    if (!rt) return c.json({ error: "not initialized" }, 503);
+    try {
+      const client = rt.clients.get(c.req.param("id"));
+      if (!client?.running) return c.json({ error: "connector is not running" }, 400);
+      await client.ping();
+      return c.json({ ok: true });
+    } catch (err) {
+      return c.json({ error: err.message }, 400);
+    }
+  }
+
+  async function listResources(c) {
+    const rt = runtime();
+    if (!rt) return c.json({ error: "not initialized" }, 503);
+    try {
+      const resources = await rt.listConnectorResources(c.req.param("id"));
+      return c.json({ resources });
+    } catch (err) {
+      return c.json({ error: err.message }, 400);
+    }
+  }
+
+  async function readResource(c) {
+    const rt = runtime();
+    if (!rt) return c.json({ error: "not initialized" }, 503);
+    try {
+      const { uri } = await c.req.json();
+      const result = await rt.readConnectorResource(c.req.param("id"), uri);
+      return c.json(result);
+    } catch (err) {
+      return c.json({ error: err.message }, 400);
+    }
+  }
+
+  async function listPrompts(c) {
+    const rt = runtime();
+    if (!rt) return c.json({ error: "not initialized" }, 503);
+    try {
+      const prompts = await rt.listConnectorPrompts(c.req.param("id"));
+      return c.json({ prompts });
+    } catch (err) {
+      return c.json({ error: err.message }, 400);
+    }
+  }
+
+  async function getPrompt(c) {
+    const rt = runtime();
+    if (!rt) return c.json({ error: "not initialized" }, 503);
+    try {
+      const { arguments: args } = await c.req.json();
+      const result = await rt.getConnectorPrompt(c.req.param("id"), c.req.param("name"), args);
+      return c.json(result);
+    } catch (err) {
+      return c.json({ error: err.message }, 400);
+    }
+  }
+
+  async function listResourceTemplates(c) {
+    const rt = runtime();
+    if (!rt) return c.json({ error: "not initialized" }, 503);
+    try {
+      const templates = await rt.listConnectorResourceTemplates(c.req.param("id"));
+      return c.json(templates);
+    } catch (err) {
+      return c.json({ error: err.message }, 400);
+    }
+  }
+
+  async function contextResources(c) {
+    const rt = runtime();
+    if (!rt) return c.json({ error: "not initialized" }, 503);
+    try {
+      const resources = await rt.getAgentContextResources();
+      return c.json({ resources });
+    } catch (err) {
+      return c.json({ error: err.message }, 400);
+    }
+  }
+
+  app.post("/connectors/:id/ping", pingConnector);
+  app.post("/servers/:id/ping", pingConnector);
+
+  app.get("/connectors/:id/resources", listResources);
+  app.get("/servers/:id/resources", listResources);
+  app.post("/connectors/:id/resources/read", readResource);
+  app.post("/servers/:id/resources/read", readResource);
+  app.get("/connectors/:id/resources/templates", listResourceTemplates);
+  app.get("/servers/:id/resources/templates", listResourceTemplates);
+
+  app.get("/connectors/:id/prompts", listPrompts);
+  app.get("/servers/:id/prompts", listPrompts);
+  app.post("/connectors/:id/prompts/:name", getPrompt);
+  app.post("/servers/:id/prompts/:name", getPrompt);
+
+  app.get("/context-resources", contextResources);
+
+  // ─── Registry routes ───
+
+  app.get("/registry/search", async (c) => {
+    try {
+      const q = c.req.query("q") || "";
+      const servers = await searchRegistryServers(q);
+      return c.json({ servers });
+    } catch (err) {
+      return c.json({ error: err.message }, 400);
+    }
+  });
+
+  app.get("/registry/categories", (c) => {
+    return c.json({ categories: getRegistryCategories() });
+  });
+
+  app.get("/registry/servers/:id", async (c) => {
+    try {
+      const server = await getRegistryServerDetail(c.req.param("id"));
+      if (!server) return c.json({ error: "Server not found" }, 404);
+      return c.json({ server });
+    } catch (err) {
+      return c.json({ error: err.message }, 400);
+    }
   });
 }
 

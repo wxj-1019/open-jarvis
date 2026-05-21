@@ -15,6 +15,7 @@ import type { ChatListItem } from '../../stores/chat-types';
 import { ChatTranscript } from './ChatTranscript';
 import { ChatTimelineNavigator } from './ChatTimelineNavigator';
 import { buildTimelineAnchors } from './timeline-anchors';
+import { SkeletonMessageList } from '../SkeletonMessage';
 import styles from './Chat.module.css';
 
 const MAX_ALIVE = 5;
@@ -194,7 +195,7 @@ const Panel = memo(function Panel({ path, active }: { path: string; active: bool
         <div ref={contentRef} className={styles.sessionMessages}>
           {hasMore && (
             <div className={styles.loadMoreHint}>
-              {loadingMore ? '...' : ''}
+              {loadingMore ? <SkeletonMessageList count={2} /> : ''}
             </div>
           )}
           <ChatTranscript

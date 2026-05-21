@@ -123,6 +123,17 @@ export class Agent {
      * Agent 不持有 Engine 引用，所有对 Engine 的需求通过此对象间接访问。
      */
     this._cb = null;
+
+    /** MCP Resources 上下文文本（由 MCP Runtime 异步更新，buildSystemPrompt 同步读取） */
+    this._mcpResourcesText = "";
+  }
+
+  /**
+   * 更新 MCP Resources 上下文文本（由 MCP Runtime 调用）。
+   * 下次 buildSystemPrompt 时会自动注入。
+   */
+  updateMcpResourcesText(text) {
+    this._mcpResourcesText = text || "";
   }
 
   // ════════════════════════════
@@ -1202,6 +1213,15 @@ export class Agent {
     // 记忆规则 + 置顶记忆 + 记忆（动态，后台 compile 会更新；按 session 快照）
     if (memoryBlock) {
       parts.push(...memoryBlock);
+    }
+
+    // MCP Resources 上下文（由 MCP Runtime 异步更新，通过回调同步读取）
+    const mcpResourcesText = this._mcpResourcesText || this._cb?.getMcpResourcesText?.() || "";
+    if (mcpResourcesText) {
+      parts.push(...section(
+        isZh ? "# MCP 连接器资源" : "# MCP Connector Resources",
+        mcpResourcesText
+      ));
     }
 
     // 日期时间（尊重用户时区偏好，fallback 到系统时区）

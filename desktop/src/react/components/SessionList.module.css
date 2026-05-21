@@ -102,8 +102,8 @@
     border-radius: 3px;
     color: var(--text-muted);
     cursor: pointer;
-    opacity: 0;
-    pointer-events: none;
+    opacity: 0.35;
+    pointer-events: auto;
     transition: all var(--duration-fast);
     z-index: 1;
 }
@@ -114,14 +114,19 @@
 
 @media (hover: hover) and (pointer: fine) {
     .sessionItem:hover .sessionPinBtn {
-        opacity: 0.5;
-        pointer-events: auto;
+        opacity: 0.6;
     }
 
     .sessionPinBtn:hover {
         opacity: 1 !important;
         background: var(--accent-light);
         color: var(--accent);
+    }
+}
+
+@media (hover: none) {
+    .sessionPinBtn {
+        opacity: 0.5;
     }
 }
 
@@ -139,8 +144,8 @@
     border-radius: 3px;
     color: var(--text-muted);
     cursor: pointer;
-    opacity: 0;
-    pointer-events: none;
+    opacity: 0.35;
+    pointer-events: auto;
     transition: all var(--duration-fast);
     z-index: 1;
 }
@@ -151,14 +156,19 @@
 
 @media (hover: hover) and (pointer: fine) {
     .sessionItem:hover .sessionRenameBtn {
-        opacity: 0.5;
-        pointer-events: auto;
+        opacity: 0.6;
     }
 
     .sessionRenameBtn:hover {
         opacity: 1 !important;
         background: var(--accent-light);
         color: var(--accent);
+    }
+}
+
+@media (hover: none) {
+    .sessionRenameBtn {
+        opacity: 0.5;
     }
 }
 
@@ -201,8 +211,8 @@
     border-radius: 3px;
     color: var(--danger);
     cursor: pointer;
-    opacity: 0;
-    pointer-events: none;
+    opacity: 0.35;
+    pointer-events: auto;
     transition: all var(--duration-fast);
     z-index: 1;
 }
@@ -213,13 +223,18 @@
 
 @media (hover: hover) and (pointer: fine) {
     .sessionItem:hover .sessionArchiveBtn {
-        opacity: 0.5;
-        pointer-events: auto;
+        opacity: 0.6;
     }
 
     .sessionArchiveBtn:hover {
         opacity: 1 !important;
         background: rgba(var(--danger-rgb), 0.08);
+    }
+}
+
+@media (hover: none) {
+    .sessionArchiveBtn {
+        opacity: 0.5;
     }
 }
 
@@ -234,7 +249,7 @@
 .sessionItem:focus-visible .sessionPinBtn,
 .sessionItem:focus-visible .sessionRenameBtn,
 .sessionItem:focus-visible .sessionArchiveBtn {
-    opacity: 0.5;
+    opacity: 0.6;
     pointer-events: auto;
 }
 

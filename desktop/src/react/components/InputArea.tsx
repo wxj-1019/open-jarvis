@@ -9,6 +9,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, type ChangeEvent } f
 import { useEditor, EditorContent } from '@tiptap/react';
 import type { Editor } from '@tiptap/core';
 import { useStore } from '../stores';
+import { MAX_ATTACHMENTS } from '../constants';
 import { selectPreviewItems, selectActiveTabId } from '../stores/preview-slice';
 import { selectSessionFiles } from '../stores/selectors/file-refs';
 import { isImageFile, isVideoFile } from '../utils/format';
@@ -559,10 +560,10 @@ function InputAreaInner({ surface }: Required<InputAreaProps>) {
     const files = Array.from(event.currentTarget.files || []);
     event.currentTarget.value = '';
     if (files.length === 0) return;
-    if (useStore.getState().attachedFiles.length >= 9) return;
+    if (useStore.getState().attachedFiles.length >= MAX_ATTACHMENTS) return;
 
     for (const file of files) {
-      if (useStore.getState().attachedFiles.length >= 9) break;
+      if (useStore.getState().attachedFiles.length >= MAX_ATTACHMENTS) break;
       const mimeType = file.type || chatImageMimeTypeForName(file.name);
       try {
         const base64Data = await readFileAsBase64(file);

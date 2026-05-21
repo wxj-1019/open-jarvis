@@ -6,6 +6,7 @@ import { Toggle } from '../widgets/Toggle';
 import { AgentConnectorControls } from './mcp/AgentConnectorControls';
 import { ConnectorForm } from './mcp/ConnectorForm';
 import { ConnectorList } from './mcp/ConnectorList';
+import { RegistryBrowser } from './mcp/RegistryBrowser';
 import { connectorsFromMcpJson } from './mcp/mcp-config';
 import {
   EMPTY_MCP_STATE,
@@ -39,6 +40,7 @@ export function McpTab() {
   const [editingConnectorId, setEditingConnectorId] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [importJson, setImportJson] = useState('');
+  const [subTab, setSubTab] = useState<'connectors' | 'registry'>('connectors');
 
   useEffect(() => {
     if (!viewAgentId && currentAgentId) setViewAgentId(currentAgentId);
@@ -160,6 +162,44 @@ export function McpTab() {
       </SettingsSection>
 
       <SettingsSection title={t('settings.mcp.connectorsTitle')} variant="flush">
+        {/* Sub-tab navigation */}
+        <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--border-color, #e0e0e0)', marginBottom: 12 }}>
+          <button
+            type="button"
+            onClick={() => setSubTab('connectors')}
+            style={{
+              padding: '8px 16px',
+              border: 'none',
+              background: 'none',
+              cursor: 'pointer',
+              fontWeight: subTab === 'connectors' ? 600 : 400,
+              borderBottom: subTab === 'connectors' ? '2px solid var(--text-link, #0066cc)' : '2px solid transparent',
+              color: subTab === 'connectors' ? 'var(--text-link, #0066cc)' : 'var(--text-secondary, #666)',
+            }}
+          >
+            {t('settings.mcp.myConnectors') || 'My Connectors'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setSubTab('registry')}
+            style={{
+              padding: '8px 16px',
+              border: 'none',
+              background: 'none',
+              cursor: 'pointer',
+              fontWeight: subTab === 'registry' ? 600 : 400,
+              borderBottom: subTab === 'registry' ? '2px solid var(--text-link, #0066cc)' : '2px solid transparent',
+              color: subTab === 'registry' ? 'var(--text-link, #0066cc)' : 'var(--text-secondary, #666)',
+            }}
+          >
+            {t('settings.mcp.browseRegistry') || 'Browse Registry'}
+          </button>
+        </div>
+
+        {subTab === 'registry' ? (
+          <RegistryBrowser onInstalled={() => { setSubTab('connectors'); loadState(); }} />
+        ) : (
+          <>
         <div className={styles['pv-add-form-actions']}>
           <button
             className={styles['pv-add-form-btn']}
@@ -218,6 +258,8 @@ export function McpTab() {
           onOAuthStart={connectOAuth}
           onOAuthLogout={disconnectOAuth}
         />
+          </>
+        )}
       </SettingsSection>
 
       <AgentConnectorControls
