@@ -14,6 +14,9 @@ vi.mock('../../components/InputArea', async () => {
     InputArea: ({ surface }: { surface?: string }) => ReactModule.createElement('div', {
       'data-testid': 'desktop-input-area',
       'data-surface': surface || 'desktop',
+      contentEditable: true,
+      role: 'textbox',
+      tabIndex: 0,
     }),
   };
 });
@@ -180,9 +183,11 @@ describe('MobileApp', () => {
 
     render(<MobileApp />);
 
-    expect(await screen.findByText('日常记录')).toBeInTheDocument();
+    expect(await waitForMobileChatReady()).toHaveTextContent('日常记录');
     expect(screen.getByTestId('desktop-input-area')).toHaveAttribute('data-surface', 'mobile');
     expect(document.querySelector('.titlebar')).toBeInTheDocument();
+    expect(titlebarNewSessionButton()).toHaveAttribute('data-mobile-titlebar-action', 'new-session');
+    expect(screen.getByLabelText('titlebar.currentChatTitle')).toHaveTextContent('日常记录');
     expect(document.querySelector('.sidebar')).toBeInTheDocument();
     expect(document.querySelector('.jian-sidebar')).toBeInTheDocument();
     expect(useStore.getState().homeFolder).toBe('/workspace');
@@ -208,7 +213,7 @@ describe('MobileApp', () => {
 
     render(<MobileApp />);
 
-    await screen.findByText('日常记录');
+    await waitForMobileChatReady();
     fireEvent.click(screen.getByTitle('sidebar.jian'));
     fireEvent.click(await screen.findByRole('treeitem', { name: /note\.md/ }));
 
@@ -220,8 +225,8 @@ describe('MobileApp', () => {
           && url.includes('rootId=default');
       })).toBe(true);
       expect(useStore.getState().previewOpen).toBe(true);
+      expect(useStore.getState().previewItems.some(item => item.content.includes('来自手机工作台预览'))).toBe(true);
     });
-    expect(await screen.findByText('来自手机工作台预览')).toBeInTheDocument();
   });
 
   it('uses the desktop new-session draft flow on mobile instead of creating an empty session immediately', async () => {
@@ -234,12 +239,44 @@ describe('MobileApp', () => {
     });
 
     render(<MobileApp />);
-    await screen.findByText('日常记录');
-    fireEvent.click(screen.getByTitle('sidebar.newChat'));
+    await waitForMobileChatReady();
+    fireEvent.click(titlebarNewSessionButton());
 
     expect(useStore.getState().pendingNewSession).toBe(true);
     expect(useStore.getState().welcomeVisible).toBe(true);
     expect(fetchMock.mock.calls.some(([input]) => String(input).includes('/api/sessions/new'))).toBe(false);
+    expect(screen.getByLabelText('titlebar.currentChatTitle')).toHaveTextContent('sidebar.newChat');
+  });
+
+  it('keeps the mobile shell height stable and lifts only the input layer for the virtual keyboard', async () => {
+    stubNarrowViewport(true);
+    const viewport = installVisualViewportStub({ height: 700, offsetTop: 0 });
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 700 });
+    fetchMock.mockImplementation((input: RequestInfo | URL, options?: RequestInit) => {
+      const url = String(input);
+      if (url.includes('/api/web-auth/session')) {
+        return Promise.resolve(jsonResponse({ authenticated: true, principal: principal(['chat', 'resources.read', 'files.read', 'files.write']) }));
+      }
+      return Promise.resolve(jsonResponse(jsonResponseForMobile(url, options)));
+    });
+
+    render(<MobileApp />);
+    await waitForMobileChatReady();
+    const shell = mobileShell();
+    expect(shell.style.getPropertyValue('--mobile-layout-height')).toBe('700px');
+    expect(shell.style.getPropertyValue('--mobile-keyboard-offset')).toBe('0px');
+
+    fireEvent.focusIn(screen.getByTestId('desktop-input-area'));
+    viewport.height = 420;
+    act(() => {
+      viewport.dispatchEvent(new Event('resize'));
+    });
+
+    await waitFor(() => {
+      expect(shell).toHaveAttribute('data-mobile-keyboard-open', 'true');
+      expect(shell.style.getPropertyValue('--mobile-layout-height')).toBe('700px');
+      expect(shell.style.getPropertyValue('--mobile-keyboard-offset')).toBe('280px');
+    });
   });
 
   it('renders server-broadcast user messages through the desktop websocket handler', async () => {
@@ -253,7 +290,7 @@ describe('MobileApp', () => {
 
     render(<MobileApp />);
 
-    await screen.findByText('日常记录');
+    await waitForMobileChatReady();
     act(() => {
       MockWebSocket.instances[0]?.onmessage?.({
         data: JSON.stringify({
@@ -278,7 +315,7 @@ describe('MobileApp', () => {
 
     render(<MobileApp />);
 
-    await screen.findByText('日常记录');
+    await waitForMobileChatReady();
     act(() => {
       MockWebSocket.instances[0]?.onmessage?.({
         data: JSON.stringify({
@@ -315,7 +352,7 @@ describe('MobileApp', () => {
     });
 
     render(<MobileApp />);
-    await screen.findByText('日常记录');
+    await waitForMobileChatReady();
     await waitFor(() => expect(useStore.getState().sidebarOpen).toBe(false));
 
     fireEvent.touchStart(mobileShell(), {
@@ -344,7 +381,7 @@ describe('MobileApp', () => {
     });
 
     render(<MobileApp />);
-    await screen.findByText('日常记录');
+    await waitForMobileChatReady();
     await waitFor(() => expect(useStore.getState().jianOpen).toBe(false));
 
     fireEvent.touchStart(mobileShell(), {
@@ -373,7 +410,7 @@ describe('MobileApp', () => {
     });
 
     render(<MobileApp />);
-    await screen.findByText('日常记录');
+    await waitForMobileChatReady();
     await waitFor(() => expect(useStore.getState().sidebarOpen).toBe(false));
 
     fireEvent.touchStart(mobileShell(), {
@@ -492,10 +529,46 @@ function stubNarrowViewport(matches: boolean): void {
   })));
 }
 
+function installVisualViewportStub({
+  height,
+  offsetTop,
+}: {
+  height: number;
+  offsetTop: number;
+}): EventTarget & { height: number; width: number; offsetTop: number; offsetLeft: number; scale: number } {
+  const viewport = new EventTarget() as EventTarget & {
+    height: number;
+    width: number;
+    offsetTop: number;
+    offsetLeft: number;
+    scale: number;
+  };
+  viewport.height = height;
+  viewport.width = 390;
+  viewport.offsetTop = offsetTop;
+  viewport.offsetLeft = 0;
+  viewport.scale = 1;
+  Object.defineProperty(window, 'visualViewport', {
+    configurable: true,
+    value: viewport,
+  });
+  return viewport;
+}
+
 function mobileShell(): HTMLElement {
   const shell = document.querySelector<HTMLElement>('.mobile-desktop-root');
   if (!shell) throw new Error('mobile shell not found');
   return shell;
+}
+
+function titlebarNewSessionButton(): HTMLElement {
+  const button = document.querySelector<HTMLElement>('[data-mobile-titlebar-action="new-session"]');
+  if (!button) throw new Error('mobile titlebar new-session button not found');
+  return button;
+}
+
+async function waitForMobileChatReady(): Promise<HTMLElement> {
+  return await screen.findByLabelText('titlebar.currentChatTitle');
 }
 
 function resetStoreForMobileTest(): void {

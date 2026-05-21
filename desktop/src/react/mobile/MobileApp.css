@@ -5,8 +5,10 @@ body,
 }
 
 .mobile-desktop-root {
-  height: 100vh;
-  height: 100dvh;
+  --mobile-layout-height: 100vh;
+  --mobile-keyboard-offset: 0px;
+  height: var(--mobile-layout-height);
+  min-height: var(--mobile-layout-height);
   font-size: 1.0625rem;
   overflow: hidden;
   touch-action: pan-y;
@@ -19,6 +21,55 @@ body,
 
 .mobile-desktop-root .tb-toggle-left {
   margin-left: 4px;
+}
+
+.mobile-desktop-root .tb-left-group {
+  pointer-events: auto;
+  -webkit-app-region: no-drag;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.mobile-desktop-root .tb-new-session {
+  width: 32px;
+  color: var(--text-light, #888);
+  border: 1px solid var(--overlay-light);
+  background: var(--overlay-subtle);
+  opacity: 0.9;
+}
+
+.mobile-desktop-root .tb-new-session:hover {
+  color: var(--text, #333);
+  background: var(--overlay-light);
+  opacity: 1;
+}
+
+.mobile-desktop-root .tb-center-title {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 88px;
+  right: 88px;
+  pointer-events: none;
+  -webkit-app-region: drag;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  color: var(--text);
+  font-family: var(--font-serif);
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.mobile-desktop-root .tb-center-title span {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mobile-desktop-root .tb-toggle-right {
@@ -73,7 +124,23 @@ body,
   }
 
   .mobile-desktop-root .input-area {
+    position: fixed;
+    bottom: 0;
     padding: 0 var(--space-sm) calc(env(safe-area-inset-bottom, 0px) + var(--space-sm));
+    transform: translate3d(0, calc(-1 * var(--mobile-keyboard-offset)), 0);
+    transition: transform var(--duration-fast) var(--ease-out);
+    will-change: transform;
+    z-index: 80;
+  }
+
+  .mobile-desktop-root[data-mobile-keyboard-open="true"] .input-area {
+    transition-duration: var(--duration-instant);
+  }
+
+  .mobile-desktop-root .main-content.welcome-mode .input-area {
+    position: fixed;
+    bottom: 0;
+    flex: none;
   }
 
   .mobile-desktop-root #previewPanel[data-preview-open="false"] {

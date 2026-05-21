@@ -23,6 +23,7 @@ import { DmRouter } from "./dm-router.js";
 import { AgentPhoneActivityStore } from "../lib/conversations/agent-phone-activity.js";
 import {
   extractTextContent,
+  filterUnreferencedInlineImages,
   loadSessionHistoryMessages,
   isValidSessionPath,
 } from "../core/message-utils.js";
@@ -47,6 +48,7 @@ export class Hub {
     this._agentPhoneActivities = new AgentPhoneActivityStore({
       emit: (event) => this._eventBus.emit(event, null),
     });
+    this._agentPhoneAbortHandlers = new Set();
 
     // 注入 Hub 回调到 Engine（单向：Hub → Engine，不再双向引用）
     engine.setHubCallbacks({
@@ -55,6 +57,7 @@ export class Hub {
       dmRouter: this._dmRouter,
       channelRouter: this._channelRouter,
       eventBus: this._eventBus,
+      registerAgentPhoneAbortHandler: (handler, meta) => this.registerAgentPhoneAbortHandler(handler, meta),
       pauseForAgentSwitch: () => this.pauseForAgentSwitch(),
       resumeAfterAgentSwitch: () => this.resumeAfterAgentSwitch(),
       triggerChannelDelivery: (name, opts) => this._channelRouter.triggerImmediate(name, opts),
@@ -86,6 +89,30 @@ export class Hub {
   set bridgeManager(bm) { this._bridgeManager = bm; }
 
   get agentPhoneActivities() { return this._agentPhoneActivities; }
+
+  registerAgentPhoneAbortHandler(handler, meta = {}) {
+    if (typeof handler !== "function") return () => {};
+    const entry = { handler, meta };
+    this._agentPhoneAbortHandlers.add(entry);
+    return () => {
+      this._agentPhoneAbortHandlers.delete(entry);
+    };
+  }
+
+  abortAgentPhoneSessions(reason = "phone-disabled", filter = null) {
+    const entries = [...this._agentPhoneAbortHandlers];
+    let aborted = 0;
+    for (const { handler, meta } of entries) {
+      if (!matchesAgentPhoneAbortFilter(meta, filter)) continue;
+      try {
+        handler(reason);
+        aborted += 1;
+      } catch (err) {
+        log.warn(`agent phone abort handler failed: ${err.message}`);
+      }
+    }
+    return aborted;
+  }
 
   // ──────────── 订阅 ────────────
 
@@ -295,6 +322,7 @@ export class Hub {
   }
 
   async toggleChannels(enabled) {
+    if (!enabled) this.abortAgentPhoneSessions("channels-disabled");
     return this._channelRouter.toggle(enabled);
   }
 
@@ -356,8 +384,9 @@ export class Hub {
       for (const m of sourceMessages) {
         if (m.role === "user") {
           const { text, images } = extractTextContent(m.content);
-          if (text || images.length) {
-            messages.push({ role: "user", content: text, images: images.length ? images : undefined });
+          const visibleImages = filterUnreferencedInlineImages(text, images);
+          if (text || visibleImages.length) {
+            messages.push({ role: "user", content: text, images: visibleImages.length ? visibleImages : undefined });
           }
         } else if (m.role === "assistant") {
           const { text, thinking, toolUses } = extractTextContent(m.content, { stripThink: true });
@@ -474,6 +503,16 @@ export class Hub {
     }
   }
 
+}
+
+function matchesAgentPhoneAbortFilter(meta = {}, filter = null) {
+  if (!filter) return true;
+  if (typeof filter === "function") return filter(meta);
+  for (const [key, value] of Object.entries(filter)) {
+    if (value === undefined || value === null) continue;
+    if (meta?.[key] !== value) return false;
+  }
+  return true;
 }
 
 function resolveAgentForBus(engine, agentId) {
