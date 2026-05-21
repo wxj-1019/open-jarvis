@@ -116,22 +116,37 @@ export async function exchangeMcpOAuthCode({
   clientSecret = "",
   codeVerifier,
   resource,
+  grantType = "authorization_code",
+  refreshToken,
   fetchImpl = globalThis.fetch,
 } = {}) {
   if (!tokenEndpoint) throw new Error("tokenEndpoint is required");
-  if (!code) throw new Error("code is required");
-  if (!redirectUri) throw new Error("redirectUri is required");
-  if (!clientId) throw new Error("clientId is required");
-  if (!codeVerifier) throw new Error("codeVerifier is required");
+  if (grantType === "authorization_code") {
+    if (!code) throw new Error("code is required");
+    if (!redirectUri) throw new Error("redirectUri is required");
+    if (!clientId) throw new Error("clientId is required");
+    if (!codeVerifier) throw new Error("codeVerifier is required");
+  } else if (grantType === "refresh_token") {
+    if (!clientId) throw new Error("clientId is required");
+    if (!refreshToken) throw new Error("refreshToken is required");
+  }
 
   const body = new URLSearchParams();
-  body.set("grant_type", "authorization_code");
-  body.set("code", code);
-  body.set("redirect_uri", redirectUri);
-  body.set("client_id", clientId);
-  body.set("code_verifier", codeVerifier);
-  if (clientSecret) body.set("client_secret", clientSecret);
-  if (resource) body.set("resource", resource);
+  body.set("grant_type", grantType);
+
+  if (grantType === "authorization_code") {
+    body.set("code", code);
+    body.set("redirect_uri", redirectUri);
+    body.set("client_id", clientId);
+    body.set("code_verifier", codeVerifier);
+    if (clientSecret) body.set("client_secret", clientSecret);
+    if (resource) body.set("resource", resource);
+  } else if (grantType === "refresh_token") {
+    body.set("client_id", clientId);
+    body.set("refresh_token", refreshToken);
+    if (clientSecret) body.set("client_secret", clientSecret);
+    if (resource) body.set("resource", resource);
+  }
 
   const response = await fetchImpl(tokenEndpoint, {
     method: "POST",

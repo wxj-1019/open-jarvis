@@ -10,6 +10,7 @@ import {
   createMcpOAuthAuthorization,
   exchangeMcpOAuthCode,
 } from "./mcp-oauth.js";
+import { McpTokenRefresher } from "./mcp-token-refresh.js";
 
 const DEFAULT_CONFIG = {
   enabled: false,
@@ -206,6 +207,7 @@ export class McpRuntime {
     this.clients = new Map();
     this.toolDisposers = [];
     this.oauthSessions = new Map();
+    this.tokenRefresher = new McpTokenRefresher({ log: this.ctx.log });
   }
 
   async load() {
@@ -374,6 +376,25 @@ export class McpRuntime {
     if (!config.enabled) throw new Error("MCP connectors are disabled globally");
     const client = this.clients.get(connectorId);
     if (!client?.running) throw new Error(`MCP connector "${connectorId}" is not running`);
+
+    const connector = config.connectors.find((s) => s.id === connectorId);
+    if (connector && this.tokenRefresher.shouldRefresh(connector)) {
+      try {
+        this.ctx.log.info?.(`[mcp:${connectorId}] token expiring soon, refreshing before tool call`);
+        const newToken = await this.tokenRefresher.refreshToken(connector, {
+          fetchImpl: this.fetchImpl,
+        });
+        await this.saveConnectorOAuth(connectorId, {
+          ...connector.oauth,
+          ...newToken,
+        });
+        await this.stopConnector(connectorId);
+        await this.startConnector(connectorId);
+      } catch (err) {
+        this.ctx.log.warn?.(`[mcp:${connectorId}] token refresh failed, proceeding with existing token: ${err.message}`);
+      }
+    }
+
     return client.callTool(toolName, args);
   }
 
