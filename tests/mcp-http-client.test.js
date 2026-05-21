@@ -303,4 +303,41 @@ describe("MCP HTTP clients", () => {
     expect(requests.map(r => `${r.init.method || "POST"} ${r.url}`)).toContain("GET https://legacy.example.com/sse");
     expect(requests.map(r => r.url)).toContain("https://legacy.example.com/messages");
   });
+
+  it("should limit concurrent requests", async () => {
+    const activeRequests = { count: 0, max: 0 };
+    const fetchImpl = vi.fn(async (url, init) => {
+      activeRequests.count++;
+      activeRequests.max = Math.max(activeRequests.max, activeRequests.count);
+      await new Promise(resolve => setTimeout(resolve, 50));
+      activeRequests.count--;
+
+      const body = requestBody(init);
+      if (body?.method === "initialize") {
+        return jsonResponse({
+          jsonrpc: "2.0",
+          id: body.id,
+          result: { protocolVersion: MCP_PROTOCOL_VERSION, capabilities: {} },
+        }, { headers: { "MCP-Session-Id": "session-a" } });
+      }
+      if (body?.method === "notifications/initialized") return emptyResponse();
+      return jsonResponse({
+        jsonrpc: "2.0",
+        id: body.id,
+        result: { content: [{ type: "text", text: "ok" }] },
+      });
+    });
+
+    const client = new McpStreamableHttpClient({
+      id: "test",
+      url: "https://example.com/mcp",
+    }, { fetchImpl, concurrencyLimit: 2 });
+
+    await client.start();
+
+    const promises = Array(5).fill(null).map(() => client.callTool("test", {}));
+    await Promise.all(promises);
+
+    expect(activeRequests.max).toBeLessThanOrEqual(2);
+  });
 });

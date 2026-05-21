@@ -110,7 +110,7 @@ function requestTimeoutMs(server) {
 }
 
 export class McpStreamableHttpClient {
-  constructor(server, { fetchImpl = globalThis.fetch, log = console, metrics = null, connectorId = "" } = {}) {
+  constructor(server, { fetchImpl = globalThis.fetch, log = console, metrics = null, connectorId = "", concurrencyLimit = 10 } = {}) {
     this.server = server;
     this.fetchImpl = fetchImpl;
     this.log = log;
@@ -121,6 +121,9 @@ export class McpStreamableHttpClient {
     this._closed = true;
     this._initialized = false;
     this.sessionId = "";
+    this._concurrencyLimit = concurrencyLimit || 10;
+    this._activeRequests = 0;
+    this._requestQueue = [];
     this.initialProtocolVersion = resolveInitialMcpProtocolVersion({ headers: connectorHeaders(server) });
     this.protocolVersion = this.initialProtocolVersion;
   }
@@ -179,34 +182,68 @@ export class McpStreamableHttpClient {
   }
 
   async _request(method, params = {}, { initializing = false, retryOnSessionExpired = true } = {}) {
-    const id = this._nextId++;
-    const payload = { jsonrpc: "2.0", id, method, params };
-    const startTime = Date.now();
-    try {
-      const result = await retryWithBackoff(
-        () => this._postJsonRpc(payload, { initializing }),
-        { log: this.log }
-      );
-      const latency = Date.now() - startTime;
-      this.metrics?.recordRequest(this.connectorId, method, latency, true);
-      return result;
-    } catch (err) {
-      const latency = Date.now() - startTime;
-      this.metrics?.recordRequest(this.connectorId, method, latency, false);
-      if (
-        retryOnSessionExpired &&
-        err instanceof McpHttpError &&
-        err.status === 404 &&
-        this.sessionId
-      ) {
-        this.sessionId = "";
-        this._initialized = false;
-        await this.initialize();
-        this._initialized = true;
-        return this._request(method, params, { initializing: false, retryOnSessionExpired: false });
+    return this._enqueueRequest(async () => {
+      const id = this._nextId++;
+      const payload = { jsonrpc: "2.0", id, method, params };
+      const startTime = Date.now();
+      try {
+        const result = await retryWithBackoff(
+          () => this._postJsonRpc(payload, { initializing }),
+          { log: this.log }
+        );
+        const latency = Date.now() - startTime;
+        this.metrics?.recordRequest(this.connectorId, method, latency, true);
+        return result;
+      } catch (err) {
+        const latency = Date.now() - startTime;
+        this.metrics?.recordRequest(this.connectorId, method, latency, false);
+        if (
+          retryOnSessionExpired &&
+          err instanceof McpHttpError &&
+          err.status === 404 &&
+          this.sessionId
+        ) {
+          this.sessionId = "";
+          this._initialized = false;
+          await this.initialize();
+          this._initialized = true;
+          return this._request(method, params, { initializing: false, retryOnSessionExpired: false });
+        }
+        throw err;
       }
-      throw err;
+    });
+  }
+
+  async _enqueueRequest(fn) {
+    if (this._activeRequests < this._concurrencyLimit) {
+      this._activeRequests++;
+      try {
+        return await fn();
+      } finally {
+        this._activeRequests--;
+        this._processQueue();
+      }
     }
+
+    return new Promise((resolve, reject) => {
+      this._requestQueue.push({ fn, resolve, reject });
+    });
+  }
+
+  _processQueue() {
+    if (this._requestQueue.length === 0) return;
+    if (this._activeRequests >= this._concurrencyLimit) return;
+
+    const { fn, resolve, reject } = this._requestQueue.shift();
+    this._activeRequests++;
+
+    fn()
+      .then(resolve)
+      .catch(reject)
+      .finally(() => {
+        this._activeRequests--;
+        this._processQueue();
+      });
   }
 
   async _notify(method, params = {}) {
@@ -286,7 +323,7 @@ export class McpStreamableHttpClient {
 }
 
 export class McpLegacySseClient {
-  constructor(server, { fetchImpl = globalThis.fetch, log = console, metrics = null, connectorId = "" } = {}) {
+  constructor(server, { fetchImpl = globalThis.fetch, log = console, metrics = null, connectorId = "", concurrencyLimit = 10 } = {}) {
     this.server = server;
     this.fetchImpl = fetchImpl;
     this.log = log;
@@ -302,6 +339,9 @@ export class McpLegacySseClient {
     this._abort = null;
     this._endpointResolve = null;
     this._endpointReject = null;
+    this._concurrencyLimit = concurrencyLimit || 10;
+    this._activeRequests = 0;
+    this._requestQueue = [];
   }
 
   get running() {
@@ -349,43 +389,77 @@ export class McpLegacySseClient {
 
   async request(method, params = {}, { timeout = 30_000 } = {}) {
     if (!this.running) throw new Error("MCP connector is not running");
-    const id = this._nextId++;
-    const payload = { jsonrpc: "2.0", id, method, params };
-    const queued = this._queued.get(id);
-    if (queued) {
-      this._queued.delete(id);
-      return rpcResult(queued);
-    }
-    const startTime = Date.now();
-    return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
-        this._pending.delete(id);
-        const latency = Date.now() - startTime;
-        this.metrics?.recordRequest(this.connectorId, method, latency, false);
-        reject(new Error(`MCP request "${method}" timed out`));
-      }, timeout);
-      this._pending.set(id, {
-        resolve: (value) => {
-          clearTimeout(timer);
+    return this._enqueueRequest(async () => {
+      const id = this._nextId++;
+      const payload = { jsonrpc: "2.0", id, method, params };
+      const queued = this._queued.get(id);
+      if (queued) {
+        this._queued.delete(id);
+        return rpcResult(queued);
+      }
+      const startTime = Date.now();
+      return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          this._pending.delete(id);
           const latency = Date.now() - startTime;
-          this.metrics?.recordRequest(this.connectorId, method, latency, true);
-          resolve(value);
-        },
-        reject: (err) => {
+          this.metrics?.recordRequest(this.connectorId, method, latency, false);
+          reject(new Error(`MCP request "${method}" timed out`));
+        }, timeout);
+        this._pending.set(id, {
+          resolve: (value) => {
+            clearTimeout(timer);
+            const latency = Date.now() - startTime;
+            this.metrics?.recordRequest(this.connectorId, method, latency, true);
+            resolve(value);
+          },
+          reject: (err) => {
+            clearTimeout(timer);
+            const latency = Date.now() - startTime;
+            this.metrics?.recordRequest(this.connectorId, method, latency, false);
+            reject(err);
+          },
+        });
+        this._postMessage(payload).catch((err) => {
+          this._pending.delete(id);
           clearTimeout(timer);
           const latency = Date.now() - startTime;
           this.metrics?.recordRequest(this.connectorId, method, latency, false);
           reject(err);
-        },
-      });
-      this._postMessage(payload).catch((err) => {
-        this._pending.delete(id);
-        clearTimeout(timer);
-        const latency = Date.now() - startTime;
-        this.metrics?.recordRequest(this.connectorId, method, latency, false);
-        reject(err);
+        });
       });
     });
+  }
+
+  async _enqueueRequest(fn) {
+    if (this._activeRequests < this._concurrencyLimit) {
+      this._activeRequests++;
+      try {
+        return await fn();
+      } finally {
+        this._activeRequests--;
+        this._processQueue();
+      }
+    }
+
+    return new Promise((resolve, reject) => {
+      this._requestQueue.push({ fn, resolve, reject });
+    });
+  }
+
+  _processQueue() {
+    if (this._requestQueue.length === 0) return;
+    if (this._activeRequests >= this._concurrencyLimit) return;
+
+    const { fn, resolve, reject } = this._requestQueue.shift();
+    this._activeRequests++;
+
+    fn()
+      .then(resolve)
+      .catch(reject)
+      .finally(() => {
+        this._activeRequests--;
+        this._processQueue();
+      });
   }
 
   async notify(method, params = {}) {
