@@ -16,9 +16,9 @@
 |------|------|------|
 | 文件操作 | read / write / edit / stage_files | 基础 CRUD |
 | 命令执行 | bash / terminal | 一次性和持久化 PTY 终端 |
-| 网络 | web_search / web_fetch | 搜索和网页内容抓取 |
+| 网络 | web_search / web_fetch | 搜索和网页内容抓取；**v0.225.1 新增 AnySearch Free 自动降级**（付费 API 不可用时自动切换免费搜索） |
 | 浏览器 | browser | Chromium 控制，含 AXTree 快照、截图、点击、输入 |
-| 电脑控制 | computer_use | **实验性**，macOS Accessibility / Windows UIA |
+| 电脑控制 | computer_use | **实验性**，macOS Accessibility / Windows UIA；**v0.225.1 Windows 侧改进**：PowerShell 助手改为临时文件写入、错误映射优化 |
 | 多 Agent | ask_agent / channel / dm | 子任务委派、群聊、私聊 |
 | 任务管理 | todo_write / check_pending_tasks / stop_task / wait | 计划跟踪和异步任务管理 |
 | 定时 | cron | at / every / cron expression 三种调度模式 |
@@ -28,7 +28,7 @@
 | 技能 | install_skill | Agent 自主安装技能 |
 | 设置 | update_settings | 两阶段设置修改 |
 | 环境 | current_status | 查询运行时信息 |
-| 媒体 | generate_image / generate_video | 插件提供（image-gen） |
+| 媒体 | generate_image / generate_video | 插件提供（image-gen）；**v0.225.1 非阻塞化**：即时显示占位卡片，后台提交 provider |
 | MCP | 动态注册的 MCP 工具 | MCP Bridge 插件提供 |
 
 ### 1.2 记忆系统
@@ -58,7 +58,7 @@
 | macOS (Intel) | 稳定 | 已签名公证 |
 | Windows | **Beta** | 安装包未代码签名 |
 | Linux | 稳定 | AppImage + deb |
-| Mobile PWA | **v0** | 基础会话和工作台 |
+| Mobile PWA | **v0 → v0.5** | 基础会话和工作台；**v0.225.1 改进**：键盘感知布局、动态标题栏、新建会话按钮 |
 | CLI (`hana`) | 可用 | Server-first 模式 |
 
 ### 1.4 社交平台接入（Bridge）
@@ -67,6 +67,7 @@
 
 - Owner/Guest 权限分离：未设置 Owner 时，访客无工具、无记忆、无完整人格
 - 远程桌面接管：`/rc` 命令从手机控制电脑
+- **v0.225.1 改进**：QQ 适配器 Principal/Alias 身份解析（多 ID 自动归并、占位名过滤）、Channel Ticker 记忆摘要同步（Agent 回复后自动触发记忆滚动摘要）、Owner 策略支持身份别名匹配
 
 ### 1.5 多 Agent 与协作
 
@@ -77,7 +78,8 @@
 
 ### 1.6 安全
 
-- 双层沙箱：PathGuard 四级访问控制 + OS 级（Seatbelt / Bubblewrap / AppContainer）
+- 双层沙箱：PathGuard 四级访问控制 + OS 级（Seatbelt / Bubblewrap / **Restricted Token**）
+  - **v0.225.1 Windows 重大重构**：AppContainer 替换为 Restricted Token 模型，新增 GPU 兼容模式、遗留 ACL 自动清理
 - 文件预修改备份（Checkpoint）
 - PII 脱敏
 - 会话访问模式（操作 / 询问 / 只读）
@@ -98,6 +100,9 @@
 - 10+ UI 主题
 - 全屏媒体预览器
 - 代理/网络配置
+- **v0.225.1 新增**：Markdown 编辑器代码块复制按钮
+- **v0.225.1 新增**：统一工作区输出目录 `OH-Works/`（多语言子目录支持）
+- **v0.225.1 新增**：缓存前缀契约（Anthropic 最多 2 条消息 cache_control）
 
 ---
 
@@ -135,7 +140,7 @@
 |---|------|
 | 现状 | "实验性""尝鲜功能""某些软件下可能不稳定" |
 | 影响 | 帮你操作桌面软件是 Jarvis 的核心场景之一。不稳定 = 不能依赖 = 每次用都要祈祷 |
-| 具体问题 | macOS Accessibility API 对不同应用的兼容性不一致；Windows UIA 树在不同应用中差异大；缺乏统一的错误恢复和等待机制 |
+| 具体问题 | macOS Accessibility API 兼容性仍不一致；**Windows UIA v0.225.1 已改进**（PowerShell 助手改为临时文件写入、错误映射优化），但仍属实验性 |
 | 优先级 | **P0** |
 
 #### 2.1.4 无 Agent 备份功能
@@ -151,7 +156,7 @@
 | 项 | 详情 |
 |---|------|
 | 现状 | 代码审查发现：abort 调用、首次运行配置、数据库迁移、心跳错误、沙箱进程 kill、上传清理等错误被静默吞掉 |
-| 严重位置 | `server/routes/chat.js:769` / `core/first-run.js:113` / `core/migrations.js:281,824` / `lib/desk/heartbeat.js` / `lib/sandbox/exec-helper.js:154,160` / `lib/sandbox/win32-exec.js` / `core/engine.js:1164` / `server/routes/upload.js:172-174` |
+| 严重位置 | `chat.js:769` / `first-run.js:113` / `migrations.js:281,824` / `heartbeat.js` / `exec-helper.js:154,160` / `win32-exec.js` / `engine.js:1164` / `upload.js:172-174` |
 | 影响 | 生产环境调试困难，问题被掩盖，用户以为操作成功但实际失败 |
 | 优先级 | **P0** |
 
@@ -286,8 +291,8 @@
 | 项 | 详情 |
 |---|------|
 | 现状 | MCP Bridge 插件提供间接支持；已有工业级升级计划（`docs/superpowers/plans/2026-05-22-mcp-industrial-upgrade.md`），涵盖 Token 自动刷新、请求重试与指数退避、指标收集、并发请求限制 |
-| 已完成 | Token 自动刷新机制（`a88b7f28`）、代码审查修复（`be77dc26`） |
-| 待完成 | 请求重试与指数退避、指标收集与结构化日志、并发请求限制、测试覆盖率提升至 >80% |
+| 本地已完成 | Token 自动刷新（`a88b7f28`）、指标收集（`70b44e56`）、并发限制（`3d8cc337`）、代码审查修复（`be77dc26`） |
+| 待完成 | 请求重试与指数退避、测试覆盖率提升至 >80%、与上游同步 MCP 升级 |
 | 为什么重要 | MCP 社区的几百个 server（数据库、API、文件系统、SaaS）是一个巨大的能力杠杆。原生支持 = 零摩擦接入整个生态 |
 | 与向量数据库的对比 | 向量数据库解决「更好地检索几千条记忆」，MCP 解决「接入无限外部能力」。对"帮你完成所有事情"的贡献量级不在一个维度 |
 
@@ -443,5 +448,9 @@
 ---
 
 > 生成日期：2026-05-22
-> 项目版本：v0.222.29
-> 更新内容：补充代码审查发现的问题（空 catch、路由日志、非原子写入、TOCTOU）、新增层级五（代码质量与技术债）、更新 MCP 升级状态、扩展推荐实施顺序
+> 项目版本：v0.225.1
+> 更新内容：
+> - 补充代码审查发现的问题（空 catch、路由日志、非原子写入、TOCTOU）
+> - 新增层级五（代码质量与技术债）
+> - 更新 MCP 升级状态、扩展推荐实施顺序
+> - 同步上游 v0.222.29 → v0.225.1 改进内容（Windows 沙盒重构、AnySearch、图片生成非阻塞化、Bridge 记忆同步等）
