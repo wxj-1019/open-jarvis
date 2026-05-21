@@ -340,28 +340,47 @@ describe("McpTokenRefresher", () => {
     });
   });
 
-  describe("shouldRefresh", () => {
-    it("returns true when token is expiring", () => {
+  describe("isTokenExpired", () => {
+    it("returns true when token has already expired", () => {
+      const connector = createMockConnector({
+        oauth: {
+          expiresAt: Date.now() - 1000,
+        },
+      });
+      expect(tokenRefresher.isTokenExpired(connector)).toBe(true);
+    });
+
+    it("returns false when token is not yet expired", () => {
+      const connector = createMockConnector({
+        oauth: {
+          expiresAt: Date.now() + 10 * 60 * 1000,
+        },
+      });
+      expect(tokenRefresher.isTokenExpired(connector)).toBe(false);
+    });
+
+    it("returns false when token is expiring soon but not yet expired", () => {
       const connector = createMockConnector({
         oauth: {
           expiresAt: Date.now() + 2 * 60 * 1000,
         },
       });
-      expect(tokenRefresher.shouldRefresh(connector)).toBe(true);
-    });
-
-    it("returns false when token is not expiring", () => {
-      const connector = createMockConnector({
-        oauth: {
-          expiresAt: Date.now() + 30 * 60 * 1000,
-        },
-      });
-      expect(tokenRefresher.shouldRefresh(connector)).toBe(false);
+      expect(tokenRefresher.isTokenExpired(connector)).toBe(false);
     });
 
     it("returns false when connector has no oauth", () => {
       const connector = createMockConnector({ oauth: null });
-      expect(tokenRefresher.shouldRefresh(connector)).toBe(false);
+      expect(tokenRefresher.isTokenExpired(connector)).toBe(false);
+    });
+
+    it("returns false when expiresAt is 0", () => {
+      const connector = createMockConnector({
+        oauth: {
+          expiresAt: 0,
+          refreshToken: "refresh-token",
+        },
+      });
+      expect(tokenRefresher.isTokenExpired(connector)).toBe(false);
     });
   });
 });

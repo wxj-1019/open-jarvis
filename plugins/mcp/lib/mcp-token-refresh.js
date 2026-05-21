@@ -19,8 +19,12 @@ export class McpTokenRefresher {
     return timeUntilExpiry <= this.thresholdMs;
   }
 
-  shouldRefresh(connector) {
-    return this.isTokenExpiring(connector);
+  isTokenExpired(connector) {
+    const oauth = connector?.oauth;
+    if (!oauth || typeof oauth !== "object") return false;
+    if (!oauth.expiresAt || oauth.expiresAt === 0) return false;
+
+    return oauth.expiresAt - Date.now() <= 0;
   }
 
   async refreshToken(connector, { fetchImpl = globalThis.fetch } = {}) {

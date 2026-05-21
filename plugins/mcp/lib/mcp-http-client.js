@@ -218,6 +218,11 @@ export class McpStreamableHttpClient {
     }
   }
 
+  updateAuthToken(token) {
+    this.server.oauth = this.server.oauth || {};
+    this.server.oauth.accessToken = token;
+  }
+
   _headers({ sessionId = this.sessionId, includeJson = true, initializing = false } = {}) {
     const headers = {
       ...headersWithoutMcpProtocolVersion(connectorHeaders(this.server)),
@@ -374,6 +379,11 @@ export class McpLegacySseClient {
       pending.reject(new Error("MCP connector stopped"));
     }
     this._pending.clear();
+  }
+
+  updateAuthToken(token) {
+    this.server.oauth = this.server.oauth || {};
+    this.server.oauth.accessToken = token;
   }
 
   async _connectSse() {

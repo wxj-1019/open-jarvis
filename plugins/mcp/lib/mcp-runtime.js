@@ -378,7 +378,8 @@ export class McpRuntime {
     if (!client?.running) throw new Error(`MCP connector "${connectorId}" is not running`);
 
     const connector = config.connectors.find((s) => s.id === connectorId);
-    if (connector && this.tokenRefresher.shouldRefresh(connector)) {
+    if (connector && this.tokenRefresher.isTokenExpiring(connector)) {
+      const wasAlreadyExpired = this.tokenRefresher.isTokenExpired(connector);
       try {
         this.ctx.log.info?.(`[mcp:${connectorId}] token expiring soon, refreshing before tool call`);
         const newToken = await this.tokenRefresher.refreshToken(connector, {
@@ -388,9 +389,16 @@ export class McpRuntime {
           ...connector.oauth,
           ...newToken,
         });
-        await this.stopConnector(connectorId);
-        await this.startConnector(connectorId);
+        if (client.updateAuthToken) {
+          client.updateAuthToken(newToken.accessToken);
+        } else {
+          await this.stopConnector(connectorId);
+          await this.startConnector(connectorId);
+        }
       } catch (err) {
+        if (wasAlreadyExpired) {
+          throw new Error(`MCP connector "${connectorId}" token expired and refresh failed: ${err.message}`);
+        }
         this.ctx.log.warn?.(`[mcp:${connectorId}] token refresh failed, proceeding with existing token: ${err.message}`);
       }
     }

@@ -157,7 +157,12 @@ export async function exchangeMcpOAuthCode({
     body,
   });
   const text = await response.text();
-  const data = text ? JSON.parse(text) : {};
+  let data;
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch (err) {
+    throw new Error(`OAuth token response contained invalid JSON: ${err.message}`);
+  }
   if (!response.ok) {
     throw new Error(data?.error_description || data?.error || `OAuth token exchange failed with status ${response.status}`);
   }
