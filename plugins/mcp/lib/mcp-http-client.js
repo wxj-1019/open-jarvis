@@ -4,6 +4,7 @@ import {
   headersWithoutMcpProtocolVersion,
   resolveInitialMcpProtocolVersion,
 } from "./mcp-protocol-version.js";
+import { retryWithBackoff } from "./mcp-retry.js";
 
 const STREAMABLE_ACCEPT = "application/json, text/event-stream";
 const SSE_ACCEPT = "text/event-stream";
@@ -109,10 +110,12 @@ function requestTimeoutMs(server) {
 }
 
 export class McpStreamableHttpClient {
-  constructor(server, { fetchImpl = globalThis.fetch, log = console } = {}) {
+  constructor(server, { fetchImpl = globalThis.fetch, log = console, metrics = null, connectorId = "" } = {}) {
     this.server = server;
     this.fetchImpl = fetchImpl;
     this.log = log;
+    this.metrics = metrics;
+    this.connectorId = connectorId;
     this.endpoint = server?.url || "";
     this._nextId = 1;
     this._closed = true;
@@ -178,9 +181,18 @@ export class McpStreamableHttpClient {
   async _request(method, params = {}, { initializing = false, retryOnSessionExpired = true } = {}) {
     const id = this._nextId++;
     const payload = { jsonrpc: "2.0", id, method, params };
+    const startTime = Date.now();
     try {
-      return await this._postJsonRpc(payload, { initializing });
+      const result = await retryWithBackoff(
+        () => this._postJsonRpc(payload, { initializing }),
+        { log: this.log }
+      );
+      const latency = Date.now() - startTime;
+      this.metrics?.recordRequest(this.connectorId, method, latency, true);
+      return result;
     } catch (err) {
+      const latency = Date.now() - startTime;
+      this.metrics?.recordRequest(this.connectorId, method, latency, false);
       if (
         retryOnSessionExpired &&
         err instanceof McpHttpError &&
@@ -274,10 +286,12 @@ export class McpStreamableHttpClient {
 }
 
 export class McpLegacySseClient {
-  constructor(server, { fetchImpl = globalThis.fetch, log = console } = {}) {
+  constructor(server, { fetchImpl = globalThis.fetch, log = console, metrics = null, connectorId = "" } = {}) {
     this.server = server;
     this.fetchImpl = fetchImpl;
     this.log = log;
+    this.metrics = metrics;
+    this.connectorId = connectorId;
     this.sseUrl = server?.url || "";
     this.messageEndpoint = "";
     this._nextId = 1;
@@ -342,24 +356,33 @@ export class McpLegacySseClient {
       this._queued.delete(id);
       return rpcResult(queued);
     }
+    const startTime = Date.now();
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         this._pending.delete(id);
+        const latency = Date.now() - startTime;
+        this.metrics?.recordRequest(this.connectorId, method, latency, false);
         reject(new Error(`MCP request "${method}" timed out`));
       }, timeout);
       this._pending.set(id, {
         resolve: (value) => {
           clearTimeout(timer);
+          const latency = Date.now() - startTime;
+          this.metrics?.recordRequest(this.connectorId, method, latency, true);
           resolve(value);
         },
         reject: (err) => {
           clearTimeout(timer);
+          const latency = Date.now() - startTime;
+          this.metrics?.recordRequest(this.connectorId, method, latency, false);
           reject(err);
         },
       });
       this._postMessage(payload).catch((err) => {
         this._pending.delete(id);
         clearTimeout(timer);
+        const latency = Date.now() - startTime;
+        this.metrics?.recordRequest(this.connectorId, method, latency, false);
         reject(err);
       });
     });
@@ -526,7 +549,21 @@ export class McpAutoHttpClient {
   }
 
   async callTool(name, args) {
-    return this.client.callTool(name, args);
+    const startTime = Date.now();
+    try {
+      const result = await this.client.callTool(name, args);
+      const latency = Date.now() - startTime;
+      const metrics = this.opts?.metrics;
+      const connectorId = this.opts?.connectorId;
+      metrics?.recordToolCall(connectorId, name, latency, true);
+      return result;
+    } catch (err) {
+      const latency = Date.now() - startTime;
+      const metrics = this.opts?.metrics;
+      const connectorId = this.opts?.connectorId;
+      metrics?.recordToolCall(connectorId, name, latency, false);
+      throw err;
+    }
   }
 
   async stop() {

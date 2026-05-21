@@ -11,6 +11,7 @@ import {
   exchangeMcpOAuthCode,
 } from "./mcp-oauth.js";
 import { McpTokenRefresher } from "./mcp-token-refresh.js";
+import { McpMetricsCollector } from "./mcp-metrics.js";
 
 const DEFAULT_CONFIG = {
   enabled: false,
@@ -201,8 +202,9 @@ export class McpRuntime {
     this.ctx = ctx;
     this.Client = Client;
     this.fetchImpl = fetchImpl;
+    this.metrics = new McpMetricsCollector();
     this.clientFactory = clientFactory || ((connector, opts) => (
-      this.Client ? new this.Client(connector, opts) : createDefaultClient(connector, opts)
+      this.Client ? new this.Client(connector, opts) : createDefaultClient(connector, opts, this.metrics)
     ));
     this.clients = new Map();
     this.toolDisposers = [];
@@ -259,6 +261,14 @@ export class McpRuntime {
       servers: connectors,
       agentConfig: normalizeAgentMcpConfig(agentConfig),
     };
+  }
+
+  getMetrics() {
+    return this.metrics.getAllStats();
+  }
+
+  getConnectorMetrics(connectorId) {
+    return this.metrics.getConnectorStats(connectorId);
   }
 
   async setEnabled(enabled) {
@@ -330,7 +340,7 @@ export class McpRuntime {
     const existing = this.clients.get(id);
     if (existing?.running) return connector;
 
-    const client = this.clientFactory(connector, { log: this.ctx.log, fetchImpl: this.fetchImpl });
+    const client = this.clientFactory(connector, { log: this.ctx.log, fetchImpl: this.fetchImpl, metrics: this.metrics, connectorId: id });
     this.clients.set(id, client);
     try {
       await client.start();
@@ -544,11 +554,16 @@ export class McpRuntime {
   }
 }
 
-function createDefaultClient(connector, opts) {
+function createDefaultClient(connector, opts, metrics) {
+  const clientOpts = {
+    ...opts,
+    metrics,
+    connectorId: connector.id,
+  };
   if (connector.transport === "stdio") return new McpStdioClient(connector, opts);
-  if (connector.transport === "streamable-http") return new McpStreamableHttpClient(connector, opts);
-  if (connector.transport === "sse") return new McpLegacySseClient(connector, opts);
-  return new McpAutoHttpClient(connector, opts);
+  if (connector.transport === "streamable-http") return new McpStreamableHttpClient(connector, clientOpts);
+  if (connector.transport === "sse") return new McpLegacySseClient(connector, clientOpts);
+  return new McpAutoHttpClient(connector, clientOpts);
 }
 
 function normalizeTransport(connector) {

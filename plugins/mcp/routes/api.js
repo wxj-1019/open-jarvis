@@ -178,6 +178,18 @@ export default function registerMcpRoutes(app, ctx) {
     if (!rt) return c.json({ error: "not initialized" }, 503);
     return c.json(rt.getOAuthStatus(c.req.param("sessionId")));
   });
+
+  app.get("/metrics", (c) => {
+    const rt = runtime();
+    if (!rt) return c.json({ error: "not initialized" }, 503);
+    return c.json({ metrics: rt.getMetrics() });
+  });
+
+  app.get("/metrics/:connectorId", (c) => {
+    const rt = runtime();
+    if (!rt) return c.json({ error: "not initialized" }, 503);
+    return c.json({ metrics: rt.getConnectorMetrics(c.req.param("connectorId")) });
+  });
 }
 
 function escapeHtml(value) {
