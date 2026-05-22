@@ -9,6 +9,8 @@ import { SessionRegistryFilesPanel } from './SessionRegistryFilesPanel';
 import styles from './RightWorkspacePanel.module.css';
 // @ts-expect-error — shared JS module
 import { workspaceDisplayName } from '../../../../../shared/workspace-history.js';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
+import { CaretDown, CaretRight } from '@phosphor-icons/react';
 
 interface RightWorkspaceTabDef {
   id: RightWorkspaceTab;

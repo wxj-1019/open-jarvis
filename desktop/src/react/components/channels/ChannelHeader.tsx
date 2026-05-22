@@ -8,6 +8,8 @@ import { useI18n } from '../../hooks/use-i18n';
 import { deleteChannel } from '../../stores/channel-actions';
 import { ContextMenu, type ContextMenuItem } from '../../ui';
 import styles from './Channels.module.css';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
+import { DotsThreeVertical } from '@phosphor-icons/react';
 
 function confirmDeleteChannel(channelId: string) {
   const ch = useStore.getState().channels.find((c) => c.id === channelId);

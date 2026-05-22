@@ -1,6 +1,8 @@
 import React from 'react';
 import type { AutoUpdateState } from '../types';
 import styles from './AutoUpdateStatus.module.css';
+import { PhosphorIcon } from '../ui/PhosphorIcon';
+import { ArrowsClockwise } from '@phosphor-icons/react';
 
 interface AutoUpdateStatusProps {
   state: AutoUpdateState | null;

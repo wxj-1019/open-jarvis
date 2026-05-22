@@ -13,6 +13,8 @@ import {
   type FloatingRect,
 } from './position';
 import styles from './FloatingInput.module.css';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
+import { ArrowElbowDownLeft } from '@phosphor-icons/react';
 
 const CLOSE_DURATION_MS = 150;
 const FALLBACK_HEIGHT = 56;

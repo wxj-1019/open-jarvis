@@ -7,6 +7,8 @@ import { useStore } from '../../stores';
 import { hanaFetch } from '../../hooks/use-hana-fetch';
 import type { CwdSkillInfo } from '../../stores/desk-slice';
 import css from './Desk.module.css';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
+import { Lightning } from '@phosphor-icons/react';
 
 // ── 加载 CWD skills ──
 
