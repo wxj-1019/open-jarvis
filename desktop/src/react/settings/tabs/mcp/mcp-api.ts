@@ -119,3 +119,60 @@ export async function logoutMcpOAuth(connectorId: string): Promise<void> {
   });
   await jsonOrError(res);
 }
+
+// ─── Registry API ───
+
+export interface RegistryServer {
+  id: string;
+  name: string;
+  description: string;
+  transport: string;
+  command: string;
+  args: string[];
+  envHints: string[];
+  category: string;
+  source?: string;
+}
+
+export async function searchRegistry(query: string): Promise<RegistryServer[]> {
+  const res = await hanaFetch(`/api/plugins/mcp/registry/search?q=${encodeURIComponent(query)}`);
+  const data = await jsonOrError<{ servers: RegistryServer[] }>(res);
+  return data.servers || [];
+}
+
+export async function getRegistryCategories(): Promise<string[]> {
+  const res = await hanaFetch('/api/plugins/mcp/registry/categories');
+  const data = await jsonOrError<{ categories: string[] }>(res);
+  return data.categories || [];
+}
+
+// ─── Resources & Prompts API ───
+
+export async function loadConnectorResources(connectorId: string): Promise<any[]> {
+  const res = await hanaFetch(`/api/plugins/mcp/connectors/${encodeURIComponent(connectorId)}/resources`);
+  const data = await jsonOrError<{ resources: any[] }>(res);
+  return data.resources || [];
+}
+
+export async function readConnectorResource(connectorId: string, uri: string): Promise<any> {
+  const res = await hanaFetch(`/api/plugins/mcp/connectors/${encodeURIComponent(connectorId)}/resources/read`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ uri }),
+  });
+  return jsonOrError(res);
+}
+
+export async function loadConnectorPrompts(connectorId: string): Promise<any[]> {
+  const res = await hanaFetch(`/api/plugins/mcp/connectors/${encodeURIComponent(connectorId)}/prompts`);
+  const data = await jsonOrError<{ prompts: any[] }>(res);
+  return data.prompts || [];
+}
+
+export async function pingConnector(connectorId: string): Promise<boolean> {
+  const res = await hanaFetch(`/api/plugins/mcp/connectors/${encodeURIComponent(connectorId)}/ping`, {
+    method: 'POST',
+  });
+  const data = await jsonOrError<{ ok: boolean }>(res);
+  return data.ok === true;
+}

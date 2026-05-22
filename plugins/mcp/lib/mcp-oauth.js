@@ -179,6 +179,49 @@ export async function exchangeMcpOAuthCode({
   };
 }
 
+export async function refreshMcpOAuthToken({
+  tokenEndpoint,
+  refreshToken,
+  clientId,
+  clientSecret = "",
+  fetchImpl = globalThis.fetch,
+} = {}) {
+  if (!tokenEndpoint) throw new Error("tokenEndpoint is required");
+  if (!refreshToken) throw new Error("refreshToken is required");
+  if (!clientId) throw new Error("clientId is required");
+
+  const body = new URLSearchParams();
+  body.set("grant_type", "refresh_token");
+  body.set("refresh_token", refreshToken);
+  body.set("client_id", clientId);
+  if (clientSecret) body.set("client_secret", clientSecret);
+
+  const response = await fetchImpl(tokenEndpoint, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body,
+  });
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : {};
+  if (!response.ok) {
+    throw new Error(data?.error_description || data?.error || `OAuth token refresh failed with status ${response.status}`);
+  }
+  const accessToken = stringOrEmpty(data.access_token);
+  if (!accessToken) throw new Error("OAuth token refresh response did not include access_token");
+  return {
+    accessToken,
+    refreshToken: stringOrEmpty(data.refresh_token) || refreshToken,
+    expiresIn: Number.isFinite(data.expires_in) ? data.expires_in : Number(data.expires_in || 0),
+    scope: stringOrEmpty(data.scope),
+    tokenType: stringOrEmpty(data.token_type) || "Bearer",
+    tokenEndpoint,
+    obtainedAt: Date.now(),
+  };
+}
+
 async function fetchAuthChallenge(connectorUrl, fetchImpl, protocolVersion = MCP_PROTOCOL_VERSION) {
   const response = await fetchImpl(connectorUrl, {
     method: "POST",
@@ -194,7 +237,7 @@ async function fetchAuthChallenge(connectorUrl, fetchImpl, protocolVersion = MCP
       params: {
         protocolVersion,
         capabilities: {},
-        clientInfo: { name: "hana", title: "Hana", version: "0.1.0" },
+        clientInfo: { name: "jarvis", title: "Jarvis", version: "0.222.29" },
       },
     }),
   });

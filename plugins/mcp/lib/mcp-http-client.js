@@ -4,7 +4,6 @@ import {
   headersWithoutMcpProtocolVersion,
   resolveInitialMcpProtocolVersion,
 } from "./mcp-protocol-version.js";
-import { retryWithBackoff } from "./mcp-retry.js";
 
 const STREAMABLE_ACCEPT = "application/json, text/event-stream";
 const SSE_ACCEPT = "text/event-stream";
@@ -110,22 +109,21 @@ function requestTimeoutMs(server) {
 }
 
 export class McpStreamableHttpClient {
-  constructor(server, { fetchImpl = globalThis.fetch, log = console, metrics = null, connectorId = "", concurrencyLimit = 10 } = {}) {
+  constructor(server, { fetchImpl = globalThis.fetch, log = console, onNotification, onRequest } = {}) {
     this.server = server;
     this.fetchImpl = fetchImpl;
     this.log = log;
-    this.metrics = metrics;
-    this.connectorId = connectorId;
     this.endpoint = server?.url || "";
     this._nextId = 1;
     this._closed = true;
     this._initialized = false;
     this.sessionId = "";
-    this._concurrencyLimit = concurrencyLimit || 10;
-    this._activeRequests = 0;
-    this._requestQueue = [];
     this.initialProtocolVersion = resolveInitialMcpProtocolVersion({ headers: connectorHeaders(server) });
     this.protocolVersion = this.initialProtocolVersion;
+    this._notificationHandler = onNotification || null;
+    this._requestHandler = onRequest || null;
+    this.serverCapabilities = null;
+    this.serverInfo = null;
   }
 
   get running() {
@@ -150,13 +148,18 @@ export class McpStreamableHttpClient {
     this.protocolVersion = this.initialProtocolVersion;
     const result = await this._request("initialize", {
       protocolVersion: this.initialProtocolVersion,
-      capabilities: {},
+      capabilities: {
+        sampling: {},
+        roots: { listChanged: true },
+      },
       clientInfo: {
-        name: "hana",
-        title: "Hana",
-        version: "0.1.0",
+        name: "jarvis",
+        title: "Jarvis",
+        version: "0.222.29",
       },
     }, { initializing: true, retryOnSessionExpired: false });
+    this.serverCapabilities = result?.capabilities || null;
+    this.serverInfo = result?.serverInfo || null;
     if (typeof result?.protocolVersion === "string") {
       this.protocolVersion = result.protocolVersion;
     }
@@ -176,73 +179,82 @@ export class McpStreamableHttpClient {
     });
   }
 
+  async ping() {
+    return this.request("ping");
+  }
+
+  async listResources(cursor) {
+    const params = cursor ? { cursor } : {};
+    const result = await this.request("resources/list", params);
+    return result || { resources: [] };
+  }
+
+  async listResourceTemplates(cursor) {
+    const params = cursor ? { cursor } : {};
+    const result = await this.request("resources/templates/list", params);
+    return result || { resourceTemplates: [] };
+  }
+
+  async readResource(uri) {
+    return this.request("resources/read", { uri });
+  }
+
+  async subscribeResource(uri) {
+    return this.request("resources/subscribe", { uri });
+  }
+
+  async unsubscribeResource(uri) {
+    return this.request("resources/unsubscribe", { uri });
+  }
+
+  async listPrompts(cursor) {
+    const params = cursor ? { cursor } : {};
+    const result = await this.request("prompts/list", params);
+    return result || { prompts: [] };
+  }
+
+  async getPrompt(name, arguments_) {
+    return this.request("prompts/get", { name, arguments: arguments_ });
+  }
+
+  async complete(ref, argument) {
+    return this.request("completions/complete", { ref, argument });
+  }
+
+  async setLogLevel(level) {
+    return this.request("logging/setLevel", { level });
+  }
+
+  rejectPending(_requestId, _error) {
+    // Streamable HTTP doesn't use a pending map like stdio
+    // This is a no-op for compatibility
+  }
+
   async request(method, params = {}, opts = {}) {
     if (!this.running) throw new Error("MCP connector is not running");
     return this._request(method, params, opts);
   }
 
   async _request(method, params = {}, { initializing = false, retryOnSessionExpired = true } = {}) {
-    return this._enqueueRequest(async () => {
-      const id = this._nextId++;
-      const payload = { jsonrpc: "2.0", id, method, params };
-      const startTime = Date.now();
-      try {
-        const result = await retryWithBackoff(
-          () => this._postJsonRpc(payload, { initializing }),
-          { log: this.log }
-        );
-        const latency = Date.now() - startTime;
-        this.metrics?.recordRequest(this.connectorId, method, latency, true);
-        return result;
-      } catch (err) {
-        const latency = Date.now() - startTime;
-        this.metrics?.recordRequest(this.connectorId, method, latency, false);
-        if (
-          retryOnSessionExpired &&
-          err instanceof McpHttpError &&
-          err.status === 404 &&
-          this.sessionId
-        ) {
-          this.sessionId = "";
-          this._initialized = false;
-          await this.initialize();
-          return this._request(method, params, { initializing: false, retryOnSessionExpired: false });
-        }
-        throw err;
+    const id = this._nextId++;
+    const payload = { jsonrpc: "2.0", id, method, params };
+    try {
+      return await this._postJsonRpc(payload, { initializing });
+    } catch (err) {
+      if (
+        retryOnSessionExpired &&
+        err instanceof McpHttpError &&
+        err.status === 404 &&
+        this.sessionId
+      ) {
+        this.sessionId = "";
+        this._initialized = false;
+        await this.initialize();
+        this._initialized = true;
+        return this._request(method, params, { initializing: false, retryOnSessionExpired: false });
       }
-    });
-  }
-
-  async _enqueueRequest(fn) {
-    if (this._activeRequests < this._concurrencyLimit) {
-      this._activeRequests++;
-      try {
-        return await fn();
-      } finally {
-        this._activeRequests--;
-        this._processQueue();
-      }
+      throw err;
     }
-
-    return new Promise((resolve, reject) => {
-      this._requestQueue.push({ fn, resolve, reject });
-    });
-  }
-
-  _processQueue() {
-    if (this._requestQueue.length === 0) return;
-    if (this._activeRequests >= this._concurrencyLimit) return;
-
-    const { fn, resolve, reject } = this._requestQueue.shift();
-    this._activeRequests++;
-
-    fn()
-      .then(resolve)
-      .catch(reject)
-      .finally(() => {
-        this._activeRequests--;
-        this._processQueue();
-      });
   }
 
   async _notify(method, params = {}) {
@@ -252,10 +264,6 @@ export class McpStreamableHttpClient {
   async stop() {
     this._closed = true;
     this._initialized = false;
-    for (const item of this._requestQueue) {
-      item.reject(new Error("MCP connector stopped"));
-    }
-    this._requestQueue.length = 0;
     if (this.sessionId) {
       const sessionId = this.sessionId;
       this.sessionId = "";
@@ -270,11 +278,6 @@ export class McpStreamableHttpClient {
     }
   }
 
-  updateAuthToken(token) {
-    this.server.oauth = this.server.oauth || {};
-    this.server.oauth.accessToken = token;
-  }
-
   _headers({ sessionId = this.sessionId, includeJson = true, initializing = false } = {}) {
     const headers = {
       ...headersWithoutMcpProtocolVersion(connectorHeaders(this.server)),
@@ -286,6 +289,21 @@ export class McpStreamableHttpClient {
     const token = authToken(this.server);
     if (token) headers.Authorization = `Bearer ${token}`;
     return headers;
+  }
+
+  async _onServerRequest(id, method, params) {
+    if (this._requestHandler) {
+      try {
+        const result = await this._requestHandler(method, params);
+        // Send as proper JSON-RPC response with matching id
+        await this._postJsonRpc({ jsonrpc: "2.0", id, result }, { initializing: false }).catch(() => {});
+      } catch (err) {
+        await this._postJsonRpc({
+          jsonrpc: "2.0", id,
+          error: { code: -32603, message: err.message || "Internal error" },
+        }, { initializing: false }).catch(() => {});
+      }
+    }
   }
 
   async _postJsonRpc(payload, { initializing = false } = {}) {
@@ -312,11 +330,32 @@ export class McpStreamableHttpClient {
     const contentType = responseHeader(response, "Content-Type");
     const text = await responseText(response);
     if (contentType.includes("text/event-stream")) {
+      let matchedResult;
       for (const event of parseSseEvents(text)) {
         if (!event.data) continue;
-        const message = JSON.parse(event.data);
-        if (isJsonRpcResponse(message) && message.id === payload.id) return rpcResult(message);
+        let message;
+        try { message = JSON.parse(event.data); } catch { continue; }
+
+        // Response matching
+        if (isJsonRpcResponse(message) && message.id === payload.id) {
+          matchedResult = rpcResult(message);
+          continue;
+        }
+
+        // Notification dispatch
+        if (message?.method && message.id == null) {
+          if (this._notificationHandler) {
+            this._notificationHandler(message.method, message.params);
+          }
+          continue;
+        }
+
+        // Server request dispatch
+        if (message?.method && message.id != null) {
+          this._onServerRequest(message.id, message.method, message.params);
+        }
       }
+      if (matchedResult !== undefined) return matchedResult;
       throw new Error(`MCP response for "${payload.method}" was not found in SSE stream`);
     }
     const message = text ? JSON.parse(text) : null;
@@ -326,12 +365,10 @@ export class McpStreamableHttpClient {
 }
 
 export class McpLegacySseClient {
-  constructor(server, { fetchImpl = globalThis.fetch, log = console, metrics = null, connectorId = "", concurrencyLimit = 10 } = {}) {
+  constructor(server, { fetchImpl = globalThis.fetch, log = console, onNotification, onRequest } = {}) {
     this.server = server;
     this.fetchImpl = fetchImpl;
     this.log = log;
-    this.metrics = metrics;
-    this.connectorId = connectorId;
     this.sseUrl = server?.url || "";
     this.messageEndpoint = "";
     this._nextId = 1;
@@ -342,9 +379,10 @@ export class McpLegacySseClient {
     this._abort = null;
     this._endpointResolve = null;
     this._endpointReject = null;
-    this._concurrencyLimit = concurrencyLimit || 10;
-    this._activeRequests = 0;
-    this._requestQueue = [];
+    this._notificationHandler = onNotification || null;
+    this._requestHandler = onRequest || null;
+    this.serverCapabilities = null;
+    this.serverInfo = null;
   }
 
   get running() {
@@ -367,13 +405,18 @@ export class McpLegacySseClient {
   async initialize() {
     const result = await this.request("initialize", {
       protocolVersion: MCP_PROTOCOL_VERSION,
-      capabilities: {},
+      capabilities: {
+        sampling: {},
+        roots: { listChanged: true },
+      },
       clientInfo: {
-        name: "hana",
-        title: "Hana",
-        version: "0.1.0",
+        name: "jarvis",
+        title: "Jarvis",
+        version: "0.222.29",
       },
     });
+    this.serverCapabilities = result?.capabilities || null;
+    this.serverInfo = result?.serverInfo || null;
     await this.notify("notifications/initialized", {});
     return result;
   }
@@ -390,79 +433,90 @@ export class McpLegacySseClient {
     });
   }
 
+  async ping() {
+    return this.request("ping");
+  }
+
+  async listResources(cursor) {
+    const params = cursor ? { cursor } : {};
+    const result = await this.request("resources/list", params);
+    return result || { resources: [] };
+  }
+
+  async listResourceTemplates(cursor) {
+    const params = cursor ? { cursor } : {};
+    const result = await this.request("resources/templates/list", params);
+    return result || { resourceTemplates: [] };
+  }
+
+  async readResource(uri) {
+    return this.request("resources/read", { uri });
+  }
+
+  async subscribeResource(uri) {
+    return this.request("resources/subscribe", { uri });
+  }
+
+  async unsubscribeResource(uri) {
+    return this.request("resources/unsubscribe", { uri });
+  }
+
+  async listPrompts(cursor) {
+    const params = cursor ? { cursor } : {};
+    const result = await this.request("prompts/list", params);
+    return result || { prompts: [] };
+  }
+
+  async getPrompt(name, arguments_) {
+    return this.request("prompts/get", { name, arguments: arguments_ });
+  }
+
+  async complete(ref, argument) {
+    return this.request("completions/complete", { ref, argument });
+  }
+
+  async setLogLevel(level) {
+    return this.request("logging/setLevel", { level });
+  }
+
+  rejectPending(requestId, error) {
+    const pending = this._pending.get(requestId);
+    if (pending) {
+      this._pending.delete(requestId);
+      pending.reject(error);
+    }
+  }
+
   async request(method, params = {}, { timeout = 30_000 } = {}) {
     if (!this.running) throw new Error("MCP connector is not running");
-    return this._enqueueRequest(async () => {
-      const id = this._nextId++;
-      const payload = { jsonrpc: "2.0", id, method, params };
-      const queued = this._queued.get(id);
-      if (queued) {
-        this._queued.delete(id);
-        return rpcResult(queued);
-      }
-      const startTime = Date.now();
-      return new Promise((resolve, reject) => {
-        const timer = setTimeout(() => {
-          this._pending.delete(id);
-          const latency = Date.now() - startTime;
-          this.metrics?.recordRequest(this.connectorId, method, latency, false);
-          reject(new Error(`MCP request "${method}" timed out`));
-        }, timeout);
-        this._pending.set(id, {
-          resolve: (value) => {
-            clearTimeout(timer);
-            const latency = Date.now() - startTime;
-            this.metrics?.recordRequest(this.connectorId, method, latency, true);
-            resolve(value);
-          },
-          reject: (err) => {
-            clearTimeout(timer);
-            const latency = Date.now() - startTime;
-            this.metrics?.recordRequest(this.connectorId, method, latency, false);
-            reject(err);
-          },
-        });
-        this._postMessage(payload).catch((err) => {
-          this._pending.delete(id);
-          clearTimeout(timer);
-          const latency = Date.now() - startTime;
-          this.metrics?.recordRequest(this.connectorId, method, latency, false);
-          reject(err);
-        });
-      });
-    });
-  }
-
-  async _enqueueRequest(fn) {
-    if (this._activeRequests < this._concurrencyLimit) {
-      this._activeRequests++;
-      try {
-        return await fn();
-      } finally {
-        this._activeRequests--;
-        this._processQueue();
-      }
+    const id = this._nextId++;
+    const payload = { jsonrpc: "2.0", id, method, params };
+    const queued = this._queued.get(id);
+    if (queued) {
+      this._queued.delete(id);
+      return rpcResult(queued);
     }
-
     return new Promise((resolve, reject) => {
-      this._requestQueue.push({ fn, resolve, reject });
-    });
-  }
-
-  _processQueue() {
-    if (this._requestQueue.length === 0) return;
-    if (this._activeRequests >= this._concurrencyLimit) return;
-
-    const { fn, resolve, reject } = this._requestQueue.shift();
-    this._activeRequests++;
-
-    fn()
-      .then(resolve)
-      .catch(reject)
-      .finally(() => {
-        this._activeRequests--;
-        this._processQueue();
+      const timer = setTimeout(() => {
+        this._pending.delete(id);
+        reject(new Error(`MCP request "${method}" timed out`));
+      }, timeout);
+      this._pending.set(id, {
+        resolve: (value) => {
+          clearTimeout(timer);
+          resolve(value);
+        },
+        reject: (err) => {
+          clearTimeout(timer);
+          reject(err);
+        },
       });
+      this._postMessage(payload).catch((err) => {
+        this._pending.delete(id);
+        clearTimeout(timer);
+        reject(err);
+      });
+    });
   }
 
   async notify(method, params = {}) {
@@ -473,17 +527,12 @@ export class McpLegacySseClient {
   async stop() {
     this._closed = true;
     this.messageEndpoint = "";
-    try { this._abort?.abort(); } catch {}
+    try { this._abort?.abort(); } catch { /* already closed */ }
     this._abort = null;
     for (const pending of this._pending.values()) {
       pending.reject(new Error("MCP connector stopped"));
     }
     this._pending.clear();
-  }
-
-  updateAuthToken(token) {
-    this.server.oauth = this.server.oauth || {};
-    this.server.oauth.accessToken = token;
   }
 
   async _connectSse() {
@@ -556,17 +605,49 @@ export class McpLegacySseClient {
       this.log.warn?.(`[mcp:${this.server.id}] ignored invalid SSE JSON: ${err.message}`);
       return;
     }
-    if (!isJsonRpcResponse(message)) return;
-    const pending = this._pending.get(message.id);
-    if (!pending) {
-      this._queued.set(message.id, message);
+
+    // Response: has id, no method → match pending
+    if (isJsonRpcResponse(message)) {
+      const pending = this._pending.get(message.id);
+      if (!pending) {
+        this._queued.set(message.id, message);
+        return;
+      }
+      this._pending.delete(message.id);
+      try {
+        pending.resolve(rpcResult(message));
+      } catch (err) {
+        pending.reject(err);
+      }
       return;
     }
-    this._pending.delete(message.id);
-    try {
-      pending.resolve(rpcResult(message));
-    } catch (err) {
-      pending.reject(err);
+
+    // Notification: has method, no id → dispatch
+    if (message?.method && message.id == null) {
+      if (this._notificationHandler) {
+        this._notificationHandler(message.method, message.params);
+      }
+      return;
+    }
+
+    // Server request: has both id and method
+    if (message?.method && message.id != null) {
+      this._onServerRequest(message.id, message.method, message.params);
+    }
+  }
+
+  async _onServerRequest(id, method, params) {
+    if (this._requestHandler) {
+      try {
+        const result = await this._requestHandler(method, params);
+        // Send as proper JSON-RPC response with matching id
+        await this._postMessage({ jsonrpc: "2.0", id, result }).catch(() => {});
+      } catch (err) {
+        await this._postMessage({
+          jsonrpc: "2.0", id,
+          error: { code: -32603, message: err.message || "Internal error" },
+        }).catch(() => {});
+      }
     }
   }
 
@@ -606,6 +687,14 @@ export class McpAutoHttpClient {
     return this.client?.running === true;
   }
 
+  get serverCapabilities() {
+    return this.client?.serverCapabilities || null;
+  }
+
+  get serverInfo() {
+    return this.client?.serverInfo || null;
+  }
+
   async start() {
     const streamable = new McpStreamableHttpClient(this.server, this.opts);
     try {
@@ -622,25 +711,67 @@ export class McpAutoHttpClient {
   }
 
   async listTools() {
+    if (!this.client) throw new Error("McpAutoHttpClient not started");
     return this.client.listTools();
   }
 
   async callTool(name, args) {
-    const startTime = Date.now();
-    try {
-      const result = await this.client.callTool(name, args);
-      const latency = Date.now() - startTime;
-      const metrics = this.opts?.metrics;
-      const connectorId = this.opts?.connectorId;
-      metrics?.recordToolCall(connectorId, name, latency, true);
-      return result;
-    } catch (err) {
-      const latency = Date.now() - startTime;
-      const metrics = this.opts?.metrics;
-      const connectorId = this.opts?.connectorId;
-      metrics?.recordToolCall(connectorId, name, latency, false);
-      throw err;
-    }
+    if (!this.client) throw new Error("McpAutoHttpClient not started");
+    return this.client.callTool(name, args);
+  }
+
+  async ping() {
+    if (!this.client) throw new Error("McpAutoHttpClient not started");
+    return this.client.ping();
+  }
+
+  async listResources(cursor) {
+    if (!this.client) throw new Error("McpAutoHttpClient not started");
+    return this.client.listResources(cursor);
+  }
+
+  async listResourceTemplates(cursor) {
+    if (!this.client) throw new Error("McpAutoHttpClient not started");
+    return this.client.listResourceTemplates(cursor);
+  }
+
+  async readResource(uri) {
+    if (!this.client) throw new Error("McpAutoHttpClient not started");
+    return this.client.readResource(uri);
+  }
+
+  async subscribeResource(uri) {
+    if (!this.client) throw new Error("McpAutoHttpClient not started");
+    return this.client.subscribeResource(uri);
+  }
+
+  async unsubscribeResource(uri) {
+    if (!this.client) throw new Error("McpAutoHttpClient not started");
+    return this.client.unsubscribeResource(uri);
+  }
+
+  async listPrompts(cursor) {
+    if (!this.client) throw new Error("McpAutoHttpClient not started");
+    return this.client.listPrompts(cursor);
+  }
+
+  async getPrompt(name, arguments_) {
+    if (!this.client) throw new Error("McpAutoHttpClient not started");
+    return this.client.getPrompt(name, arguments_);
+  }
+
+  async complete(ref, argument) {
+    if (!this.client) throw new Error("McpAutoHttpClient not started");
+    return this.client.complete(ref, argument);
+  }
+
+  async setLogLevel(level) {
+    if (!this.client) throw new Error("McpAutoHttpClient not started");
+    return this.client.setLogLevel(level);
+  }
+
+  rejectPending(requestId, error) {
+    this.client?.rejectPending?.(requestId, error);
   }
 
   async stop() {

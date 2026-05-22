@@ -77,18 +77,17 @@ export function FloatPreviewCard({
     requestAnimationFrame(() => setVisible(true));
   }, []);
 
-  const style: React.CSSProperties = {
-    top: state.anchorRect.bottom + 6,
-    ...(state.side === 'left'
-      ? { left: state.anchorRect.left }
-      : { right: window.innerWidth - state.anchorRect.right }),
-  };
+  const cssVars: React.CSSProperties = {
+    '--float-top': `${state.anchorRect.bottom + 6}px`,
+    '--float-left': state.side === 'left' ? `${state.anchorRect.left}px` : 'auto',
+    '--float-right': state.side === 'left' ? 'auto' : `${window.innerWidth - state.anchorRect.right}px`,
+  } as React.CSSProperties;
 
   return (
     <div
       ref={cardRef}
       className={`float-card float-card-${state.side}${visible ? ' visible' : ''}`}
-      style={style}
+      style={cssVars}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >

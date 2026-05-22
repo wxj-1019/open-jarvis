@@ -8,6 +8,7 @@
  */
 
 import { useState, useRef, useCallback } from 'react';
+import { MAX_ATTACHMENTS } from './constants';
 import { useStore } from './stores';
 import { hanaFetch } from './hooks/use-hana-fetch';
 import { toSlash, baseName } from './utils/format';
@@ -64,7 +65,7 @@ export async function attachFilesFromPaths(
   nameMap: Record<string, string> = {},
 ): Promise<void> {
   if (srcPaths.length === 0) return;
-  if (useStore.getState().attachedFiles.length >= 9) return;
+  if (useStore.getState().attachedFiles.length >= MAX_ATTACHMENTS) return;
 
   // .skill 文件直接安装为用户技能，不当附件处理
   const skillPaths = srcPaths.filter(p => /\.skill$/i.test(p));
@@ -85,7 +86,7 @@ export async function attachFilesFromPaths(
     const deskPaths = srcPaths.filter(isDeskPath);
     srcPaths = srcPaths.filter((p) => !isDeskPath(p));
     for (const p of deskPaths) {
-      if (useStore.getState().attachedFiles.length >= 9) break;
+      if (useStore.getState().attachedFiles.length >= MAX_ATTACHMENTS) break;
       const name = baseName(p);
       const isRoot = toSlash(p) === deskBase;
       const knownFile = deskFileMap.get(name);
@@ -137,11 +138,11 @@ export async function attachFilesFromPaths(
 export async function attachAppFileDragPayloadToInput(payload: AppFileDragPayload): Promise<void> {
   if (payload.files.length === 0) return;
   const state = useStore.getState();
-  if (state.attachedFiles.length >= 9) return;
+  if (state.attachedFiles.length >= MAX_ATTACHMENTS) return;
 
   if (payload.source === 'session-file') {
     for (const file of payload.files) {
-      if (useStore.getState().attachedFiles.length >= 9) break;
+      if (useStore.getState().attachedFiles.length >= MAX_ATTACHMENTS) break;
       useStore.getState().addAttachedFile({
         fileId: file.fileId,
         path: file.path,

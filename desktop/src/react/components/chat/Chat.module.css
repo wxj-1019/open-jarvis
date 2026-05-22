@@ -1359,8 +1359,8 @@
     color: rgba(var(--accent-rgb), 0.52);
     cursor: pointer;
     padding: 0 var(--timeline-marker-pad-right) 0 var(--timeline-marker-pad-left);
-    opacity: 0;
-    pointer-events: none;
+    opacity: 0.15;
+    pointer-events: auto;
     display: grid;
     grid-template-columns: minmax(0, 1fr) 24px;
     align-items: center;

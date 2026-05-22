@@ -125,6 +125,9 @@ describe("AgentManager.createAgent default skills.enabled", () => {
         cleanupAgentFromChannels: vi.fn(),
       }),
       getSessionCoordinator: () => ({}),
+      getEngine: () => ({
+        emitDevLog: vi.fn(),
+      }),
     });
   }
 

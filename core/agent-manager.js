@@ -26,26 +26,19 @@ import { relativePathInsideBase } from "./message-utils.js";
 import { detachAgentFromBundles } from "../lib/skill-bundles/store.js";
 import { assertKnownYuan, getAgentConfigRepairState } from "./yuan-registry.js";
 
+import { validateDeps } from './types/dependencies.js';
+
 const log = createModuleLogger("agent-mgr");
 
 export class AgentManager {
   /**
-   * @param {object} deps
-   * @param {string} deps.agentsDir
-   * @param {string} deps.productDir
-   * @param {string} deps.userDir
-   * @param {string} deps.channelsDir
-   * @param {() => import('./preferences-manager.js').PreferencesManager} deps.getPrefs
-   * @param {() => import('./model-manager.js').ModelManager} deps.getModels
-   * @param {() => object|null} deps.getHub
-   * @param {() => import('./skill-manager.js').SkillManager} deps.getSkills
-   * @param {() => object} deps.getSearchConfig
-   * @param {() => object} deps.resolveUtilityConfig
-   * @param {() => object} deps.getSharedModels
-   * @param {() => import('./channel-manager.js').ChannelManager} deps.getChannelManager
-   * @param {() => import('./session-coordinator.js').SessionCoordinator} deps.getSessionCoordinator
+   * @param {import('./types/dependencies.js').AgentManagerDeps} deps
    */
   constructor(deps) {
+    validateDeps(deps, 'AgentManager', {
+      required: ['agentsDir', 'productDir', 'userDir', 'channelsDir', 'getPrefs', 'getModels', 'getSkills', 'getSearchConfig', 'resolveUtilityConfig', 'getSharedModels', 'getChannelManager', 'getSessionCoordinator', 'getEngine'],
+      optional: ['getHub', 'getResourceLoader'],
+    });
     this._d = deps;
     this._agents = new Map();
     this._activeAgentId = null;
@@ -833,6 +826,10 @@ export class AgentManager {
       resolveUtilityConfig: () => getEngine()?.resolveUtilityConfig?.({ agentId: ag.id }),
       getCwd:               () => getEngine()?.cwd ?? "",
       getTimezone:          () => getEngine()?.getTimezone?.() ?? "",
+      getMcpResourcesText:  () => {
+        const pm = getEngine()?.pluginManager;
+        return pm?.ctx?._mcpRuntime?._cachedResourcesText || "";
+      },
       scheduleMemoryMaintenance: (agentId, reason) =>
         this.scheduleAgentMemoryMaintenance(agentId, reason, ag),
       getEngine,  // update-settings-tool 仍需要完整 engine

@@ -18,6 +18,8 @@ import {
   normalizeSearchProvider,
 } from "../shared/search-providers.js";
 
+import { validateDeps } from './types/dependencies.js';
+
 const log = createModuleLogger("config");
 
 export const ACCESS_MODE_OPERATE = "operate";
@@ -105,24 +107,12 @@ export function normalizeSharedModelsPatch(partial) {
 
 export class ConfigCoordinator {
   /**
-   * @param {object} deps
-   * @param {string} deps.hanakoHome
-   * @param {string} deps.agentsDir
-   * @param {() => object} deps.getAgent - 当前焦点 agent
-   * @param {(id: string) => object|null} deps.getAgentById - 按 ID 查找 agent
-   * @param {() => string} deps.getActiveAgentId - 当前焦点 agent ID
-   * @param {() => Map} deps.getAgents - 所有 agent Map
-   * @param {() => import('./model-manager.js').ModelManager} deps.getModels
-   * @param {() => import('./preferences-manager.js').PreferencesManager} deps.getPrefs
-   * @param {() => import('./skill-manager.js').SkillManager} deps.getSkills
-   * @param {() => object|null} deps.getSession - 当前 session
-   * @param {() => import('./session-coordinator.js').SessionCoordinator|null} deps.getSessionCoordinator
-   * @param {() => object|null} deps.getHub
-   * @param {(event, sp) => void} deps.emitEvent
-   * @param {(text, level?) => void} deps.emitDevLog
-   * @param {() => string|null} deps.getCurrentModel - currentModel name
+   * @param {import('./types/dependencies.js').ConfigCoordinatorDeps} deps
    */
   constructor(deps) {
+    validateDeps(deps, 'ConfigCoordinator', {
+      required: ['hanakoHome', 'agentsDir', 'getAgent', 'getAgentById', 'getActiveAgentId', 'getAgents', 'getModels', 'getPrefs', 'getSkills', 'getSession', 'getSessionCoordinator', 'getHub', 'emitEvent', 'emitDevLog', 'getCurrentModel'],
+    });
     this._d = deps;
   }
 

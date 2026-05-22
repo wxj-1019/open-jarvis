@@ -9,9 +9,8 @@ import {
 import {
   createMcpOAuthAuthorization,
   exchangeMcpOAuthCode,
+  refreshMcpOAuthToken,
 } from "./mcp-oauth.js";
-import { McpTokenRefresher } from "./mcp-token-refresh.js";
-import { McpMetricsCollector } from "./mcp-metrics.js";
 
 const DEFAULT_CONFIG = {
   enabled: false,
@@ -27,11 +26,12 @@ function normalizeTool(tool) {
   if (!tool || typeof tool.name !== "string" || !tool.name) return null;
   return {
     name: tool.name,
-    title: typeof tool.title === "string" ? tool.title : tool.name,
+    title: typeof tool.title === "string" ? tool.title : (tool.annotations?.title || tool.name),
     description: typeof tool.description === "string" ? tool.description : "",
     inputSchema: tool.inputSchema && typeof tool.inputSchema === "object"
       ? tool.inputSchema
       : { type: "object", properties: {} },
+    annotations: tool.annotations && typeof tool.annotations === "object" ? tool.annotations : undefined,
   };
 }
 
@@ -202,19 +202,33 @@ export class McpRuntime {
     this.ctx = ctx;
     this.Client = Client;
     this.fetchImpl = fetchImpl;
-    this.metrics = new McpMetricsCollector();
     this.clientFactory = clientFactory || ((connector, opts) => (
-      this.Client ? new this.Client(connector, opts) : createDefaultClient(connector, opts, this.metrics)
+      this.Client ? new this.Client(connector, opts) : createDefaultClient(connector, opts)
     ));
     this.clients = new Map();
     this.toolDisposers = [];
+    this.promptDisposers = new Map();
     this.oauthSessions = new Map();
-    this.tokenRefresher = new McpTokenRefresher({ log: this.ctx.log });
+    this._refreshingTokens = new Map();
+    this._cachedResourcesText = "";
+    this._serverInfoCache = new Map();
   }
 
   async load() {
     fs.mkdirSync(this.ctx.dataDir, { recursive: true });
     this.registerCachedTools();
+
+    // Register EventBus capabilities for MCP events
+    if (this.ctx.bus?.registerCapability) {
+      this.ctx.bus.registerCapability("mcp:progress", { type: "event" });
+      this.ctx.bus.registerCapability("mcp:tools-changed", { type: "event" });
+      this.ctx.bus.registerCapability("mcp:resources-changed", { type: "event" });
+      this.ctx.bus.registerCapability("mcp:prompts-changed", { type: "event" });
+    }
+
+    // Load workspace .jarvis/mcp.json
+    await this._loadWorkspaceConfig();
+
     const config = this.getConfig();
     if (config.enabled) {
       for (const connector of config.connectors.filter((s) => s.autoStart)) {
@@ -225,15 +239,74 @@ export class McpRuntime {
     }
   }
 
+  async _loadWorkspaceConfig() {
+    const cwd = this.ctx.getCurrentWorkspace?.();
+    if (!cwd) return;
+
+    const configPath = path.join(cwd, ".jarvis", "mcp.json");
+    try {
+      const raw = await fs.promises.readFile(configPath, "utf-8");
+      const parsed = JSON.parse(raw);
+      const connectors = parsed.connectors || parsed.mcpServers || {};
+      const existingConfig = this.getConfig();
+      const existingIds = new Set(existingConfig.connectors.map((c) => c.id));
+
+      const entries = Array.isArray(connectors) ? connectors : Object.entries(connectors).map(([id, def]) => ({ id, ...def }));
+
+      for (const entry of entries) {
+        const id = sanitizeId(entry.id || entry.name || "workspace-connector");
+        if (existingIds.has(id)) continue;
+
+        // Expand environment variable references ${env:VAR_NAME}
+        const env = { ...(entry.env || {}) };
+        for (const [key, val] of Object.entries(env)) {
+          if (typeof val === "string") {
+            env[key] = val.replace(/\$\{env:([^}]+)\}/g, (_, varName) => process.env[varName] || "");
+          }
+        }
+
+        const connectorInput = {
+          id,
+          name: entry.name || id,
+          description: entry.description || `From workspace .jarvis/mcp.json`,
+          transport: entry.transport || (entry.command ? "stdio" : "remote"),
+          command: entry.command || "",
+          args: Array.isArray(entry.args) ? entry.args : [],
+          cwd: entry.cwd || cwd,
+          url: entry.url || "",
+          env,
+          headers: entry.headers || {},
+          autoStart: entry.autoStart !== false,
+        };
+
+        try {
+          this.addConnector(connectorInput);
+          this.ctx.log.info(`[mcp] loaded workspace connector "${id}" from .jarvis/mcp.json`);
+        } catch (err) {
+          this.ctx.log.warn(`[mcp] failed to load workspace connector "${id}": ${err.message}`);
+        }
+      }
+    } catch (err) {
+      if (err.code !== "ENOENT") {
+        this.ctx.log.warn(`[mcp] failed to read workspace mcp.json: ${err.message}`);
+      }
+    }
+  }
+
   async dispose() {
     for (const dispose of this.toolDisposers.splice(0)) {
-      try { dispose(); } catch {}
+      try { dispose(); } catch { /* ignore disposal error */ }
     }
+    for (const dispose of this.promptDisposers.values()) {
+      try { dispose(); } catch { /* ignore disposal error */ }
+    }
+    this.promptDisposers.clear();
     for (const client of this.clients.values()) {
       await client.stop().catch(() => {});
     }
     this.clients.clear();
     this.oauthSessions.clear();
+    this._refreshingTokens.clear();
   }
 
   getConfig() {
@@ -251,24 +324,27 @@ export class McpRuntime {
 
   getState(agentConfig = null) {
     const config = this.getConfig();
-    const connectors = config.connectors.map((connector) => publicConnector({
-      connector,
-      status: this.clients.get(connector.id)?.running ? "running" : "stopped",
-    }));
+    const connectors = config.connectors.map((connector) => {
+      const client = this.clients.get(connector.id);
+      const cached = this._serverInfoCache?.get(connector.id);
+      return {
+        ...publicConnector({
+          connector,
+          status: client?.running ? "running" : "stopped",
+        }),
+        serverCapabilities: client?.serverCapabilities || cached?.serverCapabilities || null,
+        serverInfo: client?.serverInfo || cached?.serverInfo || null,
+        toolCount: connector.tools?.length || 0,
+        resourceCount: connector.resources?.length || 0,
+        promptCount: connector.prompts?.length || 0,
+      };
+    });
     return {
       enabled: config.enabled,
       connectors,
       servers: connectors,
       agentConfig: normalizeAgentMcpConfig(agentConfig),
     };
-  }
-
-  getMetrics() {
-    return this.metrics.getAllStats();
-  }
-
-  getConnectorMetrics(connectorId) {
-    return this.metrics.getConnectorStats(connectorId);
   }
 
   async setEnabled(enabled) {
@@ -321,6 +397,12 @@ export class McpRuntime {
 
   async removeConnector(id) {
     await this.stopConnector(id);
+    // 清理 prompt disposers，防止已删除连接器的 prompts 残留为已注册工具
+    const promptDisposer = this.promptDisposers.get(id);
+    if (promptDisposer) {
+      try { promptDisposer(); } catch { /* ignore disposal error */ }
+      this.promptDisposers.delete(id);
+    }
     const config = this.getConfig();
     config.connectors = config.connectors.filter((s) => s.id !== id);
     const saved = this.saveConfig(config);
@@ -340,10 +422,32 @@ export class McpRuntime {
     const existing = this.clients.get(id);
     if (existing?.running) return connector;
 
-    const client = this.clientFactory(connector, { log: this.ctx.log, fetchImpl: this.fetchImpl, metrics: this.metrics, connectorId: id });
+    const client = this.clientFactory(connector, {
+      log: this.ctx.log,
+      fetchImpl: this.fetchImpl,
+      onNotification: (method, params) => this._handleNotification(id, method, params),
+      onRequest: (method, params) => this._handleServerRequest(id, method, params),
+    });
     this.clients.set(id, client);
     try {
       await client.start();
+
+      // Ping to verify connection is alive
+      try {
+        await client.ping();
+      } catch (err) {
+        this.ctx.log.debug?.(`[mcp:${id}] ping after start failed (non-fatal): ${err.message}`);
+      }
+
+      // Store server info in memory cache (not persisted to config)
+      this._serverInfoCache = this._serverInfoCache || new Map();
+      if (client.serverInfo) {
+        this._serverInfoCache.set(id, {
+          serverInfo: client.serverInfo,
+          serverCapabilities: client.serverCapabilities,
+        });
+      }
+
       await this.refreshTools(id);
       return this.getConfig().connectors.find((s) => s.id === id);
     } catch (err) {
@@ -361,6 +465,7 @@ export class McpRuntime {
     const client = this.clients.get(id);
     if (!client) return;
     this.clients.delete(id);
+    this._serverInfoCache?.delete(id);
     await client.stop();
   }
 
@@ -378,56 +483,55 @@ export class McpRuntime {
     connector.tools = tools.map(normalizeTool).filter(Boolean);
     this.saveConfig(config);
     this.registerCachedTools();
-    return connector.tools;
-  }
 
-  async callTool(connectorId, toolName, args) {
-    const config = this.getConfig();
-    if (!config.enabled) throw new Error("MCP connectors are disabled globally");
-    const client = this.clients.get(connectorId);
-    if (!client?.running) throw new Error(`MCP connector "${connectorId}" is not running`);
-
-    const connector = config.connectors.find((s) => s.id === connectorId);
-    if (connector && this.tokenRefresher.isTokenExpiring(connector)) {
-      const wasAlreadyExpired = this.tokenRefresher.isTokenExpired(connector);
+    // Also refresh prompts if server supports them
+    if (client.serverCapabilities?.prompts) {
       try {
-        this.ctx.log.info?.(`[mcp:${connectorId}] token expiring soon, refreshing before tool call`);
-        const newToken = await this.tokenRefresher.refreshToken(connector, {
-          fetchImpl: this.fetchImpl,
-        });
-        await this.saveConnectorOAuth(connectorId, {
-          ...connector.oauth,
-          ...newToken,
-        });
-        if (client.updateAuthToken) {
-          client.updateAuthToken(newToken.accessToken);
-        } else {
-          await this.stopConnector(connectorId);
-          await this.startConnector(connectorId);
-        }
+        const { prompts } = await client.listPrompts();
+        connector.prompts = prompts || [];
+        this.saveConfig(config);
+        this._registerPrompts(id, prompts || []);
       } catch (err) {
-        if (wasAlreadyExpired) {
-          throw new Error(`MCP connector "${connectorId}" token expired and refresh failed: ${err.message}`);
-        }
-        this.ctx.log.warn?.(`[mcp:${connectorId}] token refresh failed, proceeding with existing token: ${err.message}`);
+        this.ctx.log.debug?.(`[mcp:${id}] failed to list prompts: ${err.message}`);
       }
     }
 
-    return client.callTool(toolName, args);
+    // Also refresh resources if server supports them
+    if (client.serverCapabilities?.resources) {
+      try {
+        const { resources } = await client.listResources();
+        connector.resources = resources || [];
+        this.saveConfig(config);
+      } catch (err) {
+        this.ctx.log.debug?.(`[mcp:${id}] failed to list resources: ${err.message}`);
+      }
+    }
+
+    // Update cached resources text for Agent system prompt injection
+    this._refreshCachedResourcesText().catch(() => {});
+
+    return connector.tools;
   }
 
   registerCachedTools() {
     for (const dispose of this.toolDisposers.splice(0)) {
-      try { dispose(); } catch {}
+      try { dispose(); } catch { /* ignore disposal error */ }
     }
     const config = this.getConfig();
     for (const connector of config.connectors) {
       for (const tool of connector.tools || []) {
+        // Build LLM-friendly description using server info and tool annotations
+        const serverLabel = connector.serverInfo?.name || connector.name || connector.id;
+        const friendlyTitle = tool.title || tool.name;
+        const description = tool.description
+          ? `[${serverLabel}] ${tool.description}`
+          : `[${serverLabel}] ${friendlyTitle}`;
+
         const definition = createMcpToolDefinition({
           connectorId: connector.id,
           serverId: connector.id,
           toolName: tool.name,
-          description: tool.description || `${connector.name}: ${tool.title || tool.name}`,
+          description,
           inputSchema: tool.inputSchema,
           getGlobalEnabled: () => this.getConfig().enabled,
           getAgentConfig: (agentId) => this.getAgentConfig(agentId),
@@ -522,8 +626,17 @@ export class McpRuntime {
   getOAuthStatus(sessionId) {
     const session = this.oauthSessions.get(sessionId);
     if (!session) return { status: "missing" };
-    if (session.status === "done") return { status: "done", result: session.result || null };
-    if (session.status === "error") return { status: "error", error: session.error || "OAuth failed" };
+    if (session.status === "done") {
+      // Clean up completed session after read
+      const result = { status: "done", result: session.result || null };
+      setTimeout(() => this.oauthSessions.delete(sessionId), 60_000);
+      return result;
+    }
+    if (session.status === "error") {
+      const result = { status: "error", error: session.error || "OAuth failed" };
+      setTimeout(() => this.oauthSessions.delete(sessionId), 60_000);
+      return result;
+    }
     return { status: "pending" };
   }
 
@@ -552,18 +665,400 @@ export class McpRuntime {
     await this.stopConnector(connectorId);
     return saved.connectors.find((item) => item.id === connectorId);
   }
+
+  // ─── Notification handling (Phase 2) ───
+
+  _handleNotification(connectorId, method, params) {
+    const logErr = (err) => this.ctx.log.error(`[mcp:${connectorId}] notification ${method} failed: ${err.message}`);
+    switch (method) {
+      case "notifications/tools/list_changed":
+        this._onToolsChanged(connectorId).catch(logErr);
+        break;
+      case "notifications/resources/list_changed":
+        this._onResourcesChanged(connectorId).catch(logErr);
+        break;
+      case "notifications/resources/updated":
+        this._onResourceUpdated(connectorId, params);
+        break;
+      case "notifications/prompts/list_changed":
+        this._onPromptsChanged(connectorId).catch(logErr);
+        break;
+      case "notifications/progress":
+        this._onProgress(connectorId, params);
+        break;
+      case "notifications/cancelled":
+        this._onCancelled(connectorId, params);
+        break;
+      case "notifications/message":
+        this._onLogMessage(connectorId, params);
+        break;
+      default:
+        this.ctx.log.debug?.(`[mcp:${connectorId}] unhandled notification: ${method}`);
+    }
+  }
+
+  async _onToolsChanged(connectorId) {
+    this.ctx.log.info(`[mcp:${connectorId}] tools changed, refreshing...`);
+    try {
+      await this.refreshTools(connectorId);
+      if (this.ctx.bus) {
+        this.ctx.bus.emit("mcp:tools-changed", { connectorId });
+      }
+    } catch (err) {
+      this.ctx.log.error(`[mcp:${connectorId}] failed to refresh tools: ${err.message}`);
+    }
+  }
+
+  async _onResourcesChanged(connectorId) {
+    this.ctx.log.info(`[mcp:${connectorId}] resources changed`);
+    const client = this.clients.get(connectorId);
+    if (client?.running) {
+      try {
+        const { resources } = await client.listResources();
+        const config = this.getConfig();
+        const connector = config.connectors.find((s) => s.id === connectorId);
+        if (connector) {
+          connector.resources = resources || [];
+          this.saveConfig(config);
+        }
+      } catch (err) {
+        this.ctx.log.debug?.(`[mcp:${connectorId}] failed to refresh resources: ${err.message}`);
+      }
+    }
+    this._refreshCachedResourcesText().catch(() => {});
+    if (this.ctx.bus) {
+      this.ctx.bus.emit("mcp:resources-changed", { connectorId });
+    }
+  }
+
+  _onResourceUpdated(connectorId, params) {
+    this.ctx.log.debug?.(`[mcp:${connectorId}] resource updated: ${params?.uri}`);
+    if (this.ctx.bus) {
+      this.ctx.bus.emit("mcp:resources-changed", { connectorId, uri: params?.uri });
+    }
+  }
+
+  async _onPromptsChanged(connectorId) {
+    this.ctx.log.info(`[mcp:${connectorId}] prompts changed, refreshing...`);
+    const client = this.clients.get(connectorId);
+    if (client?.running) {
+      try {
+        const { prompts } = await client.listPrompts();
+        const config = this.getConfig();
+        const connector = config.connectors.find((s) => s.id === connectorId);
+        if (connector) {
+          connector.prompts = prompts || [];
+          this.saveConfig(config);
+        }
+        this._registerPrompts(connectorId, prompts || []);
+      } catch (err) {
+        this.ctx.log.error(`[mcp:${connectorId}] failed to refresh prompts: ${err.message}`);
+      }
+    }
+    if (this.ctx.bus) {
+      this.ctx.bus.emit("mcp:prompts-changed", { connectorId });
+    }
+  }
+
+  _onProgress(connectorId, params) {
+    if (this.ctx.bus) {
+      this.ctx.bus.emit("mcp:progress", {
+        connectorId,
+        progressToken: params?.progressToken,
+        progress: params?.progress,
+        total: params?.total,
+        message: params?.message,
+      });
+    }
+  }
+
+  _onCancelled(connectorId, params) {
+    const client = this.clients.get(connectorId);
+    if (client && params?.requestId != null) {
+      client.rejectPending(params.requestId, new Error(params.reason || "Cancelled by server"));
+    }
+  }
+
+  _onLogMessage(connectorId, params) {
+    const level = params?.level || "info";
+    const logger = params?.logger || connectorId;
+    const data = params?.data;
+    const logFn = this.ctx.log[level] || this.ctx.log.info;
+    logFn(`[mcp:${logger}] ${typeof data === "string" ? data : JSON.stringify(data)}`);
+  }
+
+  // ─── Server request handling (Phase 4) ───
+
+  async _handleServerRequest(connectorId, method, params) {
+    switch (method) {
+      case "sampling/createMessage":
+        return this._handleSamplingRequest(connectorId, params);
+      case "roots/list":
+        return this._handleRootsList(connectorId);
+      default:
+        throw new Error(`Unsupported server request: ${method}`);
+    }
+  }
+
+  async _handleSamplingRequest(connectorId, params) {
+    if (this.ctx.bus?.request) {
+      const result = await this.ctx.bus.request("llm:complete", {
+        messages: params?.messages,
+        systemPrompt: params?.systemPrompt,
+        maxTokens: params?.maxTokens || 1024,
+        temperature: params?.temperature,
+      });
+      return {
+        model: result?.model || "unknown",
+        role: "assistant",
+        content: { type: "text", text: result?.text || "" },
+        stopReason: result?.stopReason || "endTurn",
+      };
+    }
+    throw new Error("Sampling not available: no LLM bridge");
+  }
+
+  _handleRootsList(_connectorId) {
+    const roots = [];
+    if (this.ctx.getCurrentWorkspace) {
+      const cwd = this.ctx.getCurrentWorkspace();
+      if (cwd) {
+        const normalized = cwd.replace(/\\/g, "/");
+        roots.push({ uri: `file://${normalized}${normalized.endsWith("/") ? "" : "/"}`, name: "Workspace" });
+      }
+    }
+    return { roots };
+  }
+
+  // ─── Prompts registration (Phase 3) ───
+
+  _registerPrompts(connectorId, prompts) {
+    // Clean up old prompt registrations
+    const oldDisposer = this.promptDisposers.get(connectorId);
+    if (oldDisposer) {
+      try { oldDisposer(); } catch { /* ignore disposal error */ }
+    }
+
+    if (!prompts || prompts.length === 0) {
+      this.promptDisposers.delete(connectorId);
+      return;
+    }
+
+    const disposers = [];
+    for (const prompt of prompts) {
+      const toolName = toMcpToolId(connectorId, `prompt_${prompt.name}`);
+      const disposer = this.ctx.registerTool({
+        name: toolName,
+        description: `[MCP Prompt] ${prompt.description || prompt.name}`,
+        parameters: {
+          type: "object",
+          properties: Object.fromEntries(
+            (prompt.arguments || []).map((a) => [a.name, {
+              type: "string",
+              description: a.description || "",
+            }])
+          ),
+          required: (prompt.arguments || []).filter((a) => a.required).map((a) => a.name),
+        },
+        metadata: { kind: "mcp-prompt", connectorId, promptName: prompt.name },
+        execute: async (_toolCallId, args) => {
+          try {
+            const result = await this.getConnectorPrompt(connectorId, prompt.name, args || {});
+            const text = (result?.messages || [])
+              .map((m) => `[${m.role}] ${m.content?.text || JSON.stringify(m.content)}`)
+              .join("\n\n");
+            return { content: [{ type: "text", text: text || "(empty prompt result)" }] };
+          } catch (err) {
+            return mcpToolError(`MCP prompt "${prompt.name}" failed: ${err.message}`);
+          }
+        },
+      });
+      disposers.push(disposer);
+    }
+    this.promptDisposers.set(connectorId, () => disposers.forEach((d) => d()));
+  }
+
+  // ─── Resources access (Phase 3) ───
+
+  async listConnectorResources(connectorId) {
+    const client = this.clients.get(connectorId);
+    if (!client?.running) throw new Error(`MCP connector "${connectorId}" is not running`);
+    const allResources = [];
+    let cursor = undefined;
+    do {
+      const result = await client.listResources(cursor);
+      allResources.push(...(result?.resources || []));
+      cursor = result?.nextCursor;
+    } while (cursor);
+    return allResources;
+  }
+
+  async readConnectorResource(connectorId, uri) {
+    const client = this.clients.get(connectorId);
+    if (!client?.running) throw new Error(`MCP connector "${connectorId}" is not running`);
+    return client.readResource(uri);
+  }
+
+  async listConnectorResourceTemplates(connectorId) {
+    const client = this.clients.get(connectorId);
+    if (!client?.running) throw new Error(`MCP connector "${connectorId}" is not running`);
+    return client.listResourceTemplates();
+  }
+
+  async subscribeConnectorResource(connectorId, uri) {
+    const client = this.clients.get(connectorId);
+    if (!client?.running) throw new Error(`MCP connector "${connectorId}" is not running`);
+    return client.subscribeResource(uri);
+  }
+
+  async getAgentContextResources() {
+    const contexts = [];
+    for (const [id, client] of this.clients) {
+      if (!client.running) continue;
+      if (!client.serverCapabilities?.resources) continue;
+      try {
+        const resources = await this.listConnectorResources(id);
+        for (const r of resources) {
+          const audience = r.annotations?.audience;
+          if (audience && !audience.includes("assistant")) continue;
+          try {
+            const content = await this.readConnectorResource(id, r.uri);
+            const text = content?.contents?.[0]?.text;
+            if (text) {
+              contexts.push({
+                source: id,
+                name: r.name || r.uri,
+                description: r.description,
+                text,
+                priority: r.annotations?.priority ?? 0.5,
+              });
+            }
+          } catch (e) {
+            this.ctx.log.debug?.(`[mcp:${id}] failed to read resource ${r.uri}: ${e.message}`);
+          }
+        }
+      } catch (e) {
+        this.ctx.log.debug?.(`[mcp:${id}] failed to list resources: ${e.message}`);
+      }
+    }
+    contexts.sort((a, b) => b.priority - a.priority);
+    return contexts;
+  }
+
+  async _refreshCachedResourcesText() {
+    try {
+      const resources = await this.getAgentContextResources();
+      if (resources.length > 0) {
+        this._cachedResourcesText = resources
+          .map((r) => `[${r.source}:${r.name}]${r.description ? ` — ${r.description}` : ""}\n${r.text}`)
+          .join("\n\n---\n\n");
+      } else {
+        this._cachedResourcesText = "";
+      }
+    } catch {
+      this._cachedResourcesText = "";
+    }
+    return this._cachedResourcesText;
+  }
+
+  // ─── Prompts access (Phase 3) ───
+
+  async listConnectorPrompts(connectorId) {
+    const client = this.clients.get(connectorId);
+    if (!client?.running) throw new Error(`MCP connector "${connectorId}" is not running`);
+    return client.listPrompts();
+  }
+
+  async getConnectorPrompt(connectorId, name, args) {
+    const client = this.clients.get(connectorId);
+    if (!client?.running) throw new Error(`MCP connector "${connectorId}" is not running`);
+    return client.getPrompt(name, args);
+  }
+
+  // ─── Completions (Phase 4) ───
+
+  async completeConnector(connectorId, ref, argument) {
+    const client = this.clients.get(connectorId);
+    if (!client?.running) throw new Error(`MCP connector "${connectorId}" is not running`);
+    return client.complete(ref, argument);
+  }
+
+  // ─── OAuth token refresh (Phase 1) ───
+
+  async _refreshOAuthToken(connectorId) {
+    // Prevent concurrent refresh for the same connector
+    if (this._refreshingTokens.has(connectorId)) {
+      return this._refreshingTokens.get(connectorId);
+    }
+
+    const promise = (async () => {
+      const config = this.getConfig();
+      const connector = config.connectors.find((c) => c.id === connectorId);
+      if (!connector?.oauth?.refreshToken) {
+        throw new Error(`No refresh token available for connector "${connectorId}"`);
+      }
+      if (!connector.oauth.tokenEndpoint) {
+        throw new Error(`No token endpoint for connector "${connectorId}"`);
+      }
+
+      const token = await refreshMcpOAuthToken({
+        tokenEndpoint: connector.oauth.tokenEndpoint,
+        refreshToken: connector.oauth.refreshToken,
+        clientId: connector.oauthClientId,
+        clientSecret: connector.oauthClientSecret,
+        fetchImpl: this.fetchImpl,
+      });
+
+      // Save token and restart connector atomically
+      await this.saveConnectorOAuth(connectorId, token);
+      await this.startConnector(connectorId);
+      this.ctx.log.info(`[mcp:${connectorId}] OAuth token refreshed and connector restarted`);
+      return token;
+    })();
+
+    this._refreshingTokens.set(connectorId, promise);
+    try {
+      return await promise;
+    } finally {
+      this._refreshingTokens.delete(connectorId);
+    }
+  }
+
+  async callTool(connectorId, toolName, args) {
+    const config = this.getConfig();
+    if (!config.enabled) throw new Error("MCP connectors are disabled globally");
+    const client = this.clients.get(connectorId);
+    if (!client?.running) throw new Error(`MCP connector "${connectorId}" is not running`);
+    try {
+      return await client.callTool(toolName, args);
+    } catch (err) {
+      // Auto-retry on 401 if OAuth token can be refreshed
+      if (err?.status === 401 || err?.message?.includes("401") || err?.message?.includes("authentication")) {
+        const currentConfig = this.getConfig();
+        const connector = currentConfig.connectors.find((c) => c.id === connectorId);
+        if (connector?.authType === "oauth" && connector?.oauth?.refreshToken) {
+          this.ctx.log.info(`[mcp:${connectorId}] token expired, attempting refresh...`);
+          try {
+            await this._refreshOAuthToken(connectorId);
+            const newClient = this.clients.get(connectorId);
+            if (newClient?.running) {
+              return newClient.callTool(toolName, args);
+            }
+          } catch (refreshErr) {
+            this.ctx.log.error(`[mcp:${connectorId}] OAuth refresh failed: ${refreshErr.message}`);
+          }
+        }
+      }
+      throw err;
+    }
+  }
 }
 
-function createDefaultClient(connector, opts, metrics) {
-  const clientOpts = {
-    ...opts,
-    metrics,
-    connectorId: connector.id,
-  };
+function createDefaultClient(connector, opts) {
   if (connector.transport === "stdio") return new McpStdioClient(connector, opts);
-  if (connector.transport === "streamable-http") return new McpStreamableHttpClient(connector, clientOpts);
-  if (connector.transport === "sse") return new McpLegacySseClient(connector, clientOpts);
-  return new McpAutoHttpClient(connector, clientOpts);
+  if (connector.transport === "streamable-http") return new McpStreamableHttpClient(connector, opts);
+  if (connector.transport === "sse") return new McpLegacySseClient(connector, opts);
+  return new McpAutoHttpClient(connector, opts);
 }
 
 function normalizeTransport(connector) {

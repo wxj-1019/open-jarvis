@@ -201,6 +201,40 @@ describe('MobileApp', () => {
     expect(await screen.findByText('note.md')).toBeInTheDocument();
   });
 
+  it('syncs the selected session permission mode from the mobile session list', async () => {
+    const planModeEvents: unknown[] = [];
+    const listener = (event: Event) => {
+      planModeEvents.push((event as CustomEvent).detail);
+    };
+    window.addEventListener('hana-plan-mode', listener);
+    fetchMock.mockImplementation((input: RequestInfo | URL, options?: RequestInit) => {
+      const url = String(input);
+      if (url.includes('/api/web-auth/session')) {
+        return Promise.resolve(jsonResponse({ authenticated: true, principal: principal(['chat', 'resources.read', 'files.read', 'files.write']) }));
+      }
+      if (url.includes('/api/sessions/messages')) {
+        return Promise.resolve(jsonResponse({ messages: [], blocks: [], todos: [], hasMore: false, sessionFiles: [] }));
+      }
+      if (url.includes('/api/sessions')) {
+        return Promise.resolve(jsonResponse([
+          { path: '/hana/sessions/one.jsonl', title: '日常记录', firstMessage: '', modified: '2026-05-16T00:00:00.000Z', messageCount: 2, agentId: 'hana', agentName: 'Hana', cwd: '/workspace', permissionMode: 'read_only' },
+        ]));
+      }
+      return Promise.resolve(jsonResponse(jsonResponseForMobile(url, options)));
+    });
+
+    try {
+      render(<MobileApp />);
+      await waitForMobileChatReady();
+
+      await waitFor(() => {
+        expect(planModeEvents).toContainEqual({ enabled: true, mode: 'read_only' });
+      });
+    } finally {
+      window.removeEventListener('hana-plan-mode', listener);
+    }
+  });
+
   it('opens workbench files through the mobile content route using the desktop preview panel', async () => {
     document.documentElement.setAttribute('data-platform', 'web');
     fetchMock.mockImplementation((input: RequestInfo | URL, options?: RequestInit) => {
@@ -248,7 +282,7 @@ describe('MobileApp', () => {
     expect(screen.getByLabelText('titlebar.currentChatTitle')).toHaveTextContent('sidebar.newChat');
   });
 
-  it('keeps the mobile shell height stable and lifts only the input layer for the virtual keyboard', async () => {
+  it('leaves mobile keyboard viewport handling to the browser', async () => {
     stubNarrowViewport(true);
     const viewport = installVisualViewportStub({ height: 700, offsetTop: 0 });
     Object.defineProperty(window, 'innerHeight', { configurable: true, value: 700 });
@@ -263,8 +297,9 @@ describe('MobileApp', () => {
     render(<MobileApp />);
     await waitForMobileChatReady();
     const shell = mobileShell();
-    expect(shell.style.getPropertyValue('--mobile-layout-height')).toBe('700px');
-    expect(shell.style.getPropertyValue('--mobile-keyboard-offset')).toBe('0px');
+    expect(shell).not.toHaveAttribute('data-mobile-keyboard-open');
+    expect(shell.style.getPropertyValue('--mobile-layout-height')).toBe('');
+    expect(shell.style.getPropertyValue('--mobile-keyboard-offset')).toBe('');
 
     fireEvent.focusIn(screen.getByTestId('desktop-input-area'));
     viewport.height = 420;
@@ -272,11 +307,9 @@ describe('MobileApp', () => {
       viewport.dispatchEvent(new Event('resize'));
     });
 
-    await waitFor(() => {
-      expect(shell).toHaveAttribute('data-mobile-keyboard-open', 'true');
-      expect(shell.style.getPropertyValue('--mobile-layout-height')).toBe('700px');
-      expect(shell.style.getPropertyValue('--mobile-keyboard-offset')).toBe('280px');
-    });
+    expect(shell).not.toHaveAttribute('data-mobile-keyboard-open');
+    expect(shell.style.getPropertyValue('--mobile-layout-height')).toBe('');
+    expect(shell.style.getPropertyValue('--mobile-keyboard-offset')).toBe('');
   });
 
   it('renders server-broadcast user messages through the desktop websocket handler', async () => {

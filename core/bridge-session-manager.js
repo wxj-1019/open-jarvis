@@ -31,12 +31,9 @@ import {
   shouldRunFreshCompact,
 } from "../lib/fresh-compact/policy.js";
 
-const log = createModuleLogger("bridge-session");
+import { validateDeps } from './types/dependencies.js';
 
-function getSteerPrefix() {
-  const isZh = getLocale().startsWith("zh");
-  return isZh ? "（插话，无需 MOOD）\n" : "(Interjection, no MOOD needed)\n";
-}
+const log = createModuleLogger("bridge-session");
 
 function assertVideoInputSupported(model, videos) {
   if (!videos?.length) return;
@@ -110,19 +107,14 @@ function warnVisionContextInjection(entry) {
 
 export class BridgeSessionManager {
   /**
-   * @param {object} deps - 注入依赖（不持有 engine 引用）
-   * @param {() => object} deps.getAgent - 返回当前 agent（需 sessionDir, yuanPrompt）
-   * @param {(id: string) => object|null} deps.getAgentById - 按 ID 获取 agent
-   * @param {() => Map<string, object>|object[]|undefined} [deps.getAgents] - 返回所有 agent（reconcile 用）
-   * @param {() => import('./model-manager.js').ModelManager} deps.getModelManager
-   * @param {() => object} deps.getResourceLoader
-   * @param {() => object} deps.getPreferences
-   * @param {(cwd: string, customTools?, opts?) => {tools: any[], customTools: any[]}} deps.buildTools
-   * @param {() => string} deps.getHomeCwd
-   * @param {() => boolean} [deps.isVisionAuxiliaryEnabled]
+   * @param {import('./types/dependencies.js').BridgeSessionManagerDeps} deps
    */
   constructor(deps) {
-    this._deps = deps;
+    validateDeps(deps, 'BridgeSessionManager', {
+      required: ['getAgent', 'getAgentById', 'getModelManager', 'getResourceLoader', 'getPreferences', 'buildTools', 'getHomeCwd', 'emitEvent', 'ensureAgentRuntime', 'getHanakoHome', 'registerSessionFile', 'getSessionFile', 'getSessionFileByPath'],
+      optional: ['getAgents', 'getVisionBridge', 'isVisionAuxiliaryEnabled'],
+    });
+    this._d = deps;
     this._activeSessions = new Map();
     this._prePromptAbortControllers = new Map();
     this._sessionPathBridgeContexts = new Map();
@@ -132,9 +124,9 @@ export class BridgeSessionManager {
   get activeSessions() { return this._activeSessions; }
 
   _emitSessionEvent(event, sessionPath) {
-    if (!sessionPath || typeof this._deps.emitEvent !== "function") return;
+    if (!sessionPath || typeof this._d.emitEvent !== "function") return;
     try {
-      this._deps.emitEvent(event, sessionPath);
+      this._d.emitEvent(event, sessionPath);
     } catch (err) {
       log.warn(`emit ${event?.type || "event"} failed: ${err?.message || err}`);
     }
@@ -175,35 +167,35 @@ export class BridgeSessionManager {
 
   /** bridge 索引文件路径 */
   _indexPath(agent) {
-    const a = agent || this._deps.getAgent();
+    const a = agent || this._d.getAgent();
     return path.join(a.sessionDir, "bridge", "bridge-sessions.json");
   }
 
   _resolveAgent(opts = {}, operation = "operation") {
     if (opts.agentId) {
-      const agent = this._deps.getAgentById?.(opts.agentId) || null;
+      const agent = this._d.getAgentById?.(opts.agentId) || null;
       if (!agent) throw new Error(`bridge ${operation}: agent "${opts.agentId}" not found`);
       return agent;
     }
-    const agent = this._deps.getAgent?.() || null;
+    const agent = this._d.getAgent?.() || null;
     if (!agent) throw new Error(`bridge ${operation}: focus agent not available`);
     return agent;
   }
 
   async _ensureAgentRuntime(agent, operation) {
-    if (!agent?.id || typeof this._deps.ensureAgentRuntime !== "function") return agent;
-    const ensured = await this._deps.ensureAgentRuntime(agent.id, {
+    if (!agent?.id || typeof this._d.ensureAgentRuntime !== "function") return agent;
+    const ensured = await this._d.ensureAgentRuntime(agent.id, {
       priority: "background",
       reason: `bridge:${operation}`,
     });
-    return ensured || this._deps.getAgentById?.(agent.id) || agent;
+    return ensured || this._d.getAgentById?.(agent.id) || agent;
   }
 
   _listAgentsForReconcile() {
-    const all = this._deps.getAgents?.();
+    const all = this._d.getAgents?.();
     if (all instanceof Map) return [...all.values()].filter(Boolean);
     if (Array.isArray(all)) return all.filter(Boolean);
-    const focus = this._deps.getAgent?.();
+    const focus = this._d.getAgent?.();
     return focus ? [focus] : [];
   }
 
@@ -336,7 +328,7 @@ export class BridgeSessionManager {
   }
 
   _buildOwnerFreshCompactContext(agent, homeCwd) {
-    const prefs = this._deps.getPreferences();
+    const prefs = this._d.getPreferences();
     const systemPrompt = agent.buildSystemPrompt({
       cwdOverride: homeCwd,
       forceMemoryEnabled: agent.memoryMasterEnabled,
@@ -403,7 +395,7 @@ export class BridgeSessionManager {
       let agent = this._resolveAgent(opts, "executeExternalMessage");
       agent = await this._ensureAgentRuntime(agent, "executeExternalMessage");
       const bridgeContext = this._buildBridgeContext(sessionKey, meta, opts, agent);
-      const mm = this._deps.getModelManager();
+      const mm = this._d.getModelManager();
       const bridgeDir = path.join(agent.sessionDir, "bridge");
       const subDir = opts.guest ? "guests" : "owner";
       const sessionDir = path.join(bridgeDir, subDir);
@@ -427,7 +419,7 @@ export class BridgeSessionManager {
           debugLog()?.log("bridge-session", `open failed for ${sessionKey}: ${err.message}`);
         }
       }
-      const homeCwd = this._deps.getHomeCwd(agent.id) || process.cwd();
+      const homeCwd = this._d.getHomeCwd(agent.id) || process.cwd();
       if (!mgr) {
         mgr = SessionManager.create(homeCwd, sessionDir);
       }
@@ -445,20 +437,20 @@ export class BridgeSessionManager {
         const bridgePromptLine = appendBridgePromptLine("", bridgeContext, getLocale()).trim();
         const parts = [yuanBase, pubIshiki, opts.contextTag, bridgePromptLine].filter(Boolean);
         const guestPrompt = parts.join("\n\n");
-        const tempResourceLoader = Object.create(this._deps.getResourceLoader());
+        const tempResourceLoader = Object.create(this._d.getResourceLoader());
         tempResourceLoader.getSystemPrompt = () => guestPrompt;
         tempResourceLoader.getSkills = () => ({ skills: [], diagnostics: [] });
         const guestResourceLoader = withVisionContextInjectionExtension(tempResourceLoader, {
           path: "hana-vision-context-injection",
           sessionPathRef,
           targetModelRef,
-          getVisionBridge: () => this._deps.getVisionBridge?.(),
-          isVisionAuxiliaryEnabled: () => this._deps.isVisionAuxiliaryEnabled?.() === true,
+          getVisionBridge: () => this._d.getVisionBridge?.(),
+          isVisionAuxiliaryEnabled: () => this._d.isVisionAuxiliaryEnabled?.() === true,
           warn: warnVisionContextInjection,
           resolveSessionFile: ({ fileId, filePath, sessionPath }) => {
             const lookupSessionPath = sessionPath || sessionPathRef.current || null;
-            if (fileId) return this._deps.getSessionFile?.(fileId, { sessionPath: lookupSessionPath });
-            if (filePath) return this._deps.getSessionFileByPath?.(filePath, { sessionPath: lookupSessionPath });
+            if (fileId) return this._d.getSessionFile?.(fileId, { sessionPath: lookupSessionPath });
+            if (filePath) return this._d.getSessionFileByPath?.(filePath, { sessionPath: lookupSessionPath });
             return null;
           },
         });
@@ -509,10 +501,10 @@ export class BridgeSessionManager {
       }
       if (opts.inboundFiles?.length && activeSessionPath) {
         const materialized = await materializeBridgeInboundFiles({
-          hanakoHome: this._deps.getHanakoHome?.(),
+          hanakoHome: this._d.getHanakoHome?.(),
           sessionPath: activeSessionPath,
           files: opts.inboundFiles,
-          registerSessionFile: this._deps.registerSessionFile,
+          registerSessionFile: this._d.registerSessionFile,
         });
         if (materialized.imageAttachmentPaths.length) {
           promptText = addAttachedImageMarkers(promptText, materialized.imageAttachmentPaths);
@@ -574,9 +566,9 @@ export class BridgeSessionManager {
           text: promptText,
           opts,
           sessionPath: activeSessionPath,
-          getVisionBridge: () => this._deps.getVisionBridge?.(),
+          getVisionBridge: () => this._d.getVisionBridge?.(),
           visionPolicyTarget: {
-            isVisionAuxiliaryEnabled: this._deps.isVisionAuxiliaryEnabled,
+            isVisionAuxiliaryEnabled: this._d.isVisionAuxiliaryEnabled,
           },
           warn: (msg) => log.warn(msg),
           signal: abortController.signal,
@@ -655,7 +647,7 @@ export class BridgeSessionManager {
   steerSession(sessionKey, text) {
     const session = this._activeSessions.get(sessionKey);
     if (!session?.isStreaming) return false;
-    session.steer(getSteerPrefix() + text);
+    session.steer(text);
     return true;
   }
 
@@ -695,7 +687,7 @@ export class BridgeSessionManager {
       }
 
       if (!mgr) {
-        const homeCwd = this._deps.getHomeCwd(agent.id) || process.cwd();
+        const homeCwd = this._d.getHomeCwd(agent.id) || process.cwd();
         mgr = SessionManager.create(homeCwd, sessionDir);
         sessionPath = mgr.getSessionFile?.() || null;
         if (!sessionPath) {
@@ -732,7 +724,7 @@ export class BridgeSessionManager {
   }
 
   _buildRecordedAssistantMessage(agent, text) {
-    const mm = this._deps.getModelManager();
+    const mm = this._d.getModelManager();
     const chatRef = agent.config?.models?.chat;
     const ref = (typeof chatRef === "object" && chatRef?.id && chatRef?.provider) ? chatRef : null;
     if (!ref) {
@@ -758,7 +750,7 @@ export class BridgeSessionManager {
    * 构造 owner 模式 bridge session 的 createAgentSession opts。
    * 从 executeExternalMessage 的 owner 分支抽出，以便 compactSession 复用同一配置。
    *
-   * 纯函数（相对于 this._deps）：不写 _activeSessions，不落盘索引。
+   * 纯函数（相对于 this._d）：不写 _activeSessions，不落盘索引。
    *
    * @param {object} agent
    * @param {import('./model-manager.js').ModelManager} mm
@@ -766,7 +758,7 @@ export class BridgeSessionManager {
    * @returns {object} sessionOpts for createAgentSession
    */
   _buildOwnerSessionOpts(agent, mm, homeCwd, sessionPathRef = { current: null }, targetModelRef = { current: null }, opts = {}) {
-    const prefs = this._deps.getPreferences();
+    const prefs = this._d.getPreferences();
     const bridgeReadOnly = prefs?.bridge?.readOnly === true;
     const bridgePermissionMode = bridgeReadOnly
       ? SESSION_PERMISSION_MODES.READ_ONLY
@@ -779,7 +771,7 @@ export class BridgeSessionManager {
           : {}),
       })
       : agent.tools;
-    const { tools: baseTools, customTools: baseCustomTools } = this._deps.buildTools(
+    const { tools: baseTools, customTools: baseCustomTools } = this._d.buildTools(
       homeCwd, agentToolsSnapshot,
       {
         workspace: homeCwd,
@@ -811,20 +803,20 @@ export class BridgeSessionManager {
         : {}),
     });
     const ownerPromptSnapshot = appendBridgePromptLine(ownerPromptBase, opts.bridgeContext, getLocale());
-    const ownerResourceLoader = Object.create(this._deps.getResourceLoader(), {
+    const ownerResourceLoader = Object.create(this._d.getResourceLoader(), {
       getSystemPrompt: { value: () => ownerPromptSnapshot },
     });
     const visionResourceLoader = withVisionContextInjectionExtension(ownerResourceLoader, {
       path: "hana-vision-context-injection",
       sessionPathRef,
       targetModelRef,
-      getVisionBridge: () => this._deps.getVisionBridge?.(),
-      isVisionAuxiliaryEnabled: () => this._deps.isVisionAuxiliaryEnabled?.() === true,
+      getVisionBridge: () => this._d.getVisionBridge?.(),
+      isVisionAuxiliaryEnabled: () => this._d.isVisionAuxiliaryEnabled?.() === true,
       warn: warnVisionContextInjection,
       resolveSessionFile: ({ fileId, filePath, sessionPath }) => {
         const lookupSessionPath = sessionPath || sessionPathRef.current || null;
-        if (fileId) return this._deps.getSessionFile?.(fileId, { sessionPath: lookupSessionPath });
-        if (filePath) return this._deps.getSessionFileByPath?.(filePath, { sessionPath: lookupSessionPath });
+        if (fileId) return this._d.getSessionFile?.(fileId, { sessionPath: lookupSessionPath });
+        if (filePath) return this._d.getSessionFileByPath?.(filePath, { sessionPath: lookupSessionPath });
         return null;
       },
     });
@@ -880,8 +872,8 @@ export class BridgeSessionManager {
     }
 
     // 4. 打开 SessionManager + 组装 owner 模式 createAgentSession opts
-    const mm = this._deps.getModelManager();
-    const homeCwd = this._deps.getHomeCwd(agent.id) || process.cwd();
+    const mm = this._d.getModelManager();
+    const homeCwd = this._d.getHomeCwd(agent.id) || process.cwd();
     const sessionDir = path.dirname(sessionFilePath);
     const mgr = SessionManager.open(sessionFilePath, sessionDir);
     const freshContext = opts.fresh === true

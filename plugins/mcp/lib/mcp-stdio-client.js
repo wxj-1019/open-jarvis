@@ -3,7 +3,7 @@ import { spawn } from "node:child_process";
 export const MCP_PROTOCOL_VERSION = "2025-11-25";
 
 export class McpStdioClient {
-  constructor(server, { log = console } = {}) {
+  constructor(server, { log = console, onNotification, onRequest } = {}) {
     this.server = server;
     this.log = log;
     this.process = null;
@@ -11,6 +11,10 @@ export class McpStdioClient {
     this._pending = new Map();
     this._stdoutBuffer = "";
     this._closed = false;
+    this._notificationHandler = onNotification || null;
+    this._requestHandler = onRequest || null;
+    this.serverCapabilities = null;
+    this.serverInfo = null;
   }
 
   get running() {
@@ -56,13 +60,21 @@ export class McpStdioClient {
   async initialize() {
     const result = await this.request("initialize", {
       protocolVersion: MCP_PROTOCOL_VERSION,
-      capabilities: {},
+      capabilities: {
+        sampling: {},
+        roots: { listChanged: true },
+      },
       clientInfo: {
-        name: "hana",
-        title: "Hana",
-        version: "0.1.0",
+        name: "jarvis",
+        title: "Jarvis",
+        version: "0.222.29",
       },
     }, { timeout: requestTimeoutMs(this.server) });
+    this.serverCapabilities = result?.capabilities || null;
+    this.serverInfo = result?.serverInfo || null;
+    if (typeof result?.protocolVersion === "string") {
+      this._negotiatedProtocolVersion = result.protocolVersion;
+    }
     this.notify("notifications/initialized", {});
     return result;
   }
@@ -77,6 +89,60 @@ export class McpStdioClient {
       name,
       arguments: args || {},
     }, { timeout: requestTimeoutMs(this.server) });
+  }
+
+  async ping() {
+    return this.request("ping", {}, { timeout: requestTimeoutMs(this.server) });
+  }
+
+  async listResources(cursor) {
+    const params = cursor ? { cursor } : {};
+    const result = await this.request("resources/list", params, { timeout: requestTimeoutMs(this.server) });
+    return result || { resources: [] };
+  }
+
+  async listResourceTemplates(cursor) {
+    const params = cursor ? { cursor } : {};
+    const result = await this.request("resources/templates/list", params, { timeout: requestTimeoutMs(this.server) });
+    return result || { resourceTemplates: [] };
+  }
+
+  async readResource(uri) {
+    return this.request("resources/read", { uri }, { timeout: requestTimeoutMs(this.server) });
+  }
+
+  async subscribeResource(uri) {
+    return this.request("resources/subscribe", { uri }, { timeout: requestTimeoutMs(this.server) });
+  }
+
+  async unsubscribeResource(uri) {
+    return this.request("resources/unsubscribe", { uri }, { timeout: requestTimeoutMs(this.server) });
+  }
+
+  async listPrompts(cursor) {
+    const params = cursor ? { cursor } : {};
+    const result = await this.request("prompts/list", params, { timeout: requestTimeoutMs(this.server) });
+    return result || { prompts: [] };
+  }
+
+  async getPrompt(name, arguments_) {
+    return this.request("prompts/get", { name, arguments: arguments_ }, { timeout: requestTimeoutMs(this.server) });
+  }
+
+  async complete(ref, argument) {
+    return this.request("completions/complete", { ref, argument }, { timeout: requestTimeoutMs(this.server) });
+  }
+
+  async setLogLevel(level) {
+    return this.request("logging/setLevel", { level }, { timeout: requestTimeoutMs(this.server) });
+  }
+
+  rejectPending(requestId, error) {
+    const pending = this._pending.get(requestId);
+    if (pending) {
+      this._pending.delete(requestId);
+      pending.reject(error);
+    }
   }
 
   request(method, params = {}, { timeout = 30_000 } = {}) {
@@ -112,10 +178,10 @@ export class McpStdioClient {
     const proc = this.process;
     this.process = null;
     this._closed = true;
-    try { proc.stdin.end(); } catch {}
+    try { proc.stdin.end(); } catch { /* already closed */ }
     await new Promise((resolve) => {
       const timer = setTimeout(() => {
-        try { proc.kill("SIGTERM"); } catch {}
+        try { proc.kill("SIGTERM"); } catch { /* process already exited */ }
         resolve();
       }, 2_000);
       proc.once("exit", () => {
@@ -123,11 +189,21 @@ export class McpStdioClient {
         resolve();
       });
     });
+    // Reject any remaining pending requests after process exit
+    for (const pending of this._pending.values()) {
+      pending.reject(new Error("MCP client stopped"));
+    }
+    this._pending.clear();
   }
 
   _send(payload) {
+    if (!this.process?.stdin) return;
     const line = JSON.stringify(payload);
-    this.process.stdin.write(line + "\n", "utf-8");
+    try {
+      this.process.stdin.write(line + "\n", "utf-8");
+    } catch {
+      // stdin already closed, ignore
+    }
   }
 
   _onStdout(chunk) {
@@ -150,14 +226,43 @@ export class McpStdioClient {
   }
 
   _handleMessage(message) {
-    if (message?.id == null) return;
-    const pending = this._pending.get(message.id);
-    if (!pending) return;
-    this._pending.delete(message.id);
-    if (message.error) {
-      pending.reject(new Error(message.error.message || "MCP request failed"));
+    // Response: has id, no method → match pending request
+    if (message?.id != null && !message.method) {
+      const pending = this._pending.get(message.id);
+      if (!pending) return;
+      this._pending.delete(message.id);
+      if (message.error) {
+        pending.reject(new Error(message.error.message || "MCP request failed"));
+      } else {
+        pending.resolve(message.result);
+      }
+      return;
+    }
+
+    // Server request: has both id and method → needs response
+    if (message?.id != null && message.method) {
+      this._onServerRequest(message.id, message.method, message.params);
+      return;
+    }
+
+    // Notification: has method, no id → fire and forget
+    if (message?.method) {
+      if (this._notificationHandler) {
+        this._notificationHandler(message.method, message.params);
+      }
+    }
+  }
+
+  async _onServerRequest(id, method, params) {
+    if (this._requestHandler) {
+      try {
+        const result = await this._requestHandler(method, params);
+        this._send({ jsonrpc: "2.0", id, result });
+      } catch (err) {
+        this._send({ jsonrpc: "2.0", id, error: { code: -32603, message: err.message } });
+      }
     } else {
-      pending.resolve(message.result);
+      this._send({ jsonrpc: "2.0", id, error: { code: -32601, message: "Method not found" } });
     }
   }
 }

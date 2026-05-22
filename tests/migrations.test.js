@@ -105,11 +105,11 @@ describe("runMigrations runner", () => {
 
   afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
-  it("首次运行：_dataVersion 从 0 升到最新", () => {
+  it("首次运行：_dataVersion 从 0 升到最新", async () => {
     const prefs = makePrefs(userDir);
     writeAgentConfig(agentsDir, "hana", { api: { provider: "" } });
 
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -120,14 +120,14 @@ describe("runMigrations runner", () => {
     expect(prefs.getPreferences()._dataVersion).toBeGreaterThan(0);
   });
 
-  it("已迁移过：不重复执行", () => {
+  it("已迁移过：不重复执行", async () => {
     const prefs = makePrefs(userDir);
     // 设置一个很大的 _dataVersion，所有迁移都应跳过
     prefs.savePreferences({ _dataVersion: 9999 });
 
     writeAgentConfig(agentsDir, "hana", { api: { provider: "ghost-provider" } });
 
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -167,7 +167,7 @@ describe("migration #11: repairCronJobModelRefs", () => {
     return JSON.parse(fs.readFileSync(path.join(agentsDir, agentId, "desk", "cron-jobs.json"), "utf-8")).jobs;
   }
 
-  it("把 cron-jobs.json 里的裸 id / provider-id 字符串迁移为 {id, provider}", () => {
+  it("把 cron-jobs.json 里的裸 id / provider-id 字符串迁移为 {id, provider}", async () => {
     const prefs = makePrefs(userDir);
     prefs.savePreferences({ _dataVersion: 10 });
     writeAgentConfig(agentsDir, "hana", { agent: { name: "Hana" } });
@@ -178,7 +178,7 @@ describe("migration #11: repairCronJobModelRefs", () => {
       { id: "job_25", type: "cron", schedule: "0 3 * * *", prompt: "d", enabled: true, model: "unknown-model" },
     ]);
 
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -210,10 +210,10 @@ describe("migration #12: backfill legacy session files into sidecars", () => {
 
   afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
-  function runMigration12() {
+  async function runMigration12() {
     const prefs = makePrefs(userDir);
     prefs.savePreferences({ _dataVersion: 11 });
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -223,7 +223,7 @@ describe("migration #12: backfill legacy session files into sidecars", () => {
     return prefs;
   }
 
-  it("registers legacy stage_files and artifacts without rewriting the session jsonl", () => {
+  it("registers legacy stage_files and artifacts without rewriting the session jsonl", async () => {
     writeAgentConfig(agentsDir, "hana", { agent: { name: "Hana" } });
     const sessionPath = path.join(agentsDir, "hana", "sessions", "legacy.jsonl");
     const stagePath = path.join(tmpDir, "legacy-image.png");
@@ -250,7 +250,7 @@ describe("migration #12: backfill legacy session files into sidecars", () => {
     ]);
 
     const before = fs.readFileSync(sessionPath, "utf-8");
-    const prefs = runMigration12();
+    const prefs = await runMigration12();
 
     const sidecar = JSON.parse(fs.readFileSync(`${sessionPath}.files.json`, "utf-8"));
     const files = Object.values(sidecar.files);
@@ -262,7 +262,7 @@ describe("migration #12: backfill legacy session files into sidecars", () => {
     expect(prefs.getPreferences()._dataVersion).toBe(LATEST_DATA_VERSION);
   });
 
-  it("materializes legacy inline browser screenshots as managed session images", () => {
+  it("materializes legacy inline browser screenshots as managed session images", async () => {
     writeAgentConfig(agentsDir, "hana", { agent: { name: "Hana" } });
     const sessionPath = path.join(agentsDir, "hana", "sessions", "browser.jsonl");
     const base64 = Buffer.from("SCREENSHOT_BYTES").toString("base64");
@@ -275,7 +275,7 @@ describe("migration #12: backfill legacy session files into sidecars", () => {
       },
     ]);
 
-    runMigration12();
+    await runMigration12();
 
     const sidecar = JSON.parse(fs.readFileSync(`${sessionPath}.files.json`, "utf-8"));
     const files = Object.values(sidecar.files);
@@ -304,10 +304,10 @@ describe("migration #13: normalize recent legacy compatibility state", () => {
 
   afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
-  function runMigration13() {
+  async function runMigration13() {
     const prefs = makePrefs(userDir);
     prefs.savePreferences({ _dataVersion: 12 });
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -334,7 +334,7 @@ describe("migration #13: normalize recent legacy compatibility state", () => {
     return YAML.load(fs.readFileSync(path.join(tmpDir, "added-models.yaml"), "utf-8"));
   }
 
-  it("removes the reserved official DeepSeek provider id from legacy model lists", () => {
+  it("removes the reserved official DeepSeek provider id from legacy model lists", async () => {
     writeAddedModelsYaml({
       deepseek: {
         base_url: "https://api.deepseek.com/v1",
@@ -348,7 +348,7 @@ describe("migration #13: normalize recent legacy compatibility state", () => {
       },
     });
 
-    const prefs = runMigration13();
+    const prefs = await runMigration13();
 
     const raw = readAddedModelsYaml();
     expect(raw.providers.deepseek.models).toEqual([
@@ -359,7 +359,7 @@ describe("migration #13: normalize recent legacy compatibility state", () => {
     expect(prefs.getPreferences()._dataVersion).toBe(LATEST_DATA_VERSION);
   });
 
-  it("seeds DeepSeek defaults when the reserved model id was the only legacy entry", () => {
+  it("seeds DeepSeek defaults when the reserved model id was the only legacy entry", async () => {
     writeAddedModelsYaml({
       "deepseek-official-proxy": {
         base_url: "https://api.deepseek.com/v1",
@@ -368,7 +368,7 @@ describe("migration #13: normalize recent legacy compatibility state", () => {
       },
     });
 
-    runMigration13();
+    await runMigration13();
 
     const raw = readAddedModelsYaml();
     expect(raw.providers["deepseek-official-proxy"].models).toEqual([
@@ -377,7 +377,7 @@ describe("migration #13: normalize recent legacy compatibility state", () => {
     ]);
   });
 
-  it("makes legacy implicit memory master defaults explicit without overriding user choices", () => {
+  it("makes legacy implicit memory master defaults explicit without overriding user choices", async () => {
     writeAgentConfig(agentsDir, "legacy", {
       agent: { name: "Legacy" },
       memory: { token_budget: 2500 },
@@ -391,7 +391,7 @@ describe("migration #13: normalize recent legacy compatibility state", () => {
       memory: { enabled: true },
     });
 
-    runMigration13();
+    await runMigration13();
 
     expect(readAgentConfig(agentsDir, "legacy").memory).toEqual({
       token_budget: 2500,
@@ -419,13 +419,13 @@ describe("migration #1: cleanDanglingProviderRefs", () => {
 
   afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
-  it("清空指向不存在 provider 的 api.provider", () => {
+  it("清空指向不存在 provider 的 api.provider", async () => {
     writeAgentConfig(agentsDir, "hana", {
       api: { provider: "dead-provider" },
     });
     const prefs = makePrefs(userDir);
 
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir, agentsDir, prefs,
       providerRegistry: makeRegistry(["openai"]),
       log: () => {},
@@ -435,14 +435,14 @@ describe("migration #1: cleanDanglingProviderRefs", () => {
     expect(config.api.provider).toBe("");
   });
 
-  it("保留指向存在 provider 的引用", () => {
+  it("保留指向存在 provider 的引用", async () => {
     writeAgentConfig(agentsDir, "hana", {
       api: { provider: "openai" },
       models: { chat: "openai/gpt-4o" },
     });
     const prefs = makePrefs(userDir);
 
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir, agentsDir, prefs,
       providerRegistry: makeRegistry(["openai"]),
       log: () => {},
@@ -453,13 +453,13 @@ describe("migration #1: cleanDanglingProviderRefs", () => {
     expect(config.models.chat).toEqual({ id: "gpt-4o", provider: "openai" });
   });
 
-  it("清空 models.chat 中 provider/model 格式的悬空引用", () => {
+  it("清空 models.chat 中 provider/model 格式的悬空引用", async () => {
     writeAgentConfig(agentsDir, "hana", {
       models: { chat: "minimax-token_plan/minimax-large", utility: "openai/gpt-4o-mini" },
     });
     const prefs = makePrefs(userDir);
 
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir, agentsDir, prefs,
       providerRegistry: makeRegistry(["openai"]),
       log: () => {},
@@ -470,13 +470,13 @@ describe("migration #1: cleanDanglingProviderRefs", () => {
     expect(config.models.utility).toEqual({ id: "gpt-4o-mini", provider: "openai" });
   });
 
-  it("清空 models.chat 中 {id, provider} 对象格式的悬空引用", () => {
+  it("清空 models.chat 中 {id, provider} 对象格式的悬空引用", async () => {
     writeAgentConfig(agentsDir, "hana", {
       models: { chat: { id: "some-model", provider: "dead-provider" } },
     });
     const prefs = makePrefs(userDir);
 
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir, agentsDir, prefs,
       providerRegistry: makeRegistry(["openai"]),
       log: () => {},
@@ -486,13 +486,13 @@ describe("migration #1: cleanDanglingProviderRefs", () => {
     expect(config.models.chat).toBe("");
   });
 
-  it("清空 embedding_api.provider 的悬空引用", () => {
+  it("清空 embedding_api.provider 的悬空引用", async () => {
     writeAgentConfig(agentsDir, "hana", {
       embedding_api: { provider: "dead" },
     });
     const prefs = makePrefs(userDir);
 
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir, agentsDir, prefs,
       providerRegistry: makeRegistry([]),
       log: () => {},
@@ -502,7 +502,7 @@ describe("migration #1: cleanDanglingProviderRefs", () => {
     expect(config.embedding_api.provider).toBe("");
   });
 
-  it("清空 preferences 中悬空的共享模型引用", () => {
+  it("清空 preferences 中悬空的共享模型引用", async () => {
     const prefs = makePrefs(userDir);
     prefs.savePreferences({
       utility_large_model: { id: "some-model", provider: "dead" },
@@ -510,7 +510,7 @@ describe("migration #1: cleanDanglingProviderRefs", () => {
     });
     fs.mkdirSync(agentsDir, { recursive: true });
 
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir, agentsDir, prefs,
       providerRegistry: makeRegistry([]),
       log: () => {},
@@ -521,14 +521,14 @@ describe("migration #1: cleanDanglingProviderRefs", () => {
     expect(p.utility_api_provider).toBeNull();
   });
 
-  it("preferences 中字符串格式的悬空共享模型也被清空", () => {
+  it("preferences 中字符串格式的悬空共享模型也被清空", async () => {
     const prefs = makePrefs(userDir);
     prefs.savePreferences({
       utility_model: "dead-provider/fast-model",
     });
     fs.mkdirSync(agentsDir, { recursive: true });
 
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir, agentsDir, prefs,
       providerRegistry: makeRegistry(["openai"]),
       log: () => {},
@@ -538,7 +538,7 @@ describe("migration #1: cleanDanglingProviderRefs", () => {
     expect(p.utility_model).toBeNull();
   });
 
-  it("多个 agent 同时修复", () => {
+  it("多个 agent 同时修复", async () => {
     writeAgentConfig(agentsDir, "hana", { api: { provider: "dead" } });
     writeAgentConfig(agentsDir, "butter", { api: { provider: "openai" } });
     writeAgentConfig(agentsDir, "xiaohua", {
@@ -547,7 +547,7 @@ describe("migration #1: cleanDanglingProviderRefs", () => {
     });
     const prefs = makePrefs(userDir);
 
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir, agentsDir, prefs,
       providerRegistry: makeRegistry(["openai"]),
       log: () => {},
@@ -575,12 +575,12 @@ describe("migration #2: migrateBridgeToPerAgent", () => {
   afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
   /** 跳过 migration #1 直接测 #2：把 _dataVersion 设为 1 */
-  function runMigration2(prefs) {
+  async function runMigration2(prefs) {
     const p = prefs.getPreferences();
     p._dataVersion = 1;
     prefs.savePreferences(p);
 
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -589,7 +589,7 @@ describe("migration #2: migrateBridgeToPerAgent", () => {
     });
   }
 
-  it("基本迁移：单 agent，telegram + owner → config.yaml bridge 区块", () => {
+  it("基本迁移：单 agent，telegram + owner → config.yaml bridge 区块", async () => {
     writeAgentConfig(agentsDir, "hana", { api: { provider: "" } });
     const prefs = makePrefs(userDir);
     prefs.savePreferences({
@@ -601,7 +601,7 @@ describe("migration #2: migrateBridgeToPerAgent", () => {
       },
     });
 
-    runMigration2(prefs);
+    await runMigration2(prefs);
 
     const config = readAgentConfig(agentsDir, "hana");
     expect(config.bridge.telegram.token).toBe("tok123");
@@ -613,7 +613,7 @@ describe("migration #2: migrateBridgeToPerAgent", () => {
     expect(p.bridge).toBeUndefined();
   });
 
-  it("多 agent 分组：telegram→agent-a，feishu→agent-b", () => {
+  it("多 agent 分组：telegram→agent-a，feishu→agent-b", async () => {
     writeAgentConfig(agentsDir, "agent-a", { api: { provider: "" } });
     writeAgentConfig(agentsDir, "agent-b", { api: { provider: "" } });
     const prefs = makePrefs(userDir);
@@ -627,7 +627,7 @@ describe("migration #2: migrateBridgeToPerAgent", () => {
       },
     });
 
-    runMigration2(prefs);
+    await runMigration2(prefs);
 
     const cfgA = readAgentConfig(agentsDir, "agent-a");
     const cfgB = readAgentConfig(agentsDir, "agent-b");
@@ -641,7 +641,7 @@ describe("migration #2: migrateBridgeToPerAgent", () => {
     expect(cfgB.bridge.telegram).toBeUndefined();
   });
 
-  it("legacy owner key：owner.telegram（无 composite）→ 归入 primary agent", () => {
+  it("legacy owner key：owner.telegram（无 composite）→ 归入 primary agent", async () => {
     writeAgentConfig(agentsDir, "hana", { api: { provider: "" } });
     const prefs = makePrefs(userDir);
     prefs.savePreferences({
@@ -652,13 +652,13 @@ describe("migration #2: migrateBridgeToPerAgent", () => {
       },
     });
 
-    runMigration2(prefs);
+    await runMigration2(prefs);
 
     const config = readAgentConfig(agentsDir, "hana");
     expect(config.bridge.telegram.owner).toBe("legacy-owner");
   });
 
-  it("composite owner key：owner['telegram:agent-a'] → 归入 agent-a", () => {
+  it("composite owner key：owner['telegram:agent-a'] → 归入 agent-a", async () => {
     writeAgentConfig(agentsDir, "agent-a", { api: { provider: "" } });
     const prefs = makePrefs(userDir);
     prefs.savePreferences({
@@ -672,19 +672,19 @@ describe("migration #2: migrateBridgeToPerAgent", () => {
       },
     });
 
-    runMigration2(prefs);
+    await runMigration2(prefs);
 
     const config = readAgentConfig(agentsDir, "agent-a");
     // composite key takes priority over legacy key
     expect(config.bridge.telegram.owner).toBe("composite-owner");
   });
 
-  it("无 bridge 配置 → no-op", () => {
+  it("无 bridge 配置 → no-op", async () => {
     writeAgentConfig(agentsDir, "hana", { api: { provider: "" } });
     const prefs = makePrefs(userDir);
     prefs.savePreferences({ primaryAgent: "hana" });
 
-    runMigration2(prefs);
+    await runMigration2(prefs);
 
     const config = readAgentConfig(agentsDir, "hana");
     expect(config.bridge).toBeUndefined();
@@ -693,7 +693,7 @@ describe("migration #2: migrateBridgeToPerAgent", () => {
     expect(p.bridge).toBeUndefined();
   });
 
-  it("agentId 指向已删除 agent → 回退到 primaryAgent", () => {
+  it("agentId 指向已删除 agent → 回退到 primaryAgent", async () => {
     // agent-a does NOT exist, only hana exists
     writeAgentConfig(agentsDir, "hana", { api: { provider: "" } });
     const prefs = makePrefs(userDir);
@@ -705,14 +705,14 @@ describe("migration #2: migrateBridgeToPerAgent", () => {
       },
     });
 
-    runMigration2(prefs);
+    await runMigration2(prefs);
 
     const config = readAgentConfig(agentsDir, "hana");
     expect(config.bridge.telegram.token).toBe("tok");
     expect(config.bridge.telegram.agentId).toBeUndefined();
   });
 
-  it("保留 bridge.readOnly 为全局偏好，不再写入 agent config", () => {
+  it("保留 bridge.readOnly 为全局偏好，不再写入 agent config", async () => {
     writeAgentConfig(agentsDir, "primary", { api: { provider: "" } });
     writeAgentConfig(agentsDir, "secondary", { api: { provider: "" } });
     const prefs = makePrefs(userDir);
@@ -726,7 +726,7 @@ describe("migration #2: migrateBridgeToPerAgent", () => {
       },
     });
 
-    runMigration2(prefs);
+    await runMigration2(prefs);
 
     const cfgPrimary = readAgentConfig(agentsDir, "primary");
     const cfgSecondary = readAgentConfig(agentsDir, "secondary");
@@ -752,11 +752,11 @@ describe("migration #3 — migrateWorkspaceToPerAgent", () => {
 
   afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
-  function runMigration3(prefs) {
+  async function runMigration3(prefs) {
     const p = prefs.getPreferences();
     p._dataVersion = 2;
     prefs.savePreferences(p);
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -765,7 +765,7 @@ describe("migration #3 — migrateWorkspaceToPerAgent", () => {
     });
   }
 
-  it("migrates home_folder to primary agent config.yaml", () => {
+  it("migrates home_folder to primary agent config.yaml", async () => {
     writeAgentConfig(agentsDir, "hana", { api: { provider: "" } });
     const prefs = makePrefs(userDir);
     prefs.savePreferences({
@@ -774,7 +774,7 @@ describe("migration #3 — migrateWorkspaceToPerAgent", () => {
       _dataVersion: 2,
     });
 
-    runMigration3(prefs);
+    await runMigration3(prefs);
 
     const config = readAgentConfig(agentsDir, "hana");
     expect(config.desk.home_folder).toBe("/Users/test/Desktop");
@@ -784,19 +784,19 @@ describe("migration #3 — migrateWorkspaceToPerAgent", () => {
     expect(p._dataVersion).toBe(LATEST_DATA_VERSION);
   });
 
-  it("skips when home_folder is empty", () => {
+  it("skips when home_folder is empty", async () => {
     writeAgentConfig(agentsDir, "hana", { api: { provider: "" } });
     const prefs = makePrefs(userDir);
     prefs.savePreferences({ primaryAgent: "hana", _dataVersion: 2 });
 
-    runMigration3(prefs);
+    await runMigration3(prefs);
 
     const config = readAgentConfig(agentsDir, "hana");
     expect(config.desk.heartbeat_enabled).toBe(false);
     expect(prefs.getPreferences()._dataVersion).toBe(LATEST_DATA_VERSION);
   });
 
-  it("falls back to first agent when primaryAgent not found", () => {
+  it("falls back to first agent when primaryAgent not found", async () => {
     writeAgentConfig(agentsDir, "alpha", { api: { provider: "" } });
     const prefs = makePrefs(userDir);
     prefs.savePreferences({
@@ -805,14 +805,14 @@ describe("migration #3 — migrateWorkspaceToPerAgent", () => {
       _dataVersion: 2,
     });
 
-    runMigration3(prefs);
+    await runMigration3(prefs);
 
     const config = readAgentConfig(agentsDir, "alpha");
     expect(config.desk.home_folder).toBe("/workspace");
     expect(prefs.getPreferences().home_folder).toBeUndefined();
   });
 
-  it("does not write home_folder to non-primary agents, but disables their heartbeat", () => {
+  it("does not write home_folder to non-primary agents, but disables their heartbeat", async () => {
     writeAgentConfig(agentsDir, "hana", { api: { provider: "" } });
     writeAgentConfig(agentsDir, "assistant", { api: { provider: "" } });
     const prefs = makePrefs(userDir);
@@ -822,7 +822,7 @@ describe("migration #3 — migrateWorkspaceToPerAgent", () => {
       _dataVersion: 2,
     });
 
-    runMigration3(prefs);
+    await runMigration3(prefs);
 
     const hanaConfig = readAgentConfig(agentsDir, "hana");
     const assistantConfig = readAgentConfig(agentsDir, "assistant");
@@ -831,7 +831,7 @@ describe("migration #3 — migrateWorkspaceToPerAgent", () => {
     expect(assistantConfig.desk.heartbeat_enabled).toBe(false);
   });
 
-  it("preserves data when no agent config.yaml exists (version stays at 2)", () => {
+  it("preserves data when no agent config.yaml exists (version stays at 2)", async () => {
     fs.mkdirSync(path.join(agentsDir, "hana"), { recursive: true });
     const prefs = makePrefs(userDir);
     prefs.savePreferences({
@@ -841,14 +841,14 @@ describe("migration #3 — migrateWorkspaceToPerAgent", () => {
     });
 
     // migration #3 throws internally; runner catches it and breaks without bumping version
-    runMigration3(prefs);
+    await runMigration3(prefs);
 
     const p = prefs.getPreferences();
     expect(p.home_folder).toBe("/workspace");
     expect(p._dataVersion).toBe(2);
   });
 
-  it("is idempotent — rerun after success is a no-op", () => {
+  it("is idempotent — rerun after success is a no-op", async () => {
     writeAgentConfig(agentsDir, "hana", { api: { provider: "" } });
     const prefs = makePrefs(userDir);
     prefs.savePreferences({
@@ -857,14 +857,14 @@ describe("migration #3 — migrateWorkspaceToPerAgent", () => {
       _dataVersion: 2,
     });
 
-    runMigration3(prefs);
+    await runMigration3(prefs);
     expect(prefs.getPreferences()._dataVersion).toBe(LATEST_DATA_VERSION);
 
     // Manually reset _dataVersion to 2 to simulate forced rerun
     const p2 = prefs.getPreferences();
     p2._dataVersion = 2;
     prefs.savePreferences(p2);
-    runMigration3(prefs);
+    await runMigration3(prefs);
 
     // home_folder is gone from prefs, so migration skips cleanly
     expect(prefs.getPreferences()._dataVersion).toBe(LATEST_DATA_VERSION);
@@ -872,7 +872,7 @@ describe("migration #3 — migrateWorkspaceToPerAgent", () => {
     expect(config.desk.home_folder).toBe("/workspace");
   });
 
-  it("preserves existing desk fields when merging home_folder", () => {
+  it("preserves existing desk fields when merging home_folder", async () => {
     writeAgentConfig(agentsDir, "hana", {
       api: { provider: "" },
       desk: { heartbeat_enabled: false, heartbeat_interval: 30 },
@@ -884,7 +884,7 @@ describe("migration #3 — migrateWorkspaceToPerAgent", () => {
       _dataVersion: 2,
     });
 
-    runMigration3(prefs);
+    await runMigration3(prefs);
 
     const config = readAgentConfig(agentsDir, "hana");
     expect(config.desk.home_folder).toBe("/workspace");
@@ -892,7 +892,7 @@ describe("migration #3 — migrateWorkspaceToPerAgent", () => {
     expect(config.desk.heartbeat_interval).toBe(30);
   });
 
-  it("disables heartbeat for non-primary agents", () => {
+  it("disables heartbeat for non-primary agents", async () => {
     writeAgentConfig(agentsDir, "hana", { api: { provider: "" } });
     writeAgentConfig(agentsDir, "assistant", { api: { provider: "" } });
     writeAgentConfig(agentsDir, "research", { api: { provider: "" } });
@@ -903,7 +903,7 @@ describe("migration #3 — migrateWorkspaceToPerAgent", () => {
       _dataVersion: 2,
     });
 
-    runMigration3(prefs);
+    await runMigration3(prefs);
 
     // Primary agent also gets the product default made explicit by migration #29
     const hanaConfig = readAgentConfig(agentsDir, "hana");
@@ -917,7 +917,7 @@ describe("migration #3 — migrateWorkspaceToPerAgent", () => {
     expect(researchConfig.desk.heartbeat_enabled).toBe(false);
   });
 
-  it("respects existing heartbeat_enabled on non-primary agents", () => {
+  it("respects existing heartbeat_enabled on non-primary agents", async () => {
     writeAgentConfig(agentsDir, "hana", { api: { provider: "" } });
     writeAgentConfig(agentsDir, "assistant", {
       api: { provider: "" },
@@ -930,7 +930,7 @@ describe("migration #3 — migrateWorkspaceToPerAgent", () => {
       _dataVersion: 2,
     });
 
-    runMigration3(prefs);
+    await runMigration3(prefs);
 
     // User explicitly set heartbeat_enabled=true → migration respects it
     const assistantConfig = readAgentConfig(agentsDir, "assistant");
@@ -952,12 +952,12 @@ describe("migration #9 — migrateBridgeReadOnlyToGlobal", () => {
 
   afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
-  function runMigration9(prefs) {
+  async function runMigration9(prefs) {
     const p = prefs.getPreferences();
     p._dataVersion = 8;
     prefs.savePreferences(p);
 
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -966,7 +966,7 @@ describe("migration #9 — migrateBridgeReadOnlyToGlobal", () => {
     });
   }
 
-  it("lifts any agent-level bridge.readOnly into preferences and removes stale agent fields", () => {
+  it("lifts any agent-level bridge.readOnly into preferences and removes stale agent fields", async () => {
     writeAgentConfig(agentsDir, "agent-a", {
       api: { provider: "" },
       bridge: {
@@ -984,7 +984,7 @@ describe("migration #9 — migrateBridgeReadOnlyToGlobal", () => {
     const prefs = makePrefs(userDir);
     prefs.savePreferences({});
 
-    runMigration9(prefs);
+    await runMigration9(prefs);
 
     expect(prefs.getPreferences().bridge?.readOnly).toBe(true);
 
@@ -1010,11 +1010,11 @@ describe("migration #4 — migrateSubagentExecutorMetadata", () => {
 
   afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
-  function runMigration4(prefs) {
+  async function runMigration4(prefs) {
     const p = prefs.getPreferences();
     p._dataVersion = 3;
     prefs.savePreferences(p);
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -1023,7 +1023,7 @@ describe("migration #4 — migrateSubagentExecutorMetadata", () => {
     });
   }
 
-  it("migrates explicit delegated executor metadata into parent session history and child sidecar", () => {
+  it("migrates explicit delegated executor metadata into parent session history and child sidecar", async () => {
     writeAgentConfig(agentsDir, "hanako", { agent: { name: "Hanako" }, api: { provider: "" } });
     writeAgentConfig(agentsDir, "butter", { agent: { name: "butter" }, api: { provider: "" } });
     const prefs = makePrefs(userDir);
@@ -1048,7 +1048,7 @@ describe("migration #4 — migrateSubagentExecutorMetadata", () => {
     fs.mkdirSync(path.dirname(childSessionPath), { recursive: true });
     fs.writeFileSync(childSessionPath, "", "utf-8");
 
-    runMigration4(prefs);
+    await runMigration4(prefs);
 
     const entries = readSessionJsonl(parentSessionPath);
     const details = entries[1].message.details;
@@ -1064,7 +1064,7 @@ describe("migration #4 — migrateSubagentExecutorMetadata", () => {
     });
   });
 
-  it("backfills legacy self-dispatch records from the owning agent directory when executor metadata is missing", () => {
+  it("backfills legacy self-dispatch records from the owning agent directory when executor metadata is missing", async () => {
     writeAgentConfig(agentsDir, "hanako", { agent: { name: "Hanako" }, api: { provider: "" } });
     const prefs = makePrefs(userDir);
     const parentSessionPath = path.join(agentsDir, "hanako", "sessions", "parent.jsonl");
@@ -1086,7 +1086,7 @@ describe("migration #4 — migrateSubagentExecutorMetadata", () => {
     fs.mkdirSync(path.dirname(childSessionPath), { recursive: true });
     fs.writeFileSync(childSessionPath, "", "utf-8");
 
-    runMigration4(prefs);
+    await runMigration4(prefs);
 
     const entries = readSessionJsonl(parentSessionPath);
     const details = entries[1].message.details;
@@ -1117,9 +1117,9 @@ describe("#7 migrateVisionToImage", () => {
   });
   afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
-  function runMigration7(prefs) {
+  async function runMigration7(prefs) {
     prefs.savePreferences({ _dataVersion: 6 });  // 跳过 #1-#6，直接测 #7
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -1140,7 +1140,7 @@ describe("#7 migrateVisionToImage", () => {
     return YAML.load(fs.readFileSync(path.join(tmpDir, "added-models.yaml"), "utf-8"));
   }
 
-  it("重命名 added-models.yaml 里 model 对象的 vision 字段为 image", () => {
+  it("重命名 added-models.yaml 里 model 对象的 vision 字段为 image", async () => {
     const prefs = makePrefs(userDir);
     writeAddedModelsYaml({
       dashscope: {
@@ -1154,7 +1154,7 @@ describe("#7 migrateVisionToImage", () => {
       },
     });
 
-    runMigration7(prefs);
+    await runMigration7(prefs);
 
     const raw = readAddedModelsYaml();
     const models = raw.providers.dashscope.models;
@@ -1165,7 +1165,7 @@ describe("#7 migrateVisionToImage", () => {
     expect(prefs.getPreferences()._dataVersion).toBe(LATEST_DATA_VERSION);
   });
 
-  it("幂等：已迁移过的 added-models.yaml 重跑不改写", () => {
+  it("幂等：已迁移过的 added-models.yaml 重跑不改写", async () => {
     const prefs = makePrefs(userDir);
     writeAddedModelsYaml({
       dashscope: {
@@ -1175,13 +1175,13 @@ describe("#7 migrateVisionToImage", () => {
       },
     });
 
-    runMigration7(prefs);
+    await runMigration7(prefs);
 
     const raw = readAddedModelsYaml();
     expect(raw.providers.dashscope.models[0]).toEqual({ id: "qwen3-max", image: true });
   });
 
-  it("image 已存在时不覆盖，但仍删除残留 vision", () => {
+  it("image 已存在时不覆盖，但仍删除残留 vision", async () => {
     const prefs = makePrefs(userDir);
     writeAddedModelsYaml({
       dashscope: {
@@ -1191,13 +1191,13 @@ describe("#7 migrateVisionToImage", () => {
       },
     });
 
-    runMigration7(prefs);
+    await runMigration7(prefs);
 
     const raw = readAddedModelsYaml();
     expect(raw.providers.dashscope.models[0]).toEqual({ id: "qwen3-max", image: true });
   });
 
-  it("兜底处理 agent config.yaml 的 models.overrides 残留", () => {
+  it("兜底处理 agent config.yaml 的 models.overrides 残留", async () => {
     const prefs = makePrefs(userDir);
     writeAgentConfig(agentsDir, "hana", {
       models: {
@@ -1208,18 +1208,18 @@ describe("#7 migrateVisionToImage", () => {
       },
     });
 
-    runMigration7(prefs);
+    await runMigration7(prefs);
 
     const cfg = readAgentConfig(agentsDir, "hana");
     expect(cfg.models.overrides["qwen3-max"]).toEqual({ image: true, reasoning: false, displayName: "Qwen" });
     expect(cfg.models.overrides["deepseek-chat"]).toEqual({ image: false });
   });
 
-  it("added-models.yaml 不存在时不报错，_dataVersion 推进", () => {
+  it("added-models.yaml 不存在时不报错，_dataVersion 推进", async () => {
     const prefs = makePrefs(userDir);
     // 不写 added-models.yaml 也不写任何 agent config
 
-    runMigration7(prefs);
+    await runMigration7(prefs);
 
     expect(prefs.getPreferences()._dataVersion).toBe(LATEST_DATA_VERSION);
   });
@@ -1237,9 +1237,9 @@ describe("migration #14: migrate Gemini OpenAI compatibility configs to native G
 
   afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
-  function runMigration14(prefs) {
+  async function runMigration14(prefs) {
     prefs.savePreferences({ _dataVersion: 13 });
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -1260,7 +1260,7 @@ describe("migration #14: migrate Gemini OpenAI compatibility configs to native G
     return YAML.load(fs.readFileSync(path.join(tmpDir, "added-models.yaml"), "utf-8"));
   }
 
-  it("rewrites official Gemini OpenAI endpoint configs to the native Google API", () => {
+  it("rewrites official Gemini OpenAI endpoint configs to the native Google API", async () => {
     const prefs = makePrefs(userDir);
     writeAddedModelsYaml({
       gemini: {
@@ -1271,7 +1271,7 @@ describe("migration #14: migrate Gemini OpenAI compatibility configs to native G
       },
     });
 
-    runMigration14(prefs);
+    await runMigration14(prefs);
 
     const raw = readAddedModelsYaml();
     expect(raw.providers.gemini.base_url).toBe("https://generativelanguage.googleapis.com/v1beta");
@@ -1280,7 +1280,7 @@ describe("migration #14: migrate Gemini OpenAI compatibility configs to native G
     expect(prefs.getPreferences()._dataVersion).toBe(LATEST_DATA_VERSION);
   });
 
-  it("also repairs custom aliases that point directly at the official Gemini OpenAI endpoint", () => {
+  it("also repairs custom aliases that point directly at the official Gemini OpenAI endpoint", async () => {
     const prefs = makePrefs(userDir);
     writeAddedModelsYaml({
       "my-gemini": {
@@ -1296,7 +1296,7 @@ describe("migration #14: migrate Gemini OpenAI compatibility configs to native G
       },
     });
 
-    runMigration14(prefs);
+    await runMigration14(prefs);
 
     const raw = readAddedModelsYaml();
     expect(raw.providers["my-gemini"].base_url).toBe("https://generativelanguage.googleapis.com/v1beta");
@@ -1318,9 +1318,9 @@ describe("migration #15: repair legacy session sidecar thinking levels", () => {
 
   afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
-  function runMigration15(prefs) {
+  async function runMigration15(prefs) {
     prefs.savePreferences({ _dataVersion: 14 });
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -1343,7 +1343,7 @@ describe("migration #15: repair legacy session sidecar thinking levels", () => {
     return JSON.parse(fs.readFileSync(path.join(agentsDir, agentId, "sessions", "session-meta.json"), "utf-8"));
   }
 
-  it("downgrades prompt-snapshotted xhigh entries when xhigh support cannot be proven", () => {
+  it("downgrades prompt-snapshotted xhigh entries when xhigh support cannot be proven", async () => {
     const prefs = makePrefs(userDir);
     const originalMeta = {
       "legacy-xhigh.jsonl": {
@@ -1385,7 +1385,7 @@ describe("migration #15: repair legacy session sidecar thinking levels", () => {
     };
     writeSessionMeta("hana", originalMeta);
 
-    runMigration15(prefs);
+    await runMigration15(prefs);
 
     const meta = readSessionMeta("hana");
     expect(meta["legacy-xhigh.jsonl"]).toMatchObject({
@@ -1416,9 +1416,9 @@ describe("migration #16: video capability projection", () => {
 
   afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
-  function runMigration16(prefs) {
+  async function runMigration16(prefs) {
     prefs.savePreferences({ _dataVersion: 15 });
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -1429,7 +1429,7 @@ describe("migration #16: video capability projection", () => {
     });
   }
 
-  it("repairs stale models.json input arrays for known video-capable models", () => {
+  it("repairs stale models.json input arrays for known video-capable models", async () => {
     const prefs = makePrefs(userDir);
     const modelsJsonPath = path.join(tmpDir, "models.json");
     fs.writeFileSync(modelsJsonPath, JSON.stringify({
@@ -1443,7 +1443,7 @@ describe("migration #16: video capability projection", () => {
       },
     }, null, 2) + "\n", "utf-8");
 
-    runMigration16(prefs);
+    await runMigration16(prefs);
 
     const raw = JSON.parse(fs.readFileSync(modelsJsonPath, "utf-8"));
     expect(raw.providers.dashscope.models[0].input).toEqual(["text", "image"]);
@@ -1453,7 +1453,7 @@ describe("migration #16: video capability projection", () => {
     expect(prefs.getPreferences()._dataVersion).toBe(LATEST_DATA_VERSION);
   });
 
-  it("promotes legacy agent model override video flags into added-models.yaml", () => {
+  it("promotes legacy agent model override video flags into added-models.yaml", async () => {
     const prefs = makePrefs(userDir);
     fs.writeFileSync(
       path.join(tmpDir, "added-models.yaml"),
@@ -1476,7 +1476,7 @@ describe("migration #16: video capability projection", () => {
       },
     });
 
-    runMigration16(prefs);
+    await runMigration16(prefs);
 
     const raw = YAML.load(fs.readFileSync(path.join(tmpDir, "added-models.yaml"), "utf-8"));
     expect(raw.providers.dashscope.models[0]).toEqual({ id: "qwen3-vl-plus", video: true });
@@ -1497,9 +1497,9 @@ describe("migration #20: Pi model input schema compatibility", () => {
 
   afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
-  function runMigration20(prefs) {
+  async function runMigration20(prefs) {
     prefs.savePreferences({ _dataVersion: 19 });
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -1530,7 +1530,7 @@ describe("migration #20: Pi model input schema compatibility", () => {
       },
     }, null, 2) + "\n", "utf-8");
 
-    runMigration20(prefs);
+    await runMigration20(prefs);
 
     const raw = JSON.parse(fs.readFileSync(modelsJsonPath, "utf-8"));
     expect(raw.providers.dashscope.models[0]).toMatchObject({
@@ -1577,9 +1577,9 @@ describe("migration #21: video transport capability refresh", () => {
 
   afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
-  function runMigration21(prefs) {
+  async function runMigration21(prefs) {
     prefs.savePreferences({ _dataVersion: 20 });
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -1588,7 +1588,7 @@ describe("migration #21: video transport capability refresh", () => {
     });
   }
 
-  it("repairs existing models.json entries for newly declared Kimi video models", () => {
+  it("repairs existing models.json entries for newly declared Kimi video models", async () => {
     const prefs = makePrefs(userDir);
     const modelsJsonPath = path.join(tmpDir, "models.json");
     fs.writeFileSync(modelsJsonPath, JSON.stringify({
@@ -1604,7 +1604,7 @@ describe("migration #21: video transport capability refresh", () => {
       },
     }, null, 2) + "\n", "utf-8");
 
-    runMigration21(prefs);
+    await runMigration21(prefs);
 
     const raw = JSON.parse(fs.readFileSync(modelsJsonPath, "utf-8"));
     expect(raw.providers.moonshot.models[0]).toMatchObject({
@@ -1629,14 +1629,14 @@ describe("migration #8 — repairPostMigrationModelRefs", () => {
 
   afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
-  it("修复 migration #5 之后又被旧入口写回的裸字符串 chat model", () => {
+  it("修复 migration #5 之后又被旧入口写回的裸字符串 chat model", async () => {
     writeAgentConfig(agentsDir, "hana", {
       models: { chat: "qwen3.6-flash" },
     });
     const prefs = makePrefs(userDir);
     prefs.savePreferences({ _dataVersion: 7 });
 
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -1667,7 +1667,7 @@ describe("migration #10 — cleanupSummarizerCompilerRemnants", () => {
 
   afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
-  it("删除 preferences 里的 summarizer_model / compiler_model 字段（key 整体消失）", () => {
+  it("删除 preferences 里的 summarizer_model / compiler_model 字段（key 整体消失）", async () => {
     const prefs = makePrefs(userDir);
     prefs.savePreferences({
       _dataVersion: 9,
@@ -1676,7 +1676,7 @@ describe("migration #10 — cleanupSummarizerCompilerRemnants", () => {
       compiler_model: { id: "gpt-4o", provider: "openai" },
     });
 
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir, agentsDir, prefs,
       providerRegistry: makeRegistry(["openai"]),
       log: () => {},
@@ -1688,7 +1688,7 @@ describe("migration #10 — cleanupSummarizerCompilerRemnants", () => {
     expect(p.utility_model).toBe("openai/gpt-4o-mini");
   });
 
-  it("删除每个 agent config.yaml 的 models.summarizer / models.compiler", () => {
+  it("删除每个 agent config.yaml 的 models.summarizer / models.compiler", async () => {
     writeAgentConfig(agentsDir, "hana", {
       models: {
         chat: { id: "claude-opus-4-7", provider: "anthropic" },
@@ -1703,7 +1703,7 @@ describe("migration #10 — cleanupSummarizerCompilerRemnants", () => {
     const prefs = makePrefs(userDir);
     prefs.savePreferences({ _dataVersion: 9 });
 
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir, agentsDir, prefs,
       providerRegistry: makeRegistry(["anthropic", "openai"]),
       log: () => {},
@@ -1720,14 +1720,14 @@ describe("migration #10 — cleanupSummarizerCompilerRemnants", () => {
     expect(butter.models.chat).toEqual({ id: "claude-haiku-4-5", provider: "anthropic" });
   });
 
-  it("幂等：没有残留字段时不抛错，version 仍推进", () => {
+  it("幂等：没有残留字段时不抛错，version 仍推进", async () => {
     writeAgentConfig(agentsDir, "hana", {
       models: { chat: { id: "claude-opus-4-7", provider: "anthropic" } },
     });
     const prefs = makePrefs(userDir);
     prefs.savePreferences({ _dataVersion: 9 });
 
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir, agentsDir, prefs,
       providerRegistry: makeRegistry(["anthropic"]),
       log: () => {},
@@ -1767,7 +1767,7 @@ describe("migration #17 — migrateBridgeSessionKeysToAgentScoped", () => {
     ));
   }
 
-  it("adds the owning agent suffix to legacy bridge session keys", () => {
+  it("adds the owning agent suffix to legacy bridge session keys", async () => {
     writeAgentConfig(agentsDir, "hana", { api: { provider: "" } });
     writeBridgeIndex("hana", {
       "wx_dm_wx-user": { file: "owner/wx.jsonl", userId: "wx-user", name: "Alice" },
@@ -1778,7 +1778,7 @@ describe("migration #17 — migrateBridgeSessionKeysToAgentScoped", () => {
     const prefs = makePrefs(userDir);
     prefs.savePreferences({ _dataVersion: 16 });
 
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir, agentsDir, prefs,
       providerRegistry: makeRegistry([]),
       log: () => {},
@@ -1795,7 +1795,7 @@ describe("migration #17 — migrateBridgeSessionKeysToAgentScoped", () => {
     expect(prefs.getPreferences()._dataVersion).toBe(LATEST_DATA_VERSION);
   });
 
-  it("fills an existing scoped metadata entry from legacy history", () => {
+  it("fills an existing scoped metadata entry from legacy history", async () => {
     writeAgentConfig(agentsDir, "hana", { api: { provider: "" } });
     writeBridgeIndex("hana", {
       "wx_dm_user": { file: "owner/legacy.jsonl", userId: "user", name: "Old" },
@@ -1804,7 +1804,7 @@ describe("migration #17 — migrateBridgeSessionKeysToAgentScoped", () => {
     const prefs = makePrefs(userDir);
     prefs.savePreferences({ _dataVersion: 16 });
 
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir, agentsDir, prefs,
       providerRegistry: makeRegistry([]),
       log: () => {},
@@ -1820,7 +1820,7 @@ describe("migration #17 — migrateBridgeSessionKeysToAgentScoped", () => {
     });
   });
 
-  it("keeps legacy history when the scoped key already has history", () => {
+  it("keeps legacy history when the scoped key already has history", async () => {
     writeAgentConfig(agentsDir, "hana", { api: { provider: "" } });
     writeBridgeIndex("hana", {
       "wx_dm_user": { file: "owner/legacy.jsonl", userId: "user", name: "Old" },
@@ -1829,7 +1829,7 @@ describe("migration #17 — migrateBridgeSessionKeysToAgentScoped", () => {
     const prefs = makePrefs(userDir);
     prefs.savePreferences({ _dataVersion: 16 });
 
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir, agentsDir, prefs,
       providerRegistry: makeRegistry([]),
       log: () => {},
@@ -1856,7 +1856,7 @@ describe("migration #22 — migrateChannelPhoneSettingsDefaults", () => {
 
   afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
-  it("adds explicit default reminder and disabled model override fields to legacy channel files", () => {
+  it("adds explicit default reminder and disabled model override fields to legacy channel files", async () => {
     fs.writeFileSync(
       path.join(channelsDir, "ch_legacy.md"),
       [
@@ -1878,7 +1878,7 @@ describe("migration #22 — migrateChannelPhoneSettingsDefaults", () => {
     const prefs = makePrefs(userDir);
     prefs.savePreferences({ _dataVersion: 21 });
 
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -1910,7 +1910,7 @@ describe("migration #23 — removeAgentPhoneReplyInstructions", () => {
 
   afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
-  it("removes the deprecated free-text reply-scope settings from channel and phone projection files", () => {
+  it("removes the deprecated free-text reply-scope settings from channel and phone projection files", async () => {
     fs.writeFileSync(
       path.join(channelsDir, "ch_legacy.md"),
       [
@@ -1954,7 +1954,7 @@ describe("migration #23 — removeAgentPhoneReplyInstructions", () => {
     const prefs = makePrefs(userDir);
     prefs.savePreferences({ _dataVersion: 22 });
 
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -1990,7 +1990,7 @@ describe("migration #24 — migrateChannelPhoneGuardLimitDefaults", () => {
 
   afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
-  it("adds a per-channel guard limit based on channel member count", () => {
+  it("adds a per-channel guard limit based on channel member count", async () => {
     fs.writeFileSync(
       path.join(channelsDir, "ch_crew.md"),
       [
@@ -2010,7 +2010,7 @@ describe("migration #24 — migrateChannelPhoneGuardLimitDefaults", () => {
     const prefs = makePrefs(userDir);
     prefs.savePreferences({ _dataVersion: 23 });
 
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -2040,7 +2040,7 @@ describe("migration #25 — migrateChannelPhoneProactiveDefaults", () => {
 
   afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
-  it("adds an enabled proactive initiation flag to existing channel metadata", () => {
+  it("adds an enabled proactive initiation flag to existing channel metadata", async () => {
     fs.writeFileSync(
       path.join(channelsDir, "ch_crew.md"),
       [
@@ -2061,7 +2061,7 @@ describe("migration #25 — migrateChannelPhoneProactiveDefaults", () => {
     const prefs = makePrefs(userDir);
     prefs.savePreferences({ _dataVersion: 24 });
 
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -2075,7 +2075,7 @@ describe("migration #25 — migrateChannelPhoneProactiveDefaults", () => {
     expect(prefs.getPreferences()._dataVersion).toBe(LATEST_DATA_VERSION);
   });
 
-  it("preserves channels where proactive initiation was explicitly disabled", () => {
+  it("preserves channels where proactive initiation was explicitly disabled", async () => {
     fs.writeFileSync(
       path.join(channelsDir, "ch_quiet.md"),
       [
@@ -2091,7 +2091,7 @@ describe("migration #25 — migrateChannelPhoneProactiveDefaults", () => {
     const prefs = makePrefs(userDir);
     prefs.savePreferences({ _dataVersion: 24 });
 
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -2118,10 +2118,10 @@ describe("migration #18 — create local identity registries", () => {
 
   afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
-  function runFrom17() {
+  async function runFrom17() {
     const prefs = makePrefs(userDir);
     prefs.savePreferences({ _dataVersion: 17 });
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -2131,10 +2131,10 @@ describe("migration #18 — create local identity registries", () => {
     return prefs;
   }
 
-  function runFrom25() {
+  async function runFrom25() {
     const prefs = makePrefs(userDir);
     prefs.savePreferences({ _dataVersion: 25 });
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -2144,10 +2144,10 @@ describe("migration #18 — create local identity registries", () => {
     return prefs;
   }
 
-  function runFrom26() {
+  async function runFrom26() {
     const prefs = makePrefs(userDir);
     prefs.savePreferences({ _dataVersion: 26 });
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -2157,12 +2157,12 @@ describe("migration #18 — create local identity registries", () => {
     return prefs;
   }
 
-  it("creates stable server, legacy owner user, and default personal studio for old data roots", () => {
+  it("creates stable server, legacy owner user, and default personal studio for old data roots", async () => {
     fs.mkdirSync(path.join(tmpDir, "user", "avatars"), { recursive: true });
     fs.writeFileSync(path.join(tmpDir, "user", "user.md"), "old profile\n", "utf-8");
     writeAgentConfig(agentsDir, "hana", { api: { provider: "" } });
 
-    const prefs = runFrom17();
+    const prefs = await runFrom17();
 
     const serverNode = readJson(path.join(tmpDir, "server-node.json"));
     const users = readJson(path.join(tmpDir, "users.json"));
@@ -2205,7 +2205,7 @@ describe("migration #18 — create local identity registries", () => {
     expect(prefs.getPreferences()._dataVersion).toBe(LATEST_DATA_VERSION);
   });
 
-  it("preserves existing valid identity registries exactly", () => {
+  it("preserves existing valid identity registries exactly", async () => {
     const serverNodePath = path.join(tmpDir, "server-node.json");
     const usersPath = path.join(tmpDir, "users.json");
     const studiosPath = path.join(tmpDir, "studios.json");
@@ -2250,7 +2250,7 @@ describe("migration #18 — create local identity registries", () => {
     writeJson(usersPath, users);
     writeJson(studiosPath, studios);
 
-    const prefs = runFrom17();
+    const prefs = await runFrom17();
 
     expect(readJson(serverNodePath)).toEqual(serverNode);
     expect(readJson(usersPath)).toEqual(users);
@@ -2258,7 +2258,7 @@ describe("migration #18 — create local identity registries", () => {
     expect(prefs.getPreferences()._dataVersion).toBe(LATEST_DATA_VERSION);
   });
 
-  it("completes partial identity registries with consistent owner and studio references", () => {
+  it("completes partial identity registries with consistent owner and studio references", async () => {
     writeJson(path.join(tmpDir, "server-node.json"), {
       schemaVersion: 1,
       serverId: "server_partial",
@@ -2281,7 +2281,7 @@ describe("migration #18 — create local identity registries", () => {
       updatedAt: "2026-05-01T00:00:00.000Z",
     });
 
-    const prefs = runFrom17();
+    const prefs = await runFrom17();
     const studios = readJson(path.join(tmpDir, "studios.json"));
 
     expect(studios.defaultStudioId).toMatch(/^studio_[0-9a-f-]{36}$/);
@@ -2296,7 +2296,7 @@ describe("migration #18 — create local identity registries", () => {
     expect(prefs.getPreferences()._dataVersion).toBe(LATEST_DATA_VERSION);
   });
 
-  it("migrates an already-created legacy spaces.json registry to studios.json", () => {
+  it("migrates an already-created legacy spaces.json registry to studios.json", async () => {
     writeJson(path.join(tmpDir, "server-node.json"), {
       schemaVersion: 1,
       serverId: "server_legacy_space",
@@ -2335,7 +2335,7 @@ describe("migration #18 — create local identity registries", () => {
       updatedAt: "2026-05-01T00:00:00.000Z",
     });
 
-    const prefs = runFrom25();
+    const prefs = await runFrom25();
     const studios = readJson(path.join(tmpDir, "studios.json"));
 
     expect(studios).toEqual(expect.objectContaining({
@@ -2354,7 +2354,7 @@ describe("migration #18 — create local identity registries", () => {
     expect(prefs.getPreferences()._dataVersion).toBe(LATEST_DATA_VERSION);
   });
 
-  it("creates remote access foundation registries for users already migrated to Studio", () => {
+  it("creates remote access foundation registries for users already migrated to Studio", async () => {
     const serverNode = {
       schemaVersion: 1,
       serverId: "server_existing",
@@ -2400,7 +2400,7 @@ describe("migration #18 — create local identity registries", () => {
     writeJson(path.join(tmpDir, "users.json"), users);
     writeJson(path.join(tmpDir, "studios.json"), studios);
 
-    const prefs = runFrom26();
+    const prefs = await runFrom26();
 
     expect(readJson(path.join(tmpDir, "server-node.json"))).toEqual(serverNode);
     expect(readJson(path.join(tmpDir, "users.json"))).toEqual(users);
@@ -2417,13 +2417,13 @@ describe("migration #18 — create local identity registries", () => {
     expect(prefs.getPreferences()._dataVersion).toBe(LATEST_DATA_VERSION);
   });
 
-  it("fails explicitly and keeps migration version unchanged when identity registries are invalid", () => {
+  it("fails explicitly and keeps migration version unchanged when identity registries are invalid", async () => {
     fs.writeFileSync(path.join(tmpDir, "users.json"), "{ broken json", "utf-8");
     const prefs = makePrefs(userDir);
     prefs.savePreferences({ _dataVersion: 17 });
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
-      runMigrations({
+      await runMigrations({
         hanakoHome: tmpDir,
         agentsDir,
         prefs,
@@ -2517,10 +2517,10 @@ describe("migration #19 — migrate legacy API-key auth to provider config", () 
     };
   }
 
-  function runFrom18(providerRegistry = makeProviderRegistry()) {
+  async function runFrom18(providerRegistry = makeProviderRegistry()) {
     const prefs = makePrefs(userDir);
     prefs.savePreferences({ _dataVersion: 18 });
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -2530,7 +2530,7 @@ describe("migration #19 — migrate legacy API-key auth to provider config", () 
     return prefs;
   }
 
-  it("moves legacy DeepSeek API key into existing added-models provider before auth cleanup", () => {
+  it("moves legacy DeepSeek API key into existing added-models provider before auth cleanup", async () => {
     writeAuth({
       deepseek: { type: "api_key", key: "sk-legacy-4d2a" },
       "openai-codex": { type: "oauth", access: "oauth-access-token" },
@@ -2543,7 +2543,7 @@ describe("migration #19 — migrate legacy API-key auth to provider config", () 
       },
     });
 
-    const prefs = runFrom18();
+    const prefs = await runFrom18();
 
     const providers = readAddedModels().providers;
     expect(providers.deepseek).toEqual({
@@ -2557,7 +2557,7 @@ describe("migration #19 — migrate legacy API-key auth to provider config", () 
     expect(prefs.getPreferences()._dataVersion).toBe(LATEST_DATA_VERSION);
   });
 
-  it("recreates a missing known provider from legacy auth and models.json", () => {
+  it("recreates a missing known provider from legacy auth and models.json", async () => {
     writeAuth({
       deepseek: { type: "api_key", key: "sk-legacy-4d2a" },
     });
@@ -2575,7 +2575,7 @@ describe("migration #19 — migrate legacy API-key auth to provider config", () 
       },
     });
 
-    runFrom18();
+    await runFrom18();
 
     expect(readAddedModels().providers.deepseek).toEqual({
       api_key: "sk-legacy-4d2a",
@@ -2585,7 +2585,7 @@ describe("migration #19 — migrate legacy API-key auth to provider config", () 
     });
   });
 
-  it("recovers a legacy key from models.json after auth.json has already been cleaned", () => {
+  it("recovers a legacy key from models.json after auth.json has already been cleaned", async () => {
     writeAuth({});
     writeAddedModels({
       providers: {
@@ -2607,7 +2607,7 @@ describe("migration #19 — migrate legacy API-key auth to provider config", () 
       },
     });
 
-    runFrom18();
+    await runFrom18();
 
     expect(readAddedModels().providers.deepseek).toEqual({
       api_key: "sk-projected-6ad1",
@@ -2617,7 +2617,7 @@ describe("migration #19 — migrate legacy API-key auth to provider config", () 
     });
   });
 
-  it("does not persist the synthetic local API key from no-auth provider projections", () => {
+  it("does not persist the synthetic local API key from no-auth provider projections", async () => {
     writeAuth({});
     writeAddedModels({
       providers: {
@@ -2641,7 +2641,7 @@ describe("migration #19 — migrate legacy API-key auth to provider config", () 
       },
     });
 
-    runFrom18();
+    await runFrom18();
 
     expect(readAddedModels().providers.ollama).toEqual({
       base_url: "http://localhost:11434/v1",
@@ -2650,7 +2650,7 @@ describe("migration #19 — migrate legacy API-key auth to provider config", () 
     });
   });
 
-  it("does not overwrite an explicit added-models API key, including an intentional clear", () => {
+  it("does not overwrite an explicit added-models API key, including an intentional clear", async () => {
     writeAuth({
       deepseek: { type: "api_key", key: "sk-old-3ffa" },
     });
@@ -2665,7 +2665,7 @@ describe("migration #19 — migrate legacy API-key auth to provider config", () 
       },
     });
 
-    runFrom18();
+    await runFrom18();
 
     expect(readAddedModels().providers.deepseek.api_key).toBe("");
   });
@@ -2683,10 +2683,10 @@ describe("migration #28 — durable subagent run registry", () => {
 
   afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
-  function runFrom27() {
+  async function runFrom27() {
     const prefs = makePrefs(userDir);
     prefs.savePreferences({ _dataVersion: 27 });
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -2696,7 +2696,7 @@ describe("migration #28 — durable subagent run registry", () => {
     return prefs;
   }
 
-  it("backfills durable subagent run mappings from existing deferred metadata", () => {
+  it("backfills durable subagent run mappings from existing deferred metadata", async () => {
     const parentSessionPath = path.join(agentsDir, "hanako", "sessions", "parent.jsonl");
     const childSessionPath = path.join(agentsDir, "hanako", "subagent-sessions", "child.jsonl");
     fs.mkdirSync(path.dirname(parentSessionPath), { recursive: true });
@@ -2724,7 +2724,7 @@ describe("migration #28 — durable subagent run registry", () => {
       },
     });
 
-    const prefs = runFrom27();
+    const prefs = await runFrom27();
 
     const registry = readJson(path.join(tmpDir, "subagent-runs.json"));
     expect(registry.runs["subagent-legacy"]).toMatchObject({
@@ -2742,7 +2742,7 @@ describe("migration #28 — durable subagent run registry", () => {
     expect(prefs.getPreferences()._dataVersion).toBe(LATEST_DATA_VERSION);
   });
 
-  it("backfills historical parent records only when they already carry a child session path", () => {
+  it("backfills historical parent records only when they already carry a child session path", async () => {
     const parentSessionPath = path.join(agentsDir, "hanako", "sessions", "parent.jsonl");
     const childSessionPath = path.join(agentsDir, "hanako", "subagent-sessions", "child.jsonl");
     writeSessionJsonl(parentSessionPath, [
@@ -2774,7 +2774,7 @@ describe("migration #28 — durable subagent run registry", () => {
       },
     ]);
 
-    runFrom27();
+    await runFrom27();
 
     const registry = readJson(path.join(tmpDir, "subagent-runs.json"));
     expect(registry.runs["subagent-with-child"]).toMatchObject({
@@ -2800,10 +2800,10 @@ describe("migration #29 — heartbeat default is explicit opt-in", () => {
 
   afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
-  function runFrom28() {
+  async function runFrom28() {
     const prefs = makePrefs(userDir);
     prefs.savePreferences({ _dataVersion: 28 });
-    runMigrations({
+    await runMigrations({
       hanakoHome: tmpDir,
       agentsDir,
       prefs,
@@ -2813,7 +2813,7 @@ describe("migration #29 — heartbeat default is explicit opt-in", () => {
     return prefs;
   }
 
-  it("sets missing heartbeat_enabled to false while preserving explicit true and false", () => {
+  it("sets missing heartbeat_enabled to false while preserving explicit true and false", async () => {
     writeAgentConfig(agentsDir, "missing", {
       agent: { name: "Missing" },
       desk: { heartbeat_interval: 31 },
@@ -2827,7 +2827,7 @@ describe("migration #29 — heartbeat default is explicit opt-in", () => {
       desk: { heartbeat_enabled: false, heartbeat_interval: 31 },
     });
 
-    const prefs = runFrom28();
+    const prefs = await runFrom28();
 
     expect(readAgentConfig(agentsDir, "missing").desk.heartbeat_enabled).toBe(false);
     expect(readAgentConfig(agentsDir, "enabled").desk.heartbeat_enabled).toBe(true);
