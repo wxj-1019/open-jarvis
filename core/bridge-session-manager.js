@@ -33,11 +33,6 @@ import {
 
 const log = createModuleLogger("bridge-session");
 
-function getSteerPrefix() {
-  const isZh = getLocale().startsWith("zh");
-  return isZh ? "（插话，无需 MOOD）\n" : "(Interjection, no MOOD needed)\n";
-}
-
 function assertVideoInputSupported(model, videos) {
   if (!videos?.length) return;
   if (!modelSupportsVideoInput(model)) {
@@ -382,7 +377,7 @@ export class BridgeSessionManager {
       if (this.isSessionStreaming(sessionKey)) continue;
       const decision = shouldRunFreshCompact({ meta: entry, now });
       if (decision.run) {
-        targets.push({ sessionKey, reason: decision.reason || "daily" });
+        targets.push({ sessionKey, sessionPath, reason: decision.reason || "daily" });
       }
     }
     return targets;
@@ -622,6 +617,13 @@ export class BridgeSessionManager {
           this.writeIndex(index, agent);
         }
       }
+      if (!isGuest && sessionPath) {
+        try {
+          agent.memoryTicker?.notifyTurn?.(sessionPath);
+        } catch (err) {
+          log.warn(`bridge memory notifyTurn failed (${sessionKey}): ${err?.message || err}`);
+        }
+      }
       if (providerErrorMessage) {
         return { __bridgeError: true, message: providerErrorMessage };
       }
@@ -648,7 +650,7 @@ export class BridgeSessionManager {
   steerSession(sessionKey, text) {
     const session = this._activeSessions.get(sessionKey);
     if (!session?.isStreaming) return false;
-    session.steer(getSteerPrefix() + text);
+    session.steer(text);
     return true;
   }
 

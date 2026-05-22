@@ -67,15 +67,15 @@ function extractText(content) {
     .join("");
 }
 
-function deferredResultFileBlocks(result) {
+function deferredResultFileBlocks(result, taskId = null) {
   if (!result || typeof result !== "object" || Array.isArray(result)) return [];
   const sessionFiles = Array.isArray(result.sessionFiles) ? result.sessionFiles : [];
   return sessionFiles
-    .map(sessionFileToContentBlock)
+    .map((file) => sessionFileToContentBlock(file, taskId ? { replacesTaskId: taskId } : undefined))
     .filter(Boolean);
 }
 
-function sessionFileToContentBlock(file) {
+function sessionFileToContentBlock(file, extra = undefined) {
   if (!file || typeof file !== "object") return null;
   const filePath = file.filePath || file.realPath || null;
   if (!filePath) return null;
@@ -84,6 +84,7 @@ function sessionFileToContentBlock(file) {
   const ext = file.ext ?? path.extname(filePath || label).toLowerCase().replace(/^\./, "");
   return {
     type: "file",
+    ...(extra || {}),
     ...(fileId ? { fileId } : {}),
     filePath,
     label,
@@ -93,6 +94,21 @@ function sessionFileToContentBlock(file) {
     ...(file.storageKind ? { storageKind: file.storageKind } : {}),
     ...(file.status ? { status: file.status } : {}),
     ...(file.missingAt !== undefined ? { missingAt: file.missingAt } : {}),
+    ...(file.resource ? { resource: file.resource } : {}),
+  };
+}
+
+function deferredResultFailureBlock(event) {
+  const metaType = event?.meta?.type || "";
+  const mediaKind = event?.meta?.mediaKind || (metaType === "video-generation" ? "video" : (metaType === "image-generation" ? "image" : null));
+  if (!mediaKind || !event?.taskId) return null;
+  return {
+    type: "media_generation",
+    taskId: event.taskId,
+    kind: mediaKind,
+    status: event.status === "aborted" ? "aborted" : "failed",
+    ...(event.reason ? { reason: event.reason } : {}),
+    ...(event.meta?.prompt ? { prompt: event.meta.prompt } : {}),
   };
 }
 
@@ -456,7 +472,11 @@ export function createChatRoute(engine, hub, { upgradeWebSocket }) {
       });
 
       // Unified content_block emission for all tool results
-      const blocks = extractBlocks(event.toolName, event.result?.details, event.result);
+      const blocks = enrichSessionFileBlocks(
+        extractBlocks(event.toolName, event.result?.details, event.result),
+        engine,
+        sessionPath,
+      );
       for (const block of blocks) {
         emitStreamEvent(sessionPath, ss, { type: "content_block", block });
       }
@@ -739,9 +759,12 @@ export function createChatRoute(engine, hub, { upgradeWebSocket }) {
         meta: event.meta,
       });
       if (event.status === "success") {
-        for (const block of deferredResultFileBlocks(event.result)) {
+        for (const block of enrichSessionFileBlocks(deferredResultFileBlocks(event.result, event.taskId), engine, sessionPath)) {
           emitStreamEvent(sessionPath, ss, { type: "content_block", block });
         }
+      } else {
+        const block = deferredResultFailureBlock(event);
+        if (block) emitStreamEvent(sessionPath, ss, { type: "content_block", block });
       }
     }
   });
@@ -1045,6 +1068,53 @@ export function createChatRoute(engine, hub, { upgradeWebSocket }) {
   );
 
   return { restRoute, wsRoute };
+}
+
+function enrichSessionFileBlocks(blocks, engine, sessionPath) {
+  if (!Array.isArray(blocks) || blocks.length === 0 || !sessionPath) return blocks || [];
+  return blocks.map((block) => {
+    const patch = sessionFileBlockPatch(block, engine, sessionPath);
+    if (!patch) return block;
+    const next = { ...block, ...patch };
+    if (next.type === "skill" && next.installedFile) {
+      next.installedFile = { ...next.installedFile, ...patch };
+    }
+    return next;
+  });
+}
+
+function sessionFileBlockPatch(block, engine, sessionPath) {
+  if (!block || typeof block !== "object") return null;
+  if (!["file", "artifact", "skill"].includes(block.type)) return null;
+  let file = null;
+  if (block.fileId && typeof engine?.getSessionFile === "function") {
+    file = engine.getSessionFile(block.fileId, { sessionPath });
+  }
+  if (!file && block.filePath && typeof engine?.getSessionFileByPath === "function") {
+    file = engine.getSessionFileByPath(block.filePath, { sessionPath });
+  }
+  if (!file) return null;
+  const serialized = typeof engine?.serializeSessionFile === "function"
+    ? engine.serializeSessionFile(file)
+    : file;
+  return sessionFileFields(serialized || file);
+}
+
+function sessionFileFields(file) {
+  if (!file || typeof file !== "object") return null;
+  const fileId = file.fileId || file.id || null;
+  return {
+    ...(fileId ? { fileId } : {}),
+    ...(file.filePath ? { filePath: file.filePath } : {}),
+    ...(file.label || file.displayName || file.filename ? { label: file.label || file.displayName || file.filename } : {}),
+    ...(file.ext !== undefined ? { ext: file.ext } : {}),
+    ...(file.mime ? { mime: file.mime } : {}),
+    ...(file.kind ? { kind: file.kind } : {}),
+    ...(file.storageKind ? { storageKind: file.storageKind } : {}),
+    ...(file.status ? { status: file.status } : {}),
+    ...(file.missingAt !== undefined ? { missingAt: file.missingAt } : {}),
+    ...(file.resource ? { resource: file.resource } : {}),
+  };
 }
 
 /**

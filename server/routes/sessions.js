@@ -7,15 +7,17 @@ import path from "path";
 import { Hono } from "hono";
 import { safeJson } from "../hono-helpers.js";
 import { t } from "../i18n.js";
-import { extractBlocks } from "../block-extractors.js";
+import { extractBlocks, resolveMediaGenerationBlocks } from "../block-extractors.js";
 import { BrowserManager } from "../../lib/browser/browser-manager.js";
 import { sessionIdFromFilename } from "../../lib/session-jsonl.js";
+import { parseDeferredResultNotification } from "../../lib/deferred-result-notification.js";
 import {
   materializeExecutorIdentity,
   readSubagentSessionMetaSync,
 } from "../../lib/subagent-executor-metadata.js";
 import {
   extractTextContent,
+  filterUnreferencedInlineImages,
   loadSessionHistoryMessages,
   loadLatestAssistantSummaryFromSessionFile,
   isValidSessionPath,
@@ -339,6 +341,9 @@ export function createSessionsRoute(engine, hub = null) {
           agentName: s.agentName || null,
           modelId: s.modelId || null,
           modelProvider: s.modelProvider || null,
+          permissionMode: typeof engine.getSessionPermissionMode === "function"
+            ? engine.getSessionPermissionMode(s.path)
+            : engine.permissionMode || null,
           pinnedAt: s.pinnedAt || null,
           hasSummary: !!summaryRecord,
           rcAttachment: rcAttachmentByPath.get(s.path)
@@ -431,18 +436,21 @@ export function createSessionsRoute(engine, hub = null) {
       // 每条消息带稳定 id（原始 sourceMessages 索引）
       const allMessages = [];
       const blocks = [];
+      const mediaGenerationResults = new Map();
+      const standaloneMediaGenerationResults = [];
       let globalIdx = 0;
 
       for (const m of sourceMessages) {
         if (m.role === "user") {
           const { text, images } = extractTextContent(m.content);
-          if (text || images.length) {
+          const visibleImages = filterUnreferencedInlineImages(text, images);
+          if (text || visibleImages.length) {
             allMessages.push({
               id: String(globalIdx),
               ...(m.id ? { entryId: m.id } : {}),
               role: "user",
               content: text,
-              images: images.length ? images : undefined,
+              images: visibleImages.length ? visibleImages : undefined,
               ...(m.timestamp ? { timestamp: m.timestamp } : {}),
             });
             globalIdx++;
@@ -466,13 +474,28 @@ export function createSessionsRoute(engine, hub = null) {
           for (const b of extracted) {
             blocks.push({ ...b, afterIndex: allMessages.length - 1 });
           }
+        } else if (m.role === "custom" && m.customType === "hana-background-result") {
+          const parsed = parseDeferredResultNotification(m.content);
+          if (!parsed?.taskId || !isMediaGenerationDeferredResult(parsed)) continue;
+          mediaGenerationResults.set(parsed.taskId, parsed);
+          if (parsed.status === "success") {
+            standaloneMediaGenerationResults.push({
+              ...parsed,
+              afterIndex: allMessages.length - 1,
+            });
+          }
         }
       }
+      const resolvedBlocks = resolveMediaGenerationBlocks(
+        blocks,
+        mediaGenerationResults,
+        standaloneMediaGenerationResults,
+      );
 
       // 分页：before 参数指定游标，否则默认返回最后 limit 条
       let messages;
       let hasMore = false;
-      let slicedBlocks = blocks;
+      let slicedBlocks = resolvedBlocks;
 
       const total = allMessages.length;
       // all=1 强制全量返回（流式恢复等特殊场景）
@@ -488,7 +511,7 @@ export function createSessionsRoute(engine, hub = null) {
         messages = allMessages.slice(startIdx, endIdx);
         hasMore = startIdx > 0;
         // 重映射 afterIndex 到切片内偏移，过滤超出范围的
-        slicedBlocks = blocks
+        slicedBlocks = resolvedBlocks
           .filter(b => b.afterIndex >= startIdx && b.afterIndex < endIdx)
           .map(b => ({ ...b, afterIndex: b.afterIndex - startIdx }));
       }
@@ -1064,7 +1087,7 @@ function patchSessionFileLifecycleBlocks(blocks, engine, sessionPath) {
       } catch {}
     }
     if (!file) continue;
-    const patch = sessionFileLifecycleFields(file);
+    const patch = sessionFileLifecycleFields(file, engine);
     Object.assign(block, patch);
     if (block.type === "skill" && block.installedFile) {
       block.installedFile = { ...block.installedFile, ...patch };
@@ -1082,17 +1105,26 @@ function listSessionRegistryFiles(engine, sessionPath) {
     .filter(Boolean);
 }
 
-function sessionFileLifecycleFields(file) {
-  const fileId = file.fileId || file.id || null;
+function isMediaGenerationDeferredResult(result) {
+  return result?.type === "image-generation" || result?.type === "video-generation";
+}
+
+function sessionFileLifecycleFields(file, engine) {
+  const serialized = typeof engine?.serializeSessionFile === "function"
+    ? engine.serializeSessionFile(file)
+    : file;
+  const source = serialized || file;
+  const fileId = source.fileId || source.id || file.fileId || file.id || null;
   return {
     ...(fileId ? { fileId } : {}),
-    ...(file.filePath ? { filePath: file.filePath } : {}),
-    ...(file.label || file.displayName ? { label: file.label || file.displayName } : {}),
-    ...(file.ext !== undefined ? { ext: file.ext } : {}),
-    ...(file.mime ? { mime: file.mime } : {}),
-    ...(file.kind ? { kind: file.kind } : {}),
-    ...(file.storageKind ? { storageKind: file.storageKind } : {}),
-    ...(file.status ? { status: file.status } : {}),
-    ...(file.missingAt !== undefined ? { missingAt: file.missingAt } : {}),
+    ...(source.filePath ? { filePath: source.filePath } : {}),
+    ...(source.label || source.displayName ? { label: source.label || source.displayName } : {}),
+    ...(source.ext !== undefined ? { ext: source.ext } : {}),
+    ...(source.mime ? { mime: source.mime } : {}),
+    ...(source.kind ? { kind: source.kind } : {}),
+    ...(source.storageKind ? { storageKind: source.storageKind } : {}),
+    ...(source.status ? { status: source.status } : {}),
+    ...(source.missingAt !== undefined ? { missingAt: source.missingAt } : {}),
+    ...(source.resource ? { resource: source.resource } : {}),
   };
 }
