@@ -38,10 +38,10 @@ export class McpRuntime {
     this.ctx = ctx;
 
     this._connectorManager = new ConnectorManager(ctx, opts);
-    this._toolRegistry = new ToolRegistry(this._connectorManager);
-    this._oauthManager = new OAuthManager(this._connectorManager);
+    this._toolRegistry = new ToolRegistry(this);
+    this._oauthManager = new OAuthManager(this);
     this._notificationHandler = new NotificationHandler(
-      this._connectorManager,
+      this,
       this._toolRegistry
     );
 
