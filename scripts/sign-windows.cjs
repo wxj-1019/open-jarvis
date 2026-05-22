@@ -88,8 +88,14 @@ try {
     { stdio: "inherit", shell: false }
   );
 
+  if (result.error) {
+    throw new Error(`signtool启动失败: ${result.error.code}`);
+  }
   if (result.status !== 0) {
     throw new Error(`signtool 退出码: ${result.status}`);
+  }
+  if (result.signal) {
+    throw new Error(`signtool 被信号终止: ${result.signal}`);
   }
 
   console.log(`\n✓ 签名成功: ${fileToSign}`);
@@ -101,6 +107,9 @@ try {
     { stdio: "inherit", shell: false }
   );
 
+  if (verifyResult.error) {
+    throw new Error(`签名验证启动失败: ${verifyResult.error.code}`);
+  }
   if (verifyResult.status === 0) {
     console.log("✓ 签名验证通过");
   } else {

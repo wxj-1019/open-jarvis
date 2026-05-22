@@ -16,6 +16,8 @@ export const ERROR_DEFS = Object.freeze({
   LLM_EMPTY_RESPONSE:  { severity: 'degraded', category: 'llm',        i18nKey: 'error.llmEmptyResponse',  retryable: true,  httpStatus: 502 },
   LLM_AUTH_FAILED:     { severity: 'degraded', category: 'llm',        i18nKey: 'error.llmAuthFailed',     retryable: false, httpStatus: 401 },
   LLM_SLOW_RESPONSE:   { severity: 'cosmetic', category: 'llm',        i18nKey: 'error.llmSlowResponse',   retryable: false },
+  LLM_SERVER_ERROR:    { severity: 'degraded', category: 'llm',        i18nKey: 'error.llmServerError',    retryable: true,  httpStatus: 502 },
+  LLM_CIRCUIT_OPEN:    { severity: 'degraded', category: 'llm',        i18nKey: 'error.llmCircuitOpen',    retryable: false, httpStatus: 503 },
   FS_PERMISSION:       { severity: 'critical', category: 'filesystem', i18nKey: 'error.fsPermission',      retryable: false, httpStatus: 500 },
   FS_NOT_FOUND:        { severity: 'degraded', category: 'filesystem', i18nKey: 'error.fsNotFound',        retryable: false, httpStatus: 404 },
   FS_COPY_FAILED:      { severity: 'critical', category: 'filesystem', i18nKey: 'error.fsCopyFailed',      retryable: true,  httpStatus: 500 },

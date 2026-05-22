@@ -2292,6 +2292,8 @@
   "error.llmEmptyResponse": "Model returned empty response",
   "error.llmAuthFailed": "Model authentication failed",
   "error.llmSlowResponse": "Model is responding slowly, please wait",
+  "error.llmServerError": "Model server error, retrying",
+  "error.llmCircuitOpen": "Model service temporarily unavailable, circuit breaker active",
   "error.fsPermission": "File permission denied",
   "error.fsNotFound": "File not found",
   "error.fsCopyFailed": "File copy failed",

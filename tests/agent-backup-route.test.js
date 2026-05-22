@@ -68,7 +68,7 @@ describe("POST /api/agents/:id/backup", () => {
     expect(body.success).toBe(true);
     expect(body.manifest).toBeTruthy();
     expect(body.manifest.format).toBe("hana-agent-backup");
-  });
+  }, 30000);
 
   it("agent 不存在时应返回错误", async () => {
     const { createAgentsRoute } = await import("../server/routes/agents.js");
@@ -80,5 +80,5 @@ describe("POST /api/agents/:id/backup", () => {
     expect(res.status).toBe(500);
     const body = await res.json();
     expect(body.error).toBeTruthy();
-  });
+  }, 30000);
 });

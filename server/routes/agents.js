@@ -22,6 +22,7 @@
 import fs from "fs/promises";
 import fsSync from "fs";
 import path from "path";
+import crypto from "crypto";
 import YAML from "js-yaml";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
@@ -826,7 +827,8 @@ export function createAgentsRoute(engine) {
       const backupDir = path.join(engine.agentsDir, ".backups");
       fsSync.mkdirSync(backupDir, { recursive: true });
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      const outPath = path.join(backupDir, `agent-backup-${id}-${timestamp}.zip`);
+      const randomSuffix = crypto.randomUUID().slice(0, 8);
+      const outPath = path.join(backupDir, `agent-backup-${id}-${timestamp}-${randomSuffix}.zip`);
 
       const { exportAgent } = await import("../../lib/backup/agent-backup.js");
       const agentDirPath = path.join(engine.agentsDir, id);

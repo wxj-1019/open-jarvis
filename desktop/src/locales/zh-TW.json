@@ -2292,6 +2292,8 @@
   "error.llmEmptyResponse": "模型返回了空响应",
   "error.llmAuthFailed": "模型认证失败",
   "error.llmSlowResponse": "模型响应较慢，请耐心等待",
+  "error.llmServerError": "模型服務異常，正在重試",
+  "error.llmCircuitOpen": "模型服務暫時不可用，已熔斷保護",
   "error.fsPermission": "文件权限不足",
   "error.fsNotFound": "文件未找到",
   "error.fsCopyFailed": "文件复制失败",
