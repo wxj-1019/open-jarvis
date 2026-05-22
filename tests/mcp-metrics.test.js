@@ -270,4 +270,72 @@ describe("McpMetricsCollector", () => {
       expect(stats.totalCalls).toBe(1);
     });
   });
+
+  describe("内存泄漏防护", () => {
+    it("限制每个connector的最大条目数", () => {
+      const metricsCollector = new McpMetricsCollector({ maxEntriesPerConnector: 100 });
+      for (let i = 0; i < 150; i++) {
+        metricsCollector.recordRequest("conn-1", "tools/list", 100, true);
+      }
+      const stats = metricsCollector.getConnectorStats("conn-1");
+      expect(stats.totalRequests).toBe(100);
+    });
+
+    it("限制每个tool的最大条目数", () => {
+      const metricsCollector = new McpMetricsCollector({ maxEntriesPerTool: 50 });
+      for (let i = 0; i < 80; i++) {
+        metricsCollector.recordToolCall("conn-1", "search", 100, true);
+      }
+      const stats = metricsCollector.getToolStats("conn-1", "search");
+      expect(stats.totalCalls).toBe(50);
+    });
+
+    it("自动过期旧条目当超过容量时", () => {
+      const metricsCollector = new McpMetricsCollector({ maxEntriesPerConnector: 3 });
+      metricsCollector.recordRequest("conn-1", "method1", 100, true);
+      metricsCollector.recordRequest("conn-1", "method2", 200, true);
+      metricsCollector.recordRequest("conn-1", "method3", 300, true);
+      metricsCollector.recordRequest("conn-1", "method4", 400, true);
+
+      const stats = metricsCollector.getConnectorStats("conn-1");
+      expect(stats.totalRequests).toBe(3);
+      expect(stats.avgLatencyMs).toBe(300);
+    });
+
+    it("TTL过期旧数据", async () => {
+      const metricsCollector = new McpMetricsCollector({ ttlMs: 100 });
+      metricsCollector.recordRequest("conn-1", "tools/list", 100, true);
+      await new Promise(resolve => setTimeout(resolve, 150));
+      metricsCollector.recordRequest("conn-1", "tools/list", 200, true);
+
+      const stats = metricsCollector.getConnectorStats("conn-1");
+      expect(stats.totalRequests).toBe(1);
+      expect(stats.avgLatencyMs).toBe(200);
+    });
+
+    it("cleanup方法清理过期数据", async () => {
+      const metricsCollector = new McpMetricsCollector({ ttlMs: 100 });
+      metricsCollector.recordRequest("conn-1", "method1", 100, true);
+      metricsCollector.recordRequest("conn-2", "method1", 200, true);
+      await new Promise(resolve => setTimeout(resolve, 150));
+      metricsCollector.recordRequest("conn-3", "method1", 300, true);
+
+      metricsCollector.cleanup();
+
+      const stats1 = metricsCollector.getConnectorStats("conn-1");
+      const stats3 = metricsCollector.getConnectorStats("conn-3");
+      expect(stats1.totalRequests).toBe(0);
+      expect(stats3.totalRequests).toBe(1);
+    });
+
+    it("cleanup后空connector被删除", async () => {
+      const metricsCollector = new McpMetricsCollector({ ttlMs: 100 });
+      metricsCollector.recordRequest("conn-1", "method1", 100, true);
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      metricsCollector.cleanup();
+
+      expect(metricsCollector.getConnectorStats("conn-1").totalRequests).toBe(0);
+    });
+  });
 });

@@ -4,6 +4,7 @@ import {
   headersWithoutMcpProtocolVersion,
   resolveInitialMcpProtocolVersion,
 } from "./mcp-protocol-version.js";
+import { stringOrEmpty, requestTimeoutMs } from "./mcp-utils.js";
 
 const STREAMABLE_ACCEPT = "application/json, text/event-stream";
 const SSE_ACCEPT = "text/event-stream";
@@ -44,10 +45,6 @@ export function parseSseEvents(text) {
 
 function authToken(server) {
   return stringOrEmpty(server?.authorizationToken) || stringOrEmpty(server?.oauth?.accessToken);
-}
-
-function stringOrEmpty(value) {
-  return typeof value === "string" ? value.trim() : "";
 }
 
 function connectorHeaders(server) {
@@ -103,11 +100,6 @@ async function fetchWithTimeout(fetchImpl, url, init, timeoutMs) {
   }
 }
 
-function requestTimeoutMs(server) {
-  const timeout = Number(server?.timeout || 0);
-  return Number.isFinite(timeout) && timeout > 0 ? timeout * 1000 : 30_000;
-}
-
 export class McpStreamableHttpClient {
   constructor(server, { fetchImpl = globalThis.fetch, log = console, onNotification, onRequest } = {}) {
     this.server = server;
@@ -151,6 +143,7 @@ export class McpStreamableHttpClient {
       capabilities: {
         sampling: {},
         roots: { listChanged: true },
+        elicitation: {},
       },
       clientInfo: {
         name: "jarvis",
@@ -408,6 +401,7 @@ export class McpLegacySseClient {
       capabilities: {
         sampling: {},
         roots: { listChanged: true },
+        elicitation: {},
       },
       clientInfo: {
         name: "jarvis",

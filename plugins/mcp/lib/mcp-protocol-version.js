@@ -1,4 +1,5 @@
 import { MCP_PROTOCOL_VERSION } from "./mcp-stdio-client.js";
+import { stringOrEmpty } from "./mcp-utils.js";
 
 export const MCP_PROTOCOL_VERSION_HEADER = "MCP-Protocol-Version";
 
@@ -27,8 +28,4 @@ function headerValue(headers, name) {
     value.trim()
   ));
   return found?.[1]?.trim() || "";
-}
-
-function stringOrEmpty(value) {
-  return typeof value === "string" ? value.trim() : "";
 }

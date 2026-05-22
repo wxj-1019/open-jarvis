@@ -4,6 +4,7 @@ import {
   MCP_PROTOCOL_VERSION_HEADER,
   resolveInitialMcpProtocolVersion,
 } from "./mcp-protocol-version.js";
+import { stringOrEmpty } from "./mcp-utils.js";
 
 export function parseWwwAuthenticate(value) {
   const header = String(value || "");
@@ -303,10 +304,6 @@ function scopeFromResource(resourceMetadata) {
 
 function firstString(values) {
   return Array.isArray(values) ? values.find((value) => typeof value === "string" && value) : "";
-}
-
-function stringOrEmpty(value) {
-  return typeof value === "string" ? value.trim() : "";
 }
 
 function base64url(buffer) {

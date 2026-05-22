@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { requestTimeoutMs } from "./mcp-utils.js";
 
 export const MCP_PROTOCOL_VERSION = "2025-11-25";
 
@@ -63,6 +64,7 @@ export class McpStdioClient {
       capabilities: {
         sampling: {},
         roots: { listChanged: true },
+        elicitation: {},
       },
       clientInfo: {
         name: "jarvis",
@@ -287,9 +289,4 @@ function commandName(command) {
   const raw = typeof command === "string" ? command.trim() : "";
   const name = raw.split(/[\\/]/).pop() || raw;
   return name.replace(/\.exe$/i, "").toLowerCase();
-}
-
-function requestTimeoutMs(server) {
-  const timeout = Number(server?.timeout || 0);
-  return Number.isFinite(timeout) && timeout > 0 ? timeout * 1000 : 30_000;
 }

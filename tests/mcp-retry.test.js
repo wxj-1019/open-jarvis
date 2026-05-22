@@ -297,7 +297,6 @@ describe("retryWithBackoff", () => {
     expect(mockLog.debug.mock.calls[1][0]).toMatch(/\[mcp:retry\] attempt 2\/3 failed, retrying in \d+ms/);
 
     setTimeoutSpy.mockRestore();
-    Math.random = () => Math.random();
   });
 
   it("accepts custom parameters", async () => {

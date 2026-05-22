@@ -1,5 +1,12 @@
 export class McpMetricsCollector {
-  constructor() {
+  constructor({
+    ttlMs = 60 * 60 * 1000,
+    maxEntriesPerConnector = 1000,
+    maxEntriesPerTool = 500,
+  } = {}) {
+    this._ttlMs = ttlMs;
+    this._maxEntriesPerConnector = maxEntriesPerConnector;
+    this._maxEntriesPerTool = maxEntriesPerTool;
     this._requests = new Map();
     this._tools = new Map();
   }
@@ -16,6 +23,10 @@ export class McpMetricsCollector {
       success,
       timestamp: Date.now(),
     });
+
+    if (entries.length > this._maxEntriesPerConnector) {
+      entries.shift();
+    }
   }
 
   recordToolCall(connectorId, toolName, latencyMs, success) {
@@ -30,28 +41,48 @@ export class McpMetricsCollector {
       success,
       timestamp: Date.now(),
     });
+
+    if (entries.length > this._maxEntriesPerTool) {
+      entries.shift();
+    }
   }
 
   getConnectorStats(connectorId) {
-    const entries = this._requests.get(connectorId) || [];
+    const allEntries = this._requests.get(connectorId) || [];
+    const now = Date.now();
+    const entries = allEntries.filter(e => now - e.timestamp < this._ttlMs);
     return computeConnectorStats(connectorId, entries);
   }
 
   getToolStats(connectorId, toolName) {
     const key = `${connectorId}/${toolName}`;
-    const entries = this._tools.get(key) || [];
+    const allEntries = this._tools.get(key) || [];
+    const now = Date.now();
+    const entries = allEntries.filter(e => now - e.timestamp < this._ttlMs);
     return computeToolStats(connectorId, toolName, entries);
   }
 
   getAllStats() {
+    const now = Date.now();
+    const connectorIds = new Set(this._requests.keys());
+    for (const key of this._tools.keys()) {
+      const slashIndex = key.indexOf("/");
+      if (slashIndex > 0) {
+        connectorIds.add(key.slice(0, slashIndex));
+      }
+    }
+
     const stats = [];
-    for (const [connectorId, entries] of this._requests.entries()) {
+    for (const connectorId of connectorIds) {
+      const allEntries = this._requests.get(connectorId) || [];
+      const entries = allEntries.filter(e => now - e.timestamp < this._ttlMs);
       const connectorStats = computeConnectorStats(connectorId, entries);
 
       const tools = {};
-      for (const [key, toolEntries] of this._tools.entries()) {
+      for (const [key, toolAllEntries] of this._tools.entries()) {
         if (key.startsWith(`${connectorId}/`)) {
           const toolName = key.slice(connectorId.length + 1);
+          const toolEntries = toolAllEntries.filter(e => now - e.timestamp < this._ttlMs);
           tools[toolName] = computeToolStats(connectorId, toolName, toolEntries);
         }
       }
@@ -62,6 +93,28 @@ export class McpMetricsCollector {
       });
     }
     return stats;
+  }
+
+  cleanup() {
+    const now = Date.now();
+
+    for (const [connectorId, entries] of this._requests.entries()) {
+      const freshEntries = entries.filter(e => now - e.timestamp < this._ttlMs);
+      if (freshEntries.length === 0) {
+        this._requests.delete(connectorId);
+      } else {
+        this._requests.set(connectorId, freshEntries);
+      }
+    }
+
+    for (const [key, entries] of this._tools.entries()) {
+      const freshEntries = entries.filter(e => now - e.timestamp < this._ttlMs);
+      if (freshEntries.length === 0) {
+        this._tools.delete(key);
+      } else {
+        this._tools.set(key, freshEntries);
+      }
+    }
   }
 
   reset() {
