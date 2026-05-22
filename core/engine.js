@@ -1044,8 +1044,8 @@ export class HanaEngine {
     // 0c. Model overrides 迁移（config.models.overrides → added-models.yaml，只跑一次）
     this._models.providerRegistry.migrateOverridesToAddedModels(this.agentsDir, log);
 
-    // 0d. 统一数据迁移（版本号驱动，新迁移统一加在 migrations.js）
-    runMigrations({
+    // 0d. 统一数据迁移（版本号驱动，新迁移统一加在 core/migrations/）
+    await runMigrations({
       hanakoHome: this.hanakoHome,
       agentsDir: this.agentsDir,
       prefs: this._prefs,
