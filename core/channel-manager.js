@@ -21,13 +21,13 @@ import {
   deleteChannel,
 } from "../lib/channels/channel-store.js";
 
-import { validateDeps } from '../types/dependencies.js';
+import { validateDeps } from './types/dependencies.js';
 
 const log = createModuleLogger("channel");
 
 export class ChannelManager {
   /**
-   * @param {import('../types/dependencies.js').ChannelManagerDeps} deps
+   * @param {import('./types/dependencies.js').ChannelManagerDeps} deps
    */
   constructor(deps) {
     validateDeps(deps, 'ChannelManager', {
