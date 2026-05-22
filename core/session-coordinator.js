@@ -376,6 +376,7 @@ export class SessionCoordinator {
     }
   }
 
+  // ── createSession orchestrator ──
   async createSession(sessionMgr, cwd, memoryEnabled = true, model = null, {
     restore = false,
     agent: explicitAgent = null,
@@ -384,91 +385,162 @@ export class SessionCoordinator {
     workspaceFolders = [],
     visibleInSessionList = false,
   } = {}) {
-    const t0 = Date.now();
-    const agent = explicitAgent
-      || (explicitAgentId ? this._d.getAgentById?.(explicitAgentId) : null)
+    const ctx = {
+      sessionMgr, cwd, memoryEnabled, model,
+      restore, explicitAgent, explicitAgentId, preserveAgentMemoryState, workspaceFolders, visibleInSessionList,
+      t0: Date.now(),
+    };
+
+    // Phase 1: Resolve agent, cwd, model
+    this._resolveSessionAgent(ctx);
+    this._resolveSessionCwd(ctx);
+    await this._resolveSessionModel(ctx);
+
+    // Phase 2: Restore-mode session state (thinking, prompt, workspace, permission, legacy)
+    if (ctx.restore) {
+      await this._resolveRestoredSessionState(ctx);
+    }
+
+    // Phase 3: Freeze memory/experience state & compute thinking/permission
+    await this._freezeMemoryAndExperienceState(ctx);
+
+    // Phase 4: Build system prompt snapshots & resourceLoader proxy
+    await this._buildSessionPromptResources(ctx);
+
+    // Phase 5: Build session opts (tools, settings, model)
+    await this._computeSessionToolSnapshot(ctx);
+
+    // Phase 6: Create the PI agent session + compute & apply tool snapshot
+    await this._createPiAgentSession(ctx);
+
+    // Phase 7: Persist session meta, apply tool snapshot, LRU eviction
+    await this._persistSessionAndEvict(ctx);
+
+    return { session: ctx.session, sessionPath: ctx.sessionPath || ctx.mapKey, agentId: ctx.creatingAgentId };
+  }
+
+  // ── Phase 1a: Resolve target agent ──
+  _resolveSessionAgent(ctx) {
+    const agent = ctx.explicitAgent
+      || (ctx.explicitAgentId ? this._d.getAgentById?.(ctx.explicitAgentId) : null)
       || this._d.getAgent();
     if (!agent) {
       throw new Error("createSession: target agent unavailable");
     }
-    const ownerAgentId = explicitAgentId || agent.id || this._d.getActiveAgentId();
-    const effectiveCwd = cwd || this._d.getHomeCwd(agent.id) || process.cwd();
+    ctx.agent = agent;
+    ctx.ownerAgentId = ctx.explicitAgentId || agent.id || this._d.getActiveAgentId();
+  }
+
+  // ── Phase 1b: Resolve working directory ──
+  _resolveSessionCwd(ctx) {
+    ctx.effectiveCwd = ctx.cwd || this._d.getHomeCwd(ctx.agent.id) || process.cwd();
+  }
+
+  // ── Phase 1c: Resolve effective model & create SessionManager ──
+  async _resolveSessionModel(ctx) {
     const models = this._d.getModels();
+    ctx.models = models;
     // restore 模式：不指定 model，让 PI SDK 从 JSONL 恢复（session model 单一数据源）
-    const effectiveModel = restore ? null : (model || this._pendingModel || models.currentModel);
+    const effectiveModel = ctx.restore ? null : (ctx.model || this._pendingModel || models.currentModel);
     this._pendingModel = null;
-    log.log(`createSession cwd=${effectiveCwd} restore=${restore} (传入: ${cwd || "未指定"})`);
+    ctx.effectiveModel = effectiveModel;
+    log.log(`createSession cwd=${ctx.effectiveCwd} restore=${ctx.restore} (传入: ${ctx.cwd || "未指定"})`);
 
-    await this._d.onBeforeSessionCreate?.(effectiveCwd);
+    await this._d.onBeforeSessionCreate?.(ctx.effectiveCwd);
 
-    if (!restore && !effectiveModel) {
+    if (!ctx.restore && !effectiveModel) {
       throw new Error(t("error.noAvailableModel"));
     }
-    if (!sessionMgr) {
-      sessionMgr = SessionManager.create(effectiveCwd, agent.sessionDir);
+    if (!ctx.sessionMgr) {
+      ctx.sessionMgr = SessionManager.create(ctx.effectiveCwd, ctx.agent.sessionDir);
     }
-    const sessionPathForMeta = sessionMgr.getSessionFile?.() || null;
-    let restoredThinkingLevel = null;
-    if (restore && sessionPathForMeta) {
-      try {
-        const metaPath = path.join(agent.sessionDir, "session-meta.json");
-        const meta = await this._readMetaCached(metaPath);
-        const metaEntry = meta[path.basename(sessionPathForMeta)];
-        if (typeof metaEntry?.thinkingLevel === "string") {
-          restoredThinkingLevel = metaEntry.thinkingLevel;
-        }
-      } catch (err) {
-        if (err.code !== "ENOENT") {
-          log.warn(`session thinking level restore failed: ${err.message}`);
-        }
-      }
-    }
-    const restoredPromptSnapshot = restore && sessionPathForMeta
-      ? await this._readSessionPromptSnapshot(agent, sessionPathForMeta)
-      : null;
-    const restoredPromptModel = restore && !restoredPromptSnapshot
-      ? this._resolvePromptModelFromSessionManager(sessionMgr, models)
-      : null;
-    const promptPatchModel = restoredPromptSnapshot ? null : (effectiveModel || restoredPromptModel);
-    const requestedThinkingLevel = normalizeSessionThinkingLevel(
-      restore ? (restoredThinkingLevel || this._d.getPrefs().getThinkingLevel()) : this._d.getPrefs().getThinkingLevel(),
-    );
-    let initialThinkingLevel = normalizeThinkingLevelForModel(requestedThinkingLevel, promptPatchModel);
-    let resolvedThinkingLevel = models.resolveThinkingLevel(initialThinkingLevel);
-    const providerPromptPatches = promptPatchModel
-      ? getProviderPromptPatches(promptPatchModel, {
-        reasoningLevel: resolvedThinkingLevel,
-        locale: agent.config?.locale || getLocale(),
-      })
-      : [];
-    let workspaceScope = normalizeWorkspaceScope({
-      primaryCwd: effectiveCwd,
-      workspaceFolders,
-    });
-    if (restore && sessionPathForMeta) {
-      try {
-        const metaPath = path.join(agent.sessionDir, "session-meta.json");
-        const meta = await this._readMetaCached(metaPath);
-        const restoredFolders = meta[path.basename(sessionPathForMeta)]?.workspaceFolders;
-        workspaceScope = normalizeWorkspaceScope({
-          primaryCwd: effectiveCwd,
-          workspaceFolders: restoredFolders,
-        });
-      } catch {
-        // session-meta 可选：读取或解析失败时沿用上面 fresh 算出的 workspaceScope。
-      }
-    }
-    const includeLegacyArtifactTool = restore
-      ? await this._shouldIncludeLegacyArtifactToolForRestore(agent, sessionPathForMeta)
-      : false;
+    ctx.sessionPathForMeta = ctx.sessionMgr.getSessionFile?.() || null;
+  }
 
-    // 冻结当前 session 的有效记忆参与态。
-    // fresh create: 以"创建当下实际会进入 prompt 前缀的状态"为准（master && session）
-    // restore: 以 session-meta 里冻结下来的 memoryEnabled 为准。
-    // 这样已有 session 的 prefix 身份不会被后续 master 开关漂移打穿。
+  // ── Phase 2: Resolve restored session state (thinking level, prompt snapshot, workspace, permission, legacy) ──
+  async _resolveRestoredSessionState(ctx) {
+    const { agent } = ctx;
+    const sessionPathForMeta = ctx.sessionMgr.getSessionFile?.() || null;
+    ctx.sessionPathForMeta = sessionPathForMeta;
+
+    // Legacy artifact tool — must be computed even when sessionPathForMeta is null
+    // (the helper returns true for null, signalling legacy support)
+    ctx.includeLegacyArtifactTool = await this._shouldIncludeLegacyArtifactToolForRestore(agent, sessionPathForMeta);
+    // Initialize restoredPermissionMode to null so the re-check in _createPiAgentSession
+    // (which uses sessionPath from the PI session) can detect it needs to read meta
+    ctx.restoredPermissionMode = null;
+
+    if (!sessionPathForMeta) return;
+
+    // Restore thinking level
+    let restoredThinkingLevel = null;
+    try {
+      const metaPath = path.join(agent.sessionDir, "session-meta.json");
+      const meta = await this._readMetaCached(metaPath);
+      const metaEntry = meta[path.basename(sessionPathForMeta)];
+      if (typeof metaEntry?.thinkingLevel === "string") {
+        restoredThinkingLevel = metaEntry.thinkingLevel;
+      }
+    } catch (err) {
+      if (err.code !== "ENOENT") {
+        log.warn(`session thinking level restore failed: ${err.message}`);
+      }
+    }
+    ctx.restoredThinkingLevel = restoredThinkingLevel;
+
+    // Restore prompt snapshot
+    ctx.restoredPromptSnapshot = await this._readSessionPromptSnapshot(agent, sessionPathForMeta);
+    ctx.restoredPromptModel = !ctx.restoredPromptSnapshot
+      ? this._resolvePromptModelFromSessionManager(ctx.sessionMgr, ctx.models)
+      : null;
+
+    // Restore workspace scope
+    let workspaceScope = normalizeWorkspaceScope({
+      primaryCwd: ctx.effectiveCwd,
+      workspaceFolders: ctx.workspaceFolders,
+    });
+    try {
+      const metaPath = path.join(agent.sessionDir, "session-meta.json");
+      const meta = await this._readMetaCached(metaPath);
+      const restoredFolders = meta[path.basename(sessionPathForMeta)]?.workspaceFolders;
+      workspaceScope = normalizeWorkspaceScope({
+        primaryCwd: ctx.effectiveCwd,
+        workspaceFolders: restoredFolders,
+      });
+    } catch {
+      // session-meta 可选
+    }
+    ctx.workspaceScope = workspaceScope;
+
+    // Permission mode
+    let restoredPermissionMode = null;
+    try {
+      const metaPath = path.join(agent.sessionDir, "session-meta.json");
+      const meta = await this._readMetaCached(metaPath);
+      const metaEntry = meta[path.basename(sessionPathForMeta)];
+      if (metaEntry) {
+        restoredPermissionMode = normalizeSessionPermissionMode(metaEntry);
+      }
+    } catch (err) {
+      if (err.code !== "ENOENT") {
+        log.warn(`session permission mode restore failed: ${err.message}`);
+      }
+    }
+    ctx.restoredPermissionMode = restoredPermissionMode;
+  }
+
+  // ── Phase 3: Freeze memory/experience state, compute thinking levels & permission mode ──
+  async _freezeMemoryAndExperienceState(ctx) {
+    const { agent, restore, memoryEnabled } = ctx;
+
+    // Freeze memory state
     const frozenMemoryEnabled = restore
       ? !!memoryEnabled
       : (agent.memoryMasterEnabled !== false && !!memoryEnabled);
+    ctx.frozenMemoryEnabled = frozenMemoryEnabled;
+
+    // Restore experience state
+    const sessionPathForMeta = ctx.sessionPathForMeta;
     let restoredExperienceEnabled = false;
     if (restore && sessionPathForMeta) {
       try {
@@ -482,89 +554,128 @@ export class SessionCoordinator {
       }
     }
     const agentHasExperienceSwitch = typeof agent.experienceEnabled === "boolean";
-    const frozenExperienceEnabled = restore
+    ctx.frozenExperienceEnabled = restore
       ? restoredExperienceEnabled
       : (agentHasExperienceSwitch ? agent.experienceEnabled === true : false);
 
-    // 切换 session 级记忆状态后立即快照 prompt（下方 promptSnapshot）。
-    // /rc 冷恢复这类"附着到旧 session"的路径不应污染当前 agent 的运行态，
-    // 因此允许在生成快照后把 agent 的 session-memory 状态回滚。
-    const creatingAgent = agent;
-    const prevSessionMemoryEnabled = creatingAgent.sessionMemoryEnabled;
-    creatingAgent.setMemoryEnabled(frozenMemoryEnabled);
+    // Switch session-level memory state for prompt snapshot
+    ctx.creatingAgent = agent;
+    ctx.prevSessionMemoryEnabled = agent.sessionMemoryEnabled;
+    agent.setMemoryEnabled(frozenMemoryEnabled);
 
-    const baseResourceLoader = this._d.getResourceLoader();
-    let restoredPermissionMode = null;
-    if (restore && sessionPathForMeta) {
-      try {
-        const metaPath = path.join(agent.sessionDir, "session-meta.json");
-        const meta = await this._readMetaCached(metaPath);
-        const metaEntry = meta[path.basename(sessionPathForMeta)];
-        if (metaEntry) {
-          restoredPermissionMode = normalizeSessionPermissionMode(metaEntry);
-        }
-      } catch (err) {
-        if (err.code !== "ENOENT") {
-          log.warn(`session permission mode restore failed: ${err.message}`);
-        }
-      }
+    // Compute thinking level
+    const promptPatchModel = ctx.restoredPromptSnapshot ? null : (ctx.effectiveModel || ctx.restoredPromptModel);
+    ctx.promptPatchModel = promptPatchModel;
+    const requestedThinkingLevel = normalizeSessionThinkingLevel(
+      restore ? (ctx.restoredThinkingLevel || this._d.getPrefs().getThinkingLevel()) : this._d.getPrefs().getThinkingLevel(),
+    );
+    let initialThinkingLevel = normalizeThinkingLevelForModel(requestedThinkingLevel, promptPatchModel);
+    let resolvedThinkingLevel = ctx.models.resolveThinkingLevel(initialThinkingLevel);
+    ctx.requestedThinkingLevel = requestedThinkingLevel;
+    ctx.initialThinkingLevel = initialThinkingLevel;
+    ctx.resolvedThinkingLevel = resolvedThinkingLevel;
+
+    // Provider prompt patches
+    ctx.providerPromptPatches = promptPatchModel
+      ? getProviderPromptPatches(promptPatchModel, {
+        reasoningLevel: resolvedThinkingLevel,
+        locale: agent.config?.locale || getLocale(),
+      })
+      : [];
+
+    // Workspace scope (may already be set in restore path)
+    if (!ctx.workspaceScope) {
+      ctx.workspaceScope = normalizeWorkspaceScope({
+        primaryCwd: ctx.effectiveCwd,
+        workspaceFolders: ctx.workspaceFolders,
+      });
     }
-    let initialPermissionMode = restore
-      ? normalizeSessionPermissionMode(restoredPermissionMode)
-      : normalizeSessionPermissionMode(this._pendingPermissionMode || this._getDefaultPermissionMode());
-    this._pendingPermissionMode = null;
-    let initialAccessMode = legacyAccessModeFromPermissionMode(initialPermissionMode);
-    let initialPlanMode = isReadOnlyPermissionMode(initialPermissionMode);
-    const sessionEntry = {
+
+    // Permission mode
+    let initialPermissionMode;
+    if (restore) {
+      initialPermissionMode = normalizeSessionPermissionMode(ctx.restoredPermissionMode);
+    } else {
+      initialPermissionMode = normalizeSessionPermissionMode(this._pendingPermissionMode || this._getDefaultPermissionMode());
+      this._pendingPermissionMode = null;
+    }
+    const initialAccessMode = legacyAccessModeFromPermissionMode(initialPermissionMode);
+    const initialPlanMode = isReadOnlyPermissionMode(initialPermissionMode);
+    ctx.initialPermissionMode = initialPermissionMode;
+    ctx.initialAccessMode = initialAccessMode;
+    ctx.initialPlanMode = initialPlanMode;
+
+    ctx.sessionEntry = {
       permissionMode: initialPermissionMode,
       accessMode: initialAccessMode,
       planMode: initialPlanMode,
       thinkingLevel: initialThinkingLevel,
-      visibleInSessionList: visibleInSessionList === true && !restore,
-    }; // pre-populated for resourceLoader proxy
+      visibleInSessionList: ctx.visibleInSessionList === true && !restore,
+    };
+  }
 
-    // 快照当前 system prompt，per-session 隔离。
-    // 后续记忆编译、技能变更只影响新对话，已有对话的 prompt 不变（保护 prefix cache）。
-    const systemPromptSnapshot = restoredPromptSnapshot?.systemPrompt
+  // ── Phase 4: Build system prompt snapshots & resourceLoader proxy ──
+  async _buildSessionPromptResources(ctx) {
+    const { agent, restore, frozenMemoryEnabled, frozenExperienceEnabled } = ctx;
+    ctx.baseResourceLoader = this._d.getResourceLoader();
+
+    // System prompt snapshot
+    ctx.systemPromptSnapshot = ctx.restoredPromptSnapshot?.systemPrompt
       ?? agent.buildSystemPrompt({
         forceMemoryEnabled: frozenMemoryEnabled,
         forceExperienceEnabled: frozenExperienceEnabled,
       });
-    if (preserveAgentMemoryState) {
-      creatingAgent.setMemoryEnabled(prevSessionMemoryEnabled);
+    if (ctx.preserveAgentMemoryState) {
+      ctx.creatingAgent.setMemoryEnabled(ctx.prevSessionMemoryEnabled);
     }
 
-    const localeSnapshot = agent.config?.locale || getLocale();
+    // Locale & skills
+    ctx.localeSnapshot = agent.config?.locale || getLocale();
     const skills = this._d.getSkills?.();
-    const appendSystemPromptSnapshot = restoredPromptSnapshot?.appendSystemPrompt
+    ctx.skills = skills;
+
+    // Append system prompt
+    ctx.appendSystemPromptSnapshot = ctx.restoredPromptSnapshot?.appendSystemPrompt
       ?? buildAppendSystemPromptSnapshot({
-        baseAppend: baseResourceLoader.getAppendSystemPrompt?.() || [],
-        providerPromptPatches,
+        baseAppend: ctx.baseResourceLoader.getAppendSystemPrompt?.() || [],
+        providerPromptPatches: ctx.providerPromptPatches,
         hasDeferredResultStore: !!this._d.getDeferredResultStore?.(),
-        locale: localeSnapshot,
-        workspaceScope,
+        locale: ctx.localeSnapshot,
+        workspaceScope: ctx.workspaceScope,
       });
-    const rawSkillsResultSnapshot = restoredPromptSnapshot?.skillsResult
+
+    // Skills result snapshot
+    const rawSkillsResultSnapshot = ctx.restoredPromptSnapshot?.skillsResult
       ?? (
         skills?.getSkillsForAgent
           ? freezeSkillsResult(skills.getSkillsForAgent(agent))
-          : freezeSkillsResult(baseResourceLoader.getSkills?.())
+          : freezeSkillsResult(ctx.baseResourceLoader.getSkills?.())
       );
-    const skillsResultSnapshot = restoredPromptSnapshot?.skillsResult
-      ? freezeSkillsResult(restoredPromptSnapshot.skillsResult)
-      : freezeSkillsResult(await snapshotSkillsForSession(rawSkillsResultSnapshot, sessionPathForMeta));
-    const agentsFilesResultSnapshot = restoredPromptSnapshot?.agentsFilesResult
-      ?? freezeAgentsFilesResult(baseResourceLoader.getAgentsFiles?.());
-    const promptSnapshotForPersist = restoredPromptSnapshot || {
+    ctx.rawSkillsResultSnapshot = rawSkillsResultSnapshot;
+
+    ctx.skillsResultSnapshot = ctx.restoredPromptSnapshot?.skillsResult
+      ? freezeSkillsResult(ctx.restoredPromptSnapshot.skillsResult)
+      : freezeSkillsResult(await snapshotSkillsForSession(rawSkillsResultSnapshot, ctx.sessionPathForMeta));
+
+    // Agents files snapshot
+    ctx.agentsFilesResultSnapshot = ctx.restoredPromptSnapshot?.agentsFilesResult
+      ?? freezeAgentsFilesResult(ctx.baseResourceLoader.getAgentsFiles?.());
+
+    // Prompt snapshot for persist
+    ctx.promptSnapshotForPersist = ctx.restoredPromptSnapshot || {
       version: SESSION_PROMPT_SNAPSHOT_VERSION,
-      systemPrompt: systemPromptSnapshot,
-      appendSystemPrompt: appendSystemPromptSnapshot,
-      skillsResult: skillsResultSnapshot,
-      agentsFilesResult: agentsFilesResultSnapshot,
+      systemPrompt: ctx.systemPromptSnapshot,
+      appendSystemPrompt: ctx.appendSystemPromptSnapshot,
+      skillsResult: ctx.skillsResultSnapshot,
+      agentsFilesResult: ctx.agentsFilesResultSnapshot,
     };
 
-    const sessionPathRef = { current: sessionPathForMeta };
-    const targetModelRef = { current: promptPatchModel || effectiveModel || null };
+    // Vision context injection
+    const sessionPathRef = { current: ctx.sessionPathForMeta };
+    const targetModelRef = { current: ctx.promptPatchModel || ctx.effectiveModel || null };
+    ctx.sessionPathRef = sessionPathRef;
+    ctx.targetModelRef = targetModelRef;
+
     const warnVisionContextInjection = (entry) => {
       if (typeof entry === "string") {
         log.warn(entry);
@@ -573,9 +684,6 @@ export class SessionCoordinator {
       log.warn(`vision context injection diagnostic: ${JSON.stringify(entry)}`);
     };
 
-    // Vision 辅助注入扩展：只在目标模型需要图片辅助笔记时注入视觉上下文。
-    // 注入器由 Hana 持有 session/model 引用，不读取 Pi SDK ctx，避免 restore 后 stale ctx 丢失 sidecar 笔记。
-    // 用户当前 UI 视野不再自动注入；需要时由 current_status(ui_context) 显式查询。
     const getEngine = this._d.getEngine;
     const visionAuxiliaryExtension = createVisionContextInjectionExtension({
       path: "hana-desktop-vision-context-injection",
@@ -592,15 +700,16 @@ export class SessionCoordinator {
       },
       warn: warnVisionContextInjection,
     });
+    ctx.visionAuxiliaryExtension = visionAuxiliaryExtension;
 
-    // Wrap resourceLoader: per-session prompt snapshot + plan mode injection + vision auxiliary extension
+    // ResourceLoader proxy
     const resourceLoaderProps = {
       getSystemPrompt: {
-        value: () => systemPromptSnapshot,
+        value: () => ctx.systemPromptSnapshot,
       },
       getExtensions: {
         value: () => {
-          const base = baseResourceLoader.getExtensions?.() ?? { extensions: [], errors: [] };
+          const base = ctx.baseResourceLoader.getExtensions?.() ?? { extensions: [], errors: [] };
           return {
             ...base,
             extensions: [visionAuxiliaryExtension, ...(base.extensions || [])],
@@ -608,78 +717,100 @@ export class SessionCoordinator {
         },
       },
       getAppendSystemPrompt: {
-        value: () => [...appendSystemPromptSnapshot],
+        value: () => [...ctx.appendSystemPromptSnapshot],
       },
       getSkills: {
-        value: () => resolveSessionSkillsForRuntime(skillsResultSnapshot),
+        value: () => resolveSessionSkillsForRuntime(ctx.skillsResultSnapshot),
       },
       getAgentsFiles: {
-        value: () => freezeAgentsFilesResult(agentsFilesResultSnapshot),
+        value: () => freezeAgentsFilesResult(ctx.agentsFilesResultSnapshot),
       },
     };
-    const resourceLoader = Object.create(baseResourceLoader, resourceLoaderProps);
+    ctx.resourceLoader = Object.create(ctx.baseResourceLoader, resourceLoaderProps);
+  }
+
+  // ── Phase 5: Build session opts (tools, settings, model) ──
+  async _computeSessionToolSnapshot(ctx) {
+    const { agent, frozenMemoryEnabled, effectiveModel, frozenExperienceEnabled } = ctx;
+    const agentHasExperienceSwitch = typeof agent.experienceEnabled === "boolean";
 
     const toolSnapshotOptions = { forceMemoryEnabled: frozenMemoryEnabled, model: effectiveModel };
     if (agentHasExperienceSwitch) {
       toolSnapshotOptions.forceExperienceEnabled = frozenExperienceEnabled;
     }
-    if (includeLegacyArtifactTool) {
+    if (ctx.includeLegacyArtifactTool) {
       toolSnapshotOptions.includeLegacyArtifactTool = true;
     }
     const agentToolsSnapshot = typeof agent.getToolsSnapshot === "function"
       ? agent.getToolsSnapshot(toolSnapshotOptions)
       : agent.tools;
+    ctx.agentToolsSnapshot = agentToolsSnapshot;
+
     const { tools: sessionTools, customTools: sessionCustomTools } = this._d.buildTools(
-      effectiveCwd,
+      ctx.effectiveCwd,
       agentToolsSnapshot,
-      { workspace: effectiveCwd, workspaceFolders: workspaceScope.workspaceFolders, agentDir: agent.agentDir },
+      { workspace: ctx.effectiveCwd, workspaceFolders: ctx.workspaceScope.workspaceFolders, agentDir: agent.agentDir },
     );
-    const sessionOpts = {
-      cwd: effectiveCwd,
-      sessionManager: sessionMgr,
-      settingsManager: this._createSettings(effectiveModel),
-      authStorage: models.authStorage,
-      modelRegistry: models.modelRegistry,
-      thinkingLevel: resolvedThinkingLevel,
-      resourceLoader,
+    ctx.sessionTools = sessionTools;
+    ctx.sessionCustomTools = sessionCustomTools;
+
+    // Build session opts for createAgentSession
+    ctx.sessionOpts = {
+      cwd: ctx.effectiveCwd,
+      sessionManager: ctx.sessionMgr,
+      settingsManager: this._createSettings(ctx.effectiveModel),
+      authStorage: ctx.models.authStorage,
+      modelRegistry: ctx.models.modelRegistry,
+      thinkingLevel: ctx.resolvedThinkingLevel,
+      resourceLoader: ctx.resourceLoader,
       tools: sessionTools,
       customTools: sessionCustomTools,
     };
-    // 新建 session 传 model；恢复 session 不传，让 PI SDK 从 JSONL 读取（单一数据源）
-    if (effectiveModel) sessionOpts.model = effectiveModel;
-    const { session, modelFallbackMessage } = await createAgentSession(sessionOpts);
+    if (ctx.effectiveModel) ctx.sessionOpts.model = ctx.effectiveModel;
+  }
+
+  // ── Phase 6: Create the PI agent session + compute & apply tool snapshot ──
+  async _createPiAgentSession(ctx) {
+    const { session, modelFallbackMessage } = await createAgentSession(ctx.sessionOpts);
     if (modelFallbackMessage) {
       log.warn(`session model fallback: ${modelFallbackMessage}`);
     }
+    ctx.session = session;
+    ctx.modelFallbackMessage = modelFallbackMessage;
     const resolvedModel = session.model;
-    const actualThinkingLevel = normalizeThinkingLevelForModel(initialThinkingLevel, resolvedModel);
-    if (actualThinkingLevel !== initialThinkingLevel) {
-      initialThinkingLevel = actualThinkingLevel;
-      resolvedThinkingLevel = models.resolveThinkingLevel(initialThinkingLevel);
-      session.setThinkingLevel?.(resolvedThinkingLevel);
-    }
-    const elapsed = Date.now() - t0;
-    log.log(`session created (${elapsed}ms), model=${resolvedModel?.name || effectiveModel?.name || "?"}`);
+    ctx.resolvedModel = resolvedModel;
 
-    // 事件转发（附带 agentId，供订阅者按 agent 过滤）
+    const actualThinkingLevel = normalizeThinkingLevelForModel(ctx.initialThinkingLevel, resolvedModel);
+    if (actualThinkingLevel !== ctx.initialThinkingLevel) {
+      ctx.initialThinkingLevel = actualThinkingLevel;
+      ctx.resolvedThinkingLevel = ctx.models.resolveThinkingLevel(actualThinkingLevel);
+      session.setThinkingLevel?.(ctx.resolvedThinkingLevel);
+    }
+    ctx.elapsed = Date.now() - ctx.t0;
+    log.log(`session created (${ctx.elapsed}ms), model=${resolvedModel?.name || ctx.effectiveModel?.name || "?"}`);
+
+    // Event forwarding
     const sessionPath = session.sessionManager?.getSessionFile?.();
-    sessionPathRef.current = sessionPath || sessionPathRef.current || null;
-    targetModelRef.current = resolvedModel || targetModelRef.current || null;
+    ctx.sessionPathRef.current = sessionPath || ctx.sessionPathRef.current || null;
+    ctx.targetModelRef.current = resolvedModel || ctx.targetModelRef.current || null;
+    ctx.sessionPath = sessionPath;
     this._session = session;
     this._currentSessionPath = sessionPath || null;
     this._sessionStarted = false;
-    if (restore && sessionPath && restoredPermissionMode === null) {
+
+    // Permission mode re-check for restore without explicit permission
+    if (ctx.restore && sessionPath && ctx.restoredPermissionMode === null) {
       try {
-        const metaPath = path.join(agent.sessionDir, "session-meta.json");
+        const metaPath = path.join(ctx.agent.sessionDir, "session-meta.json");
         const meta = await this._readMetaCached(metaPath);
         const metaEntry = meta[path.basename(sessionPath)];
         if (metaEntry) {
-          initialPermissionMode = normalizeSessionPermissionMode(metaEntry);
-          initialAccessMode = legacyAccessModeFromPermissionMode(initialPermissionMode);
-          initialPlanMode = isReadOnlyPermissionMode(initialPermissionMode);
-          sessionEntry.permissionMode = initialPermissionMode;
-          sessionEntry.accessMode = initialAccessMode;
-          sessionEntry.planMode = initialPlanMode;
+          ctx.initialPermissionMode = normalizeSessionPermissionMode(metaEntry);
+          ctx.initialAccessMode = legacyAccessModeFromPermissionMode(ctx.initialPermissionMode);
+          ctx.initialPlanMode = isReadOnlyPermissionMode(ctx.initialPermissionMode);
+          ctx.sessionEntry.permissionMode = ctx.initialPermissionMode;
+          ctx.sessionEntry.accessMode = ctx.initialAccessMode;
+          ctx.sessionEntry.planMode = ctx.initialPlanMode;
         }
       } catch (err) {
         if (err.code !== "ENOENT") {
@@ -687,30 +818,24 @@ export class SessionCoordinator {
         }
       }
     }
-    const creatingAgentId = ownerAgentId;
+
+    ctx.creatingAgentId = ctx.ownerAgentId;
     const unsub = session.subscribe((event) => {
       this._d.emitEvent(
-        event.agentId ? event : { ...event, agentId: creatingAgentId },
+        event.agentId ? event : { ...event, agentId: ctx.creatingAgentId },
         sessionPath,
       );
     });
+    ctx.unsub = unsub;
 
-    // 存入 map（SessionEntry）— sessionEntry is the same object the resourceLoader proxy references
-    const mapKey = sessionPath || `_anon_${Date.now()}`;
-    const old = this._sessions.get(mapKey);
+    // Store in map
+    ctx.mapKey = sessionPath || `_anon_${Date.now()}`;
+    const old = this._sessions.get(ctx.mapKey);
     if (old) old.unsub();
 
-    // ── Tool snapshot for session-tool-isolation (parallels session-model-isolation) ──
-    // Three branches:
-    //   A. restore=true + meta has toolNames  → replay the snapshot (applied below)
-    //   B. restore=true + meta missing        → legacy session, keep all tools
-    //   C. restore=false                       → fresh compute from agent config
-    //
-    // allToolNames must cover the COMPLETE active set: Pi SDK built-ins
-    // (read/bash/edit/write/grep/find/ls) from sessionTools + OpenHanako
-    // customs + plugin tools from sessionCustomTools. Using only agent.tools
-    // would silently drop SDK built-ins and plugin tools when
-    // setActiveToolsByName is applied.
+    // ── Tool snapshot computation (Cases A/B/C) ──
+    // Must run after session creation because sessionPath comes from the PI session
+    const { agent, sessionTools, sessionCustomTools } = ctx;
     const allToolObjects = [
       ...(sessionTools || []),
       ...(sessionCustomTools || []),
@@ -726,17 +851,18 @@ export class SessionCoordinator {
     const runtimeDisabledToolNames = computeRuntimeDisabledToolNames(
       allToolObjects,
       agent.config,
-      { agentId: creatingAgentId, restore, channelsEnabled },
+      { agentId: ctx.creatingAgentId, restore: ctx.restore, channelsEnabled },
       { warn: (msg) => log.warn(msg) },
     );
     const extraDisabledToolNames = [
       ...stableFeatureDisabledToolNames,
       ...runtimeDisabledToolNames,
     ];
-    let snapshotToolNames = null;  // null signals "do not call setActiveToolsByName"
+
+    let snapshotToolNames = null;
     let shouldPersistRestoredToolNames = false;
 
-    if (restore) {
+    if (ctx.restore) {
       if (sessionPath) {
         const metaPathForRestore = path.join(agent.sessionDir, "session-meta.json");
         let metaEntry = null;
@@ -753,14 +879,12 @@ export class SessionCoordinator {
           const restoredToolNames = uniqueToolNames(metaEntry.toolNames);
           snapshotToolNames = computeToolSnapshot(restoredToolNames, [], {
             extraDisabled: stableFeatureDisabledToolNames,
-          });  // Case A, with current global feature gates enforced
+          });  // Case A
           shouldPersistRestoredToolNames = restoredToolNames.length !== metaEntry.toolNames.length
             || restoredToolNames.some((name, index) => name !== metaEntry.toolNames[index])
             || snapshotToolNames.length !== restoredToolNames.length;
         } else {
-          // Legacy sessions created before tool snapshots had no stable tool
-          // identity boundary. Establish one on first restore so future plugin
-          // or dynamic tool registrations only affect newly created sessions.
+          // Case B: legacy session, establish a stable baseline
           const disabled = agent.config?.tools?.disabled ?? DEFAULT_DISABLED_TOOL_NAMES;
           snapshotToolNames = computeToolSnapshot(stableRestoreToolNames, disabled, {
             extraDisabled: extraDisabledToolNames,
@@ -769,41 +893,55 @@ export class SessionCoordinator {
         }
       }
     } else {
-      // Case C. Fresh agents (and agents upgrading from a pre-feature version)
-      // have no tools.disabled field — apply DEFAULT_DISABLED_TOOL_NAMES so
-      // update_settings and dm are off by default. Explicit `[]` means "all on"
-      // and is preserved via nullish-coalescing rather than `||`.
+      // Case C: fresh session
       const disabled = agent.config?.tools?.disabled ?? DEFAULT_DISABLED_TOOL_NAMES;
       snapshotToolNames = computeToolSnapshot(allToolNames, disabled, {
         extraDisabled: extraDisabledToolNames,
       });
     }
 
+    ctx.allToolObjects = allToolObjects;
+    ctx.allToolNames = allToolNames;
+    ctx.stableRestoreToolNames = stableRestoreToolNames;
+    ctx.stableFeatureDisabledToolNames = stableFeatureDisabledToolNames;
+    ctx.runtimeDisabledToolNames = runtimeDisabledToolNames;
+    ctx.extraDisabledToolNames = extraDisabledToolNames;
+    ctx.snapshotToolNames = snapshotToolNames;
+    ctx.shouldPersistRestoredToolNames = shouldPersistRestoredToolNames;
+  }
+
+  // ── Phase 7: Persist session meta, apply tool snapshot, LRU eviction ──
+  async _persistSessionAndEvict(ctx) {
+    const { session, sessionEntry, agent, restore, sessionPath, frozenMemoryEnabled, frozenExperienceEnabled,
+      workspaceScope, initialPermissionMode, initialAccessMode, initialPlanMode, initialThinkingLevel,
+      snapshotToolNames, shouldPersistRestoredToolNames, unsub, mapKey,
+      restoredPromptSnapshot, promptSnapshotForPersist } = ctx;
+
     Object.assign(sessionEntry, {
       session,
-      agentId: creatingAgentId,
+      agentId: ctx.creatingAgentId,
       memoryEnabled: frozenMemoryEnabled,
       experienceEnabled: frozenExperienceEnabled,
-      modelId: resolvedModel?.id || effectiveModel?.id || null,
-      modelProvider: resolvedModel?.provider || effectiveModel?.provider || null,
+      modelId: ctx.resolvedModel?.id || ctx.effectiveModel?.id || null,
+      modelProvider: ctx.resolvedModel?.provider || ctx.effectiveModel?.provider || null,
       workspaceFolders: workspaceScope.workspaceFolders,
       permissionMode: initialPermissionMode,
       accessMode: initialAccessMode,
       planMode: initialPlanMode,
       thinkingLevel: initialThinkingLevel,
-      toolNames: snapshotToolNames,  // null for legacy sessions (Case B), array otherwise
+      toolNames: snapshotToolNames,
       lastTouchedAt: Date.now(),
       unsub,
     });
     this._sessions.set(mapKey, sessionEntry);
     this._hibernatedSessionMeta.delete(mapKey);
 
-    // Apply tool snapshot (Case A / Case C). Permission mode is a runtime
-    // policy and does not change the stable tool schema.
+    // Apply tool snapshot
     if (snapshotToolNames !== null) {
       session.setActiveToolsByName(snapshotToolNames);
     }
 
+    // Final system prompt
     if (restoredPromptSnapshot?.finalSystemPrompt) {
       this._applyFinalPromptSnapshot(session, restoredPromptSnapshot.finalSystemPrompt);
     }
@@ -814,11 +952,7 @@ export class SessionCoordinator {
     this._renewCachePrefixContract(mapKey, sessionEntry, restore ? "session_restore" : "new_session");
     this._installCachePrefixGuard(mapKey, sessionEntry);
 
-    // Persist fresh snapshots and repair/establish restored snapshots. Restored
-    // legacy sessions with missing toolNames get a baseline on first restore,
-    // so later plugin/dynamic tool registrations do not drift into old history.
-    // writeSessionMeta is serialized and never rejects; awaiting gives
-    // createSession a clean post-return state.
+    // Persist session meta
     if (!restore && sessionPath) {
       const metaPatch = {
         memoryEnabled: frozenMemoryEnabled,
@@ -843,16 +977,15 @@ export class SessionCoordinator {
       }
     }
 
-    // LRU 淘汰：按 lastTouchedAt 排序，跳过 streaming 和焦点 session
+    // LRU eviction
     if (this._sessions.size > MAX_CACHED_SESSIONS) {
       const focusPath = this.currentSessionPath;
       const candidates = [...this._sessions.entries()]
         .filter(([key, e]) => key !== mapKey && key !== focusPath && !e.session.isStreaming)
         .sort((a, b) => a[1].lastTouchedAt - b[1].lastTouchedAt);
       for (const [key, entry] of candidates) {
-        // 记忆收尾（fire-and-forget，淘汰场景不阻塞）
-        const agent = this._d.getAgentById(entry.agentId) || this._d.getAgent();
-        agent?._memoryTicker?.notifySessionEnd(key).catch((err) =>
+        const lruAgent = this._d.getAgentById(entry.agentId) || this._d.getAgent();
+        lruAgent?._memoryTicker?.notifySessionEnd(key).catch((err) =>
           log.warn(`LRU 淘汰 ${path.basename(key)}: notifySessionEnd failed: ${err.message}`),
         );
         await this._teardownSessionEntry(entry, key, "lru");
@@ -860,8 +993,6 @@ export class SessionCoordinator {
         if (this._sessions.size <= MAX_CACHED_SESSIONS) break;
       }
     }
-
-    return { session, sessionPath: sessionPath || mapKey, agentId: creatingAgentId };
   }
 
   getSessionWorkspaceFolders(sessionPath = this.currentSessionPath) {
