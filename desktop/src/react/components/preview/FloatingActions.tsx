@@ -40,10 +40,7 @@ export function FloatingActions({
   return (
     <div className={styles.floatingActions} data-react-managed>
       <button className={styles.actionBtn} onClick={handleCopy}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-        </svg>
+        <PhosphorIcon icon={Copy} size={12} />
         <span>{copyLabel ?? t('attach.copy')}</span>
       </button>
       {showMarkdownPreviewToggle && (
@@ -57,11 +54,7 @@ export function FloatingActions({
         </button>
       )}
       <button className={styles.actionBtn} onClick={handleScreenshot} title={t('common.screenshot')} aria-label={t('common.screenshot')}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-          <circle cx="12" cy="13" r="4" />
-        </svg>
+        <PhosphorIcon icon={Camera} size={12} />
       </button>
     </div>
   );
