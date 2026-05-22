@@ -6,6 +6,8 @@
  */
 
 import { useCallback } from 'react';
+import { Globe, X } from '@phosphor-icons/react';
+import { PhosphorIcon } from '../ui/PhosphorIcon';
 import { useStore } from '../stores';
 import { updateKeyed } from '../stores/create-keyed-slice';
 import { hanaFetch } from '../hooks/use-hana-fetch';
@@ -49,11 +51,7 @@ export function BrowserCard() {
     <div className="browser-floating-card" id="browserFloatingCard" onClick={handleClick}>
       <div className="browser-floating-info">
         <div className="browser-floating-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="2" y1="12" x2="22" y2="12"></line>
-            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-          </svg>
+          <PhosphorIcon icon={Globe} size={16} />
         </div>
         <div className="browser-floating-text">
           <div className="browser-floating-label">{(window.t ?? ((p: string) => p))('browser.using')}</div>
@@ -72,9 +70,7 @@ export function BrowserCard() {
           />
         )}
         <button className="browser-floating-close" title={(window.t ?? ((p: string) => p))('browser.close')} onClick={handleClose}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M18 6L6 18M6 6l12 12"></path>
-          </svg>
+          <PhosphorIcon icon={X} size={14} />
         </button>
       </div>
     </div>

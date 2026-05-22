@@ -4,6 +4,8 @@ import { useSettingsStore } from '../store';
 import { hanaFetch } from '../api';
 import { t } from '../helpers';
 import styles from '../Settings.module.css';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
+import { ArrowsClockwise, Info, UploadSimple, Gear, X } from '@phosphor-icons/react';
 import { SettingsSection } from '../components/SettingsSection';
 import { SettingsRow } from '../components/SettingsRow';
 
@@ -375,14 +377,10 @@ export function PluginsTab() {
       onClick={reload}
       disabled={loading}
     >
-      <svg
-        width="14" height="14" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+      <PhosphorIcon
+        icon={ArrowsClockwise} size={14}
         className={loading ? styles['spin'] : ''}
-      >
-        <polyline points="23 4 23 10 17 10" />
-        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-      </svg>
+      />
     </button>
   );
 
@@ -393,15 +391,10 @@ export function PluginsTab() {
       onClick={loadDiagnostics}
       disabled={diagnosticsLoading}
     >
-      <svg
-        width="14" height="14" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+      <PhosphorIcon
+        icon={Info} size={14}
         className={diagnosticsLoading ? styles['spin'] : ''}
-      >
-        <circle cx="12" cy="12" r="9" />
-        <line x1="12" y1="8" x2="12" y2="12" />
-        <line x1="12" y1="16" x2="12.01" y2="16" />
-      </svg>
+      />
     </button>
   );
 
@@ -450,11 +443,7 @@ export function PluginsTab() {
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="17 8 12 3 7 8" />
-            <line x1="12" y1="3" x2="12" y2="15" />
-          </svg>
+          <PhosphorIcon icon={UploadSimple} size={18} />
           <span>{t('settings.plugins.dropzone')}</span>
         </div>
 
@@ -508,10 +497,7 @@ export function PluginsTab() {
                         title={t('settings.plugins.configure', { name: plugin.name })}
                         onClick={() => loadPluginConfig(plugin)}
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="12" r="3" />
-                          <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3h.1a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6h.1a1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
-                        </svg>
+                        <PhosphorIcon icon={Gear} size={14} />
                       </button>
                     )}
                     {/* Delete */}
@@ -520,10 +506,7 @@ export function PluginsTab() {
                       title={t('settings.plugins.deleteConfirm', { name: plugin.name })}
                       onClick={() => deletePlugin(plugin)}
                     >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                      </svg>
+                      <PhosphorIcon icon={X} size={14} />
                     </button>
 
                     {/* Enable/disable toggle */}

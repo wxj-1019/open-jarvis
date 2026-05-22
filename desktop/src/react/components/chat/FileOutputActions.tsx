@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react';
 import { createPortal } from 'react-dom';
+import { ArrowSquareOut, CaretDown, FolderOpen, Copy, DownloadSimple } from '@phosphor-icons/react';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
 import styles from './Chat.module.css';
 
 interface FileOutputActionsProps {
@@ -11,52 +13,6 @@ interface FileOutputActionsProps {
 
 function actionLabel(label: string, displayName: string): string {
   return `${label} ${displayName}`;
-}
-
-function OpenIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-      <polyline points="15 3 21 3 21 9" />
-      <line x1="10" y1="14" x2="21" y2="3" />
-    </svg>
-  );
-}
-
-function ChevronDownIcon() {
-  return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  );
-}
-
-function RevealIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M3 6h7l2 2h9v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-      <circle cx="12" cy="14" r="2.5" />
-    </svg>
-  );
-}
-
-function CopyIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="9" y="9" width="11" height="11" rx="2" />
-      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-    </svg>
-  );
-}
-
-function DownloadIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M12 3v12" />
-      <path d="M7 10l5 5 5-5" />
-      <path d="M5 21h14" />
-    </svg>
-  );
 }
 
 export function FileOutputActions({ filePath, displayName, downloadUrl, downloadName }: FileOutputActionsProps) {
@@ -159,7 +115,7 @@ export function FileOutputActions({ filePath, displayName, downloadUrl, download
           aria-label={actionLabel(openLabel, displayName)}
           title={openLabel}
         >
-          <OpenIcon />
+          <PhosphorIcon icon={ArrowSquareOut} size={12} />
         </button>
       ) : downloadUrl ? (
         <a
@@ -170,7 +126,7 @@ export function FileOutputActions({ filePath, displayName, downloadUrl, download
           aria-label={actionLabel(downloadLabel, displayName)}
           title={downloadLabel}
         >
-          <DownloadIcon />
+          <PhosphorIcon icon={DownloadSimple} size={13} />
         </a>
       ) : (
         <button
@@ -180,7 +136,7 @@ export function FileOutputActions({ filePath, displayName, downloadUrl, download
           aria-label={actionLabel(openLabel, displayName)}
           title={openLabel}
         >
-          <OpenIcon />
+          <PhosphorIcon icon={ArrowSquareOut} size={12} />
         </button>
       )}
       <button
@@ -193,7 +149,7 @@ export function FileOutputActions({ filePath, displayName, downloadUrl, download
         aria-expanded={menuOpen}
         title={moreLabel}
       >
-        <ChevronDownIcon />
+        <PhosphorIcon icon={CaretDown} size={11} />
       </button>
       {menuOpen && createPortal(
         <div
@@ -210,7 +166,7 @@ export function FileOutputActions({ filePath, displayName, downloadUrl, download
               download={resolvedDownloadName}
               onClick={handleDownloadClick}
             >
-              <DownloadIcon />
+              <PhosphorIcon icon={DownloadSimple} size={13} />
               <span>{downloadLabel}</span>
             </a>
           )}
@@ -221,7 +177,7 @@ export function FileOutputActions({ filePath, displayName, downloadUrl, download
               role="menuitem"
               onClick={(event) => handleMenuItem(event, revealFile)}
             >
-              <RevealIcon />
+              <PhosphorIcon icon={FolderOpen} size={13} />
               <span>{revealLabel}</span>
             </button>
           )}
@@ -231,7 +187,7 @@ export function FileOutputActions({ filePath, displayName, downloadUrl, download
             role="menuitem"
             onClick={(event) => handleMenuItem(event, copyPath)}
           >
-            <CopyIcon />
+            <PhosphorIcon icon={Copy} size={13} />
             <span>{copyLabel}</span>
           </button>
         </div>,

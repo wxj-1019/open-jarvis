@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { hanaFetch } from '../../hooks/use-hana-fetch';
 import type { SessionConfirmationBlock } from '../../stores/chat-types';
 import styles from './InputArea.module.css';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
+import { CaretDown } from '@phosphor-icons/react';
 
 type ConfirmationAction = 'confirmed' | 'rejected';
 
@@ -358,9 +360,7 @@ export function SessionConfirmationPrompt({ block, exiting = false }: SessionCon
                   onClick={() => setMenuOpen((open) => !open)}
                   disabled={busy}
                 >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="m6 9 6 6 6-6" />
-                  </svg>
+                  <PhosphorIcon icon={CaretDown} size={13} />
                 </button>
               </div>
               {menu}

@@ -9,6 +9,8 @@ import { SettingsSection } from '../components/SettingsSection';
 import { SettingsRow } from '../components/SettingsRow';
 import { NumberInput } from '../components/NumberInput';
 import styles from '../Settings.module.css';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
+import { Folder, X } from '@phosphor-icons/react';
 import { DEFAULT_HEARTBEAT_INTERVAL_MINUTES } from '../../../../../shared/default-workspace-constants.js';
 
 type AgentDeskConfig = {
@@ -191,9 +193,7 @@ export function WorkTab() {
                     onClick={pickHomeFolder}
                   />
                   <button className={styles['settings-folder-browse']} onClick={pickHomeFolder}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                    </svg>
+                    <PhosphorIcon icon={Folder} size={14} />
                   </button>
                   {agentDesk.home_folder && (
                     <button
@@ -201,10 +201,7 @@ export function WorkTab() {
                       onClick={clearHomeFolder}
                       title={t('settings.work.homeFolderClear')}
                     >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                      </svg>
+                      <PhosphorIcon icon={X} size={12} />
                     </button>
                   )}
                 </div>

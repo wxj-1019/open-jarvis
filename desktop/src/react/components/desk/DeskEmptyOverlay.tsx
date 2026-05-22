@@ -5,6 +5,7 @@
 import { useStore } from '../../stores';
 import { openSettingsModal } from '../../stores/settings-modal-actions';
 import { ICONS } from './desk-types';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
 import s from './Desk.module.css';
 
 export function DeskEmptyOverlay() {
@@ -19,7 +20,7 @@ export function DeskEmptyOverlay() {
         {(window.t ?? ((p: string) => p))('desk.emptyHint')}
       </p>
       <button className={s.emptyBtn} onClick={() => openSettingsModal('work')}>
-        <span dangerouslySetInnerHTML={{ __html: ICONS.settings }} />
+        <PhosphorIcon icon={ICONS.settings.component} size={ICONS.settings.size} />
         {(window.t ?? ((p: string) => p))('desk.goToSettings')}
       </button>
     </div>

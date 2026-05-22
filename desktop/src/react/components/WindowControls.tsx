@@ -6,6 +6,8 @@
  */
 
 import { useEffect, useState, useCallback } from 'react';
+import { Minus, Square, Copy, X } from '@phosphor-icons/react';
+import { PhosphorIcon } from '../ui/PhosphorIcon';
 
 export function WindowControls() {
   const t = window.t ?? ((p: string) => p);
@@ -33,18 +35,13 @@ export function WindowControls() {
   return (
     <div className="window-controls">
       <button className="wc-btn wc-minimize" title={t('window.minimize')} onClick={minimize}>
-        <svg width="12" height="12" viewBox="0 0 12 12"><line x1="2" y1="6" x2="10" y2="6" stroke="currentColor" strokeWidth="1"/></svg>
+        <PhosphorIcon icon={Minus} size={12} />
       </button>
       <button className="wc-btn wc-maximize" title={t('window.maximize')} onClick={maximize}>
-        <svg width="12" height="12" viewBox="0 0 12 12">
-          {maximized
-            ? <><rect x="3" y="1" width="7" height="7" fill="none" stroke="currentColor" strokeWidth="1"/><rect x="1" y="3" width="7" height="7" fill="none" stroke="currentColor" strokeWidth="1"/></>
-            : <rect x="2" y="2" width="8" height="8" fill="none" stroke="currentColor" strokeWidth="1"/>
-          }
-        </svg>
+        <PhosphorIcon icon={maximized ? Copy : Square} size={12} />
       </button>
       <button className="wc-btn wc-close" title={t('window.close')} onClick={close}>
-        <svg width="12" height="12" viewBox="0 0 12 12"><line x1="2" y1="2" x2="10" y2="10" stroke="currentColor" strokeWidth="1"/><line x1="10" y1="2" x2="2" y2="10" stroke="currentColor" strokeWidth="1"/></svg>
+        <PhosphorIcon icon={X} size={12} />
       </button>
     </div>
   );

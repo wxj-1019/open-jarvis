@@ -3,6 +3,8 @@
  */
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Columns, Folder, File, Copy, ArrowsClockwise, PencilSimple, Check, X, StarFour } from '@phosphor-icons/react';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
 import { MarkdownContent } from './MarkdownContent';
 import { MessageFooterActions, formatMessageTime, type MessageFooterAction } from './MessageFooterActions';
 import { AttachmentChip } from '../shared/AttachmentChip';
@@ -125,14 +127,14 @@ export const UserMessage = memo(function UserMessage({
     {
       id: 'cancel',
       title: t('common.cancel'),
-      icon: <XIcon />,
+      icon: <PhosphorIcon icon={X} size={15} />,
       onClick: () => handleCancelEdit(),
       disabled: busy,
     },
     {
       id: 'confirm',
       title: t('common.confirm'),
-      icon: <CheckIcon />,
+      icon: <PhosphorIcon icon={Check} size={15} />,
       onClick: () => { void handleConfirmEdit(); },
       disabled: busy || !editValue.trim(),
     },
@@ -141,7 +143,7 @@ export const UserMessage = memo(function UserMessage({
     {
       id: 'copy',
       title: t('common.copyText'),
-      icon: copied ? <CheckIcon /> : <CopyIcon />,
+      icon: copied ? <PhosphorIcon icon={Check} size={15} /> : <PhosphorIcon icon={Copy} size={15} />,
       onClick: () => handleCopy(),
       disabled: isStreaming || busy,
       active: copied,
@@ -149,14 +151,14 @@ export const UserMessage = memo(function UserMessage({
     {
       id: 'regenerate',
       title: t('common.regenerate'),
-      icon: <RegenerateIcon />,
+      icon: <PhosphorIcon icon={ArrowsClockwise} size={15} />,
       onClick: () => { void handleRegenerate(); },
       disabled: isStreaming || busy,
     },
     {
       id: 'edit',
       title: t('common.edit'),
-      icon: <EditIcon />,
+      icon: <PhosphorIcon icon={PencilSimple} size={15} />,
       onClick: () => handleEdit(),
       disabled: isStreaming || busy,
     },
@@ -179,7 +181,7 @@ export const UserMessage = memo(function UserMessage({
       {message.quotedText && (
         <div className={styles.userAttachments}>
           <AttachmentChip
-            icon={<GridIcon />}
+            icon={<PhosphorIcon icon={Columns} size={14} />}
             name={message.quotedText}
           />
         </div>
@@ -195,10 +197,7 @@ export const UserMessage = memo(function UserMessage({
       <div className={`${styles.message} ${styles.messageUser}${editing ? ` ${styles.messageUserEditing}` : ''}`}>
         {message.skills && message.skills.length > 0 && message.skills.map(skillName => (
           <span key={skillName} className={badgeStyles.badge} style={{ cursor: 'default' }}>
-            <svg className={badgeStyles.icon} width="13" height="13" viewBox="0 0 16 16" fill="none"
-              stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round">
-              <path d="M8 1 L9.5 6 L15 8 L9.5 10 L8 15 L6.5 10 L1 8 L6.5 6 Z" />
-            </svg>
+            <PhosphorIcon icon={StarFour} size={13} className={badgeStyles.icon} />
             <span className={badgeStyles.name}>{skillName}</span>
           </span>
         ))}
@@ -287,7 +286,7 @@ const UserAttachmentsView = memo(function UserAttachmentsView({ attachments, des
         return (
           <AttachmentChip
             key={att.name || `att-${i}`}
-            icon={att.isDir ? <FolderIcon /> : <FileIcon />}
+            icon={att.isDir ? <PhosphorIcon icon={Folder} size={14} /> : <PhosphorIcon icon={File} size={14} />}
             name={expired ? `${att.name} · ${expiredLabel}` : att.name}
             variant={expired ? 'expired' : 'normal'}
           />
@@ -295,7 +294,7 @@ const UserAttachmentsView = memo(function UserAttachmentsView({ attachments, des
       })}
       {deskContext && (
         <AttachmentChip
-          icon={<FolderIcon />}
+          icon={<PhosphorIcon icon={Folder} size={14} />}
           name={`${t('sidebar.jian')} (${deskContext.fileCount})`}
         />
       )}
@@ -303,76 +302,3 @@ const UserAttachmentsView = memo(function UserAttachmentsView({ attachments, des
   );
 });
 
-// ── Icons ──
-
-function GridIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="6" y1="4" x2="6" y2="20" />
-      <line x1="18" y1="4" x2="18" y2="20" />
-      <line x1="6" y1="8" x2="18" y2="8" />
-      <line x1="6" y1="16" x2="18" y2="16" />
-    </svg>
-  );
-}
-
-function FolderIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-    </svg>
-  );
-}
-
-function FileIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-    </svg>
-  );
-}
-
-function CopyIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-    </svg>
-  );
-}
-
-function RegenerateIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 12a9 9 0 1 1-2.64-6.36" />
-      <path d="M21 3v6h-6" />
-    </svg>
-  );
-}
-
-function EditIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 20h9" />
-      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
-}
-
-function XIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 6 6 18" />
-      <path d="m6 6 12 12" />
-    </svg>
-  );
-}

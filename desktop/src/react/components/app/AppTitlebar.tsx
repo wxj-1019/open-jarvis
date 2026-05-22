@@ -1,4 +1,6 @@
 import type { MouseEventHandler } from 'react';
+import { SidebarSimple, Plus, FileText } from '@phosphor-icons/react';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
 import { ChannelTabBar } from '../channels/ChannelTabBar';
 import { WidgetButtons } from '../plugin/WidgetButtons';
 import { WindowControls } from '../WindowControls';
@@ -52,10 +54,7 @@ export function AppTitlebar({
           onMouseEnter={onLeftMouseEnter}
           onMouseLeave={onToggleMouseLeave}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="9" y1="3" x2="9" y2="21"></line>
-          </svg>
+          <PhosphorIcon icon={SidebarSimple} size={16} />
         </button>
         {showNewSessionButton && onNewSession && (
           <button
@@ -67,10 +66,7 @@ export function AppTitlebar({
             onMouseDown={(e) => e.preventDefault()}
             onClick={onNewSession}
           >
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
+            <PhosphorIcon icon={Plus} size={17} />
           </button>
         )}
       </div>
@@ -90,12 +86,7 @@ export function AppTitlebar({
             onMouseDown={(e) => e.preventDefault()}
             onClick={onTogglePreview}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M7 3.5h7l3 3v14H7z"></path>
-              <path d="M14 3.5v3h3"></path>
-              <path d="M9.5 11h5"></path>
-              <path d="M9.5 14.5h5"></path>
-            </svg>
+            <PhosphorIcon icon={FileText} size={16} />
           </button>
         )}
         <button
@@ -107,10 +98,7 @@ export function AppTitlebar({
           onMouseEnter={onRightMouseEnter}
           onMouseLeave={onToggleMouseLeave}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="15" y1="3" x2="15" y2="21"></line>
-          </svg>
+          <PhosphorIcon icon={SidebarSimple} size={16} />
         </button>
       </div>
       <WindowControls />

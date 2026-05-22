@@ -7,6 +7,8 @@
 
 import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { PushPin, PencilSimple, Archive, Globe } from '@phosphor-icons/react';
+import { PhosphorIcon } from '../ui/PhosphorIcon';
 import { useStore } from '../stores';
 import { hanaFetch } from '../hooks/use-hana-fetch';
 import { useI18n } from '../hooks/use-i18n';
@@ -153,12 +155,7 @@ function SessionListInner() {
             <section key={section.id} className={styles.pinnedSection}>
               <div className={`${styles.sessionSectionTitle} ${styles.pinnedSectionTitle}`}>
                 <span>{t(section.titleKey)}</span>
-                <svg className={styles.pinnedTitleIcon} width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M12 17v5" />
-                  <path d="M5 17h14" />
-                  <path d="M7 3h10l-2 9H9L7 3z" />
-                  <path d="M9 12l-2 5h10l-2-5" />
-                </svg>
+                <PhosphorIcon icon={PushPin} size={10} className={styles.pinnedTitleIcon} />
               </div>
               {items}
             </section>
@@ -311,29 +308,18 @@ const SessionItem = memo(function SessionItem({ session: s, isActive, isStreamin
 
         {!editing && (
           <div className={styles.sessionPinBtn} title={t(isPinned ? 'session.unpin' : 'session.pin')} onClick={handlePin}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 17v5" />
-              <path d="M5 17h14" />
-              <path d="M7 3h10l-2 9H9L7 3z" />
-              <path d="M9 12l-2 5h10l-2-5" />
-            </svg>
+            <PhosphorIcon icon={PushPin} size={11} />
           </div>
         )}
 
         {!editing && (
           <div className={styles.sessionRenameBtn} title={t('session.rename')} onClick={startRename}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-            </svg>
+            <PhosphorIcon icon={PencilSimple} size={11} />
           </div>
         )}
 
         <div className={styles.sessionArchiveBtn} title={t('session.archive')} onClick={handleArchive}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="21 8 21 21 3 21 3 8" />
-            <rect x="1" y="3" width="22" height="5" />
-            <line x1="10" y1="12" x2="14" y2="12" />
-          </svg>
+          <PhosphorIcon icon={Archive} size={12} />
         </div>
 
         <div className={styles.sessionItemMeta}>
@@ -358,11 +344,7 @@ const SessionItem = memo(function SessionItem({ session: s, isActive, isStreamin
             onClick={handleBrowserClose}
             onKeyDown={handleBrowserKeyDown}
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="2" y1="12" x2="22" y2="12" />
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-            </svg>
+            <PhosphorIcon icon={Globe} size={12} />
           </span>
         )}
       </button>

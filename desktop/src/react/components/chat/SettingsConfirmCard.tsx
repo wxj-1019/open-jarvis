@@ -10,6 +10,8 @@ import styles from './Chat.module.css';
 import { hanaFetch } from '../../hooks/use-hana-fetch';
 import { useI18n } from '../../hooks/use-i18n';
 import registry from '../../../shared/theme-registry';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
+import { Check, X } from '@phosphor-icons/react';
 
 interface Props {
   confirmId?: string;
@@ -129,13 +131,9 @@ export const SettingsConfirmCard = memo(function SettingsConfirmCard(props: Prop
         <div className={`${styles.settingsConfirmStatus} ${statusClass === 'confirmed' ? styles.settingsConfirmStatusConfirmed : ''}`}>
           <span>{statusText}</span>
           {status === 'confirmed' ? (
-            <svg className={styles.settingsConfirmIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+            <PhosphorIcon icon={Check} size={16} />
           ) : (
-            <svg className={styles.settingsConfirmIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <PhosphorIcon icon={X} size={16} />
           )}
         </div>
       </div>

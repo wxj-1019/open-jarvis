@@ -7,6 +7,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Folder, ArrowsLeftRight, FolderPlus, Plus, Diamond } from '@phosphor-icons/react';
+import { PhosphorIcon } from '../ui/PhosphorIcon';
 import { useStore } from '../stores';
 import { hanaFetch } from '../hooks/use-hana-fetch';
 import { useI18n } from '../hooks/use-i18n';
@@ -297,16 +299,9 @@ function FolderPicker({ agents, currentAgentId, selectedFolder, homeFolder, work
         className={`${styles.folderSelectBtn}${selectedFolder ? ` ${styles.folderSelectBtnHasFolder}` : ''}`}
         onClick={handleButtonClick}
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-        </svg>
+        <PhosphorIcon icon={Folder} size={14} />
         <span>{label}</span>
-        <svg className={styles.folderSwapIcon} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="17 1 21 5 17 9"></polyline>
-          <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
-          <polyline points="7 23 3 19 7 15"></polyline>
-          <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
-        </svg>
+        <PhosphorIcon icon={ArrowsLeftRight} size={12} className={styles.folderSwapIcon} />
       </button>
       {showHistory && (
         <FolderHistory
@@ -358,9 +353,7 @@ function FolderHistory({ cwdHistory, agentHomeFolders, selectedFolder, homeFolde
             onClick={(e) => { e.stopPropagation(); onSelect(p); }}
           >
             <span className={styles.folderHistoryItemIcon}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-              </svg>
+              <PhosphorIcon icon={Folder} size={13} />
             </span>
             <span className={styles.folderHistoryItemName}>{name}</span>
           </div>
@@ -369,11 +362,7 @@ function FolderHistory({ cwdHistory, agentHomeFolders, selectedFolder, homeFolde
       <div className={styles.folderHistoryDivider} />
       <div className={styles.folderHistoryBrowse} onClick={(e) => { e.stopPropagation(); onBrowse(); }}>
         <span className={styles.folderHistoryItemIcon}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-            <line x1="12" y1="11" x2="12" y2="17"></line>
-            <line x1="9" y1="14" x2="15" y2="14"></line>
-          </svg>
+          <PhosphorIcon icon={FolderPlus} size={13} />
         </span>
         <span>{t('input.selectOtherFolder')}</span>
       </div>
@@ -391,9 +380,7 @@ function FolderHistory({ cwdHistory, agentHomeFolders, selectedFolder, homeFolde
             onClick={(e) => { e.stopPropagation(); }}
           >
             <span className={styles.folderHistoryItemIcon}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-              </svg>
+              <PhosphorIcon icon={Folder} size={13} />
             </span>
             <span className={styles.folderHistoryItemName}>{name}</span>
             <button
@@ -412,10 +399,7 @@ function FolderHistory({ cwdHistory, agentHomeFolders, selectedFolder, homeFolde
       })}
       <div className={styles.folderHistoryBrowse} onClick={(e) => { e.stopPropagation(); onAddWorkspaceFolder(); }}>
         <span className={styles.folderHistoryItemIcon}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 5v14"></path>
-            <path d="M5 12h14"></path>
-          </svg>
+          <PhosphorIcon icon={Plus} size={13} />
         </span>
         <span>{t('input.addExternalFolder')}</span>
       </div>
@@ -458,9 +442,7 @@ function MemoryToggle({ enabled, masterEnabled, t }: {
       disabled={disabled}
       title={disabled ? t('welcome.memoryDisabled') : undefined}
     >
-      <svg className={styles.memoryToggleIcon} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 2 L22 12 L12 22 L2 12 Z" />
-      </svg>
+      <PhosphorIcon icon={Diamond} size={13} className={styles.memoryToggleIcon} />
       <span>{label}</span>
     </button>
   );

@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { CaretLeft, ArrowUp, X } from '@phosphor-icons/react';
+import { PhosphorIcon } from '../ui/PhosphorIcon';
 import { useStore } from '../stores';
 import { usePanel } from '../hooks/use-panel';
 import { hanaFetch } from '../hooks/use-hana-fetch';
@@ -128,9 +130,7 @@ export function ActivityPanel() {
           <div id="activityDetailView" style={FLEX_COLUMN_STYLE}>
             <div className={fp.floatingPanelHeader}>
               <button className={fp.floatingPanelBack} onClick={closeDetail}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
+                <PhosphorIcon icon={CaretLeft} size={14} />
               </button>
               <DetailHeader detail={detail} />
               <button
@@ -138,17 +138,11 @@ export function ActivityPanel() {
                 onClick={() => promoteActivity(detail.activityId)}
                 title={t('activity.promote')}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="17 11 12 6 7 11" />
-                  <line x1="12" y1="6" x2="12" y2="18" />
-                </svg>
+                <PhosphorIcon icon={ArrowUp} size={14} />
                 <span>{t('activity.promote')}</span>
               </button>
               <button className={fp.floatingPanelClose} onClick={close}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+                <PhosphorIcon icon={X} size={14} />
               </button>
             </div>
             <DetailBody messages={detail.messages} />
@@ -166,10 +160,7 @@ export function ActivityPanel() {
                 />
               </div>
               <button className={fp.floatingPanelClose} onClick={close}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+                <PhosphorIcon icon={X} size={14} />
               </button>
             </div>
             <div className={fp.floatingPanelBody}>
@@ -245,7 +236,7 @@ function ActivityCard({
         <span className={fp.actCardAgentName}>{displayInfo.displayName}</span>
         <span className={fp.actCardBadge}>{typeText}</span>
         <span className={fp.actCardTime}>
-          {a.startedAt ? safeFormatSessionDate(a.startedAt) : ''}
+          {a.startedAt ? safeFormatSessionDate(String(a.startedAt)) : ''}
         </span>
       </div>
       <div className={fp.actCardSummary}>

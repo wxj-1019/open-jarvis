@@ -7,6 +7,8 @@ import { t, formatContext, lookupModelMeta } from '../../helpers';
 import { useAnchoredDropdown } from '../../hooks/useAnchoredDropdown';
 import { ModelEditPanel } from './ModelEditPanel';
 import styles from '../../Settings.module.css';
+import { PhosphorIcon } from '../../../ui/PhosphorIcon';
+import { Image, VideoCamera, Lightbulb, PencilSimple, X, CaretDown, ArrowsClockwise } from '@phosphor-icons/react';
 
 interface DiscoveredModel {
   id: string;
@@ -22,22 +24,11 @@ function CapabilityIcon({ kind }: { kind: CapabilityKind }) {
   return (
     <span className={styles['pv-capability-icon']} title={label} aria-label={label}>
       {kind === 'image' ? (
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-          <circle cx="8.5" cy="8.5" r="1.5" />
-          <path d="M21 15l-5-5L5 21" />
-        </svg>
+        <PhosphorIcon icon={Image} size={13} />
       ) : kind === 'video' ? (
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <rect x="3" y="5" width="13" height="14" rx="2" />
-          <path d="m16 9 5-3v12l-5-3" />
-        </svg>
+        <PhosphorIcon icon={VideoCamera} size={13} />
       ) : (
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M9 18h6" />
-          <path d="M10 22h4" />
-          <path d="M12 2a7 7 0 0 0-4 12.74V16a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-1.26A7 7 0 0 0 12 2Z" />
-        </svg>
+        <PhosphorIcon icon={Lightbulb} size={13} />
       )}
     </span>
   );
@@ -208,15 +199,10 @@ export function ProviderModelList({ providerId, summary, onRefresh }: {
                       title={t('settings.api.editModel')}
                       onClick={(e) => setEditing({ id: mid, anchor: e.currentTarget })}
                     >
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                      </svg>
+                      <PhosphorIcon icon={PencilSimple} size={11} />
                     </button>
                     <button className={styles['pv-fav-item-remove']} onClick={() => removeModelFromProvider(mid)} title={t('settings.api.removeModel')}>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                      </svg>
+                      <PhosphorIcon icon={X} size={10} />
                     </button>
                   </div>
                 </div>
@@ -233,19 +219,14 @@ export function ProviderModelList({ providerId, summary, onRefresh }: {
       <div className={styles['pv-models-action-row']}>
         <button ref={triggerRef} className={styles['pv-model-dropdown-trigger']} onClick={() => setDropdownOpen(!dropdownOpen)}>
           <span>{t('settings.api.addModel')}</span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
+          <PhosphorIcon icon={CaretDown} size={12} />
         </button>
         <button
           className={styles['pv-fetch-btn-inline']}
           title={t('settings.providers.fetchModels')}
           onClick={(e) => fetchModels(e.currentTarget)}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
-            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-          </svg>
+          <PhosphorIcon icon={ArrowsClockwise} size={14} />
           {t('settings.providers.fetchModels')}
         </button>
       </div>

@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Lightbulb } from '@phosphor-icons/react';
 import { hanaFetch } from '../../hooks/use-hana-fetch';
 import { invalidateConfigCache } from '../../hooks/use-config';
 import { useI18n } from '../../hooks/use-i18n';
 import { useStore } from '../../stores';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
 import type { ThinkingLevel } from '../../stores/model-slice';
 import styles from './InputArea.module.css';
 
@@ -67,11 +69,7 @@ export function ThinkingLevelButton({ level, onChange, modelXhigh }: {
         className={`${styles['thinking-pill']}${isOff ? '' : ` ${styles.active}`}`}
         onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M9 18h6" /><path d="M10 22h4" />
-          <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0018 8 6 6 0 006 8c0 1 .23 2.23 1.5 3.5.76.76 1.23 1.52 1.41 2.5" />
-          {isOff && <line x1="4" y1="4" x2="20" y2="20" strokeWidth="1.5" />}
-        </svg>
+        <PhosphorIcon icon={Lightbulb} />
       </button>
       {open && (
         <div className={styles['thinking-dropdown']}>

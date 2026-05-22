@@ -6,6 +6,8 @@ import { loadSettingsConfig } from '../../actions';
 import { SelectWidget } from '@/ui';
 import { KeyInput } from '../../widgets/KeyInput';
 import styles from '../../Settings.module.css';
+import { PhosphorIcon } from '../../../ui/PhosphorIcon';
+import { CaretLeft } from '@phosphor-icons/react';
 
 export function AddCustomButton({ onClick }: { onClick: () => void }) {
   return (
@@ -22,9 +24,7 @@ export function AddProviderOverlay({ onDone, onCancel }: { onDone: () => void; o
     <div className={styles['pv-add-overlay']}>
       <div className={styles['pv-add-overlay-header']}>
         <button className={styles['pv-add-overlay-back']} onClick={onCancel} aria-label={t('settings.api.cancel')}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
+          <PhosphorIcon icon={CaretLeft} size={16} />
           <span>{t('settings.api.cancel')}</span>
         </button>
         <div className={styles['pv-add-overlay-title']}>{t('settings.providers.addCustom')}</div>

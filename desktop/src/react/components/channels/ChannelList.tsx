@@ -24,6 +24,8 @@ import {
   type AgentDisplayInfo,
 } from '../../utils/agent-display';
 import styles from './Channels.module.css';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
+import { CaretLeft, Link, Plus } from '@phosphor-icons/react';
 
 
 // ── 辅助类型 ──
@@ -346,10 +348,7 @@ function DmIcon({ channel, selfInfo, agents, agentMap, userName, userAvatarUrl, 
         <MemberAvatar info={selfInfo} />
       </div>
       <div className={styles.channelDmLink}>
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-        </svg>
+        <PhosphorIcon icon={Link} size={10} />
       </div>
       <div className={styles.channelDmAvatar}>
         <MemberAvatar info={peerInfo} />

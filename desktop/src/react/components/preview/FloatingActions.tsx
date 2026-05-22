@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './FloatingActions.module.css';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
+import { Camera, Copy, Eye } from '@phosphor-icons/react';
 
 interface Props {
   content: string;
@@ -51,11 +53,7 @@ export function FloatingActions({
           title={t(markdownPreviewActive ? 'preview.exitMarkdownPreview' : 'preview.markdownPreview')}
           aria-label={t('preview.markdownPreview')}
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
+          <PhosphorIcon icon={Eye} size={13} />
         </button>
       )}
       <button className={styles.actionBtn} onClick={handleScreenshot} title={t('common.screenshot')} aria-label={t('common.screenshot')}>

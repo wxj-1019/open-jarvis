@@ -1,4 +1,6 @@
 import { memo, type RefObject } from 'react';
+import { Plus, StarFour } from '@phosphor-icons/react';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
 import { PlanModeButton, type PermissionMode } from './PlanModeButton';
 import { ContextRing } from './ContextRing';
 import { ThinkingLevelButton } from './ThinkingLevelButton';
@@ -50,10 +52,7 @@ export const InputControlBar = memo(function InputControlBar(props: Props) {
           title={t('input.attachFiles')}
           onClick={onAttach}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
+          <PhosphorIcon icon={Plus} size={14} />
         </button>
         <button
           ref={slashBtnRef}
@@ -61,9 +60,7 @@ export const InputControlBar = memo(function InputControlBar(props: Props) {
           title={t('input.commandMenu')}
           onClick={onSlashToggle}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 2L14 10L22 12L14 14L12 22L10 14L2 12L10 10Z" />
-          </svg>
+          <PhosphorIcon icon={StarFour} size={16} />
         </button>
         <PlanModeButton mode={permissionMode} onChange={onPermissionModeChange} locked={planModeLocked} />
         <ContextRing />

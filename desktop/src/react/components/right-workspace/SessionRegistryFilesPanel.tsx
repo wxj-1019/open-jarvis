@@ -12,6 +12,8 @@ import {
   writeAppFileDragPayload,
 } from '../../utils/app-file-drag';
 import styles from './RightWorkspacePanel.module.css';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
+import { ArrowSquareOut, Code, Copy, DownloadSimple, Eye, File, FolderOpen, Image, SlidersHorizontal, VideoCamera } from '@phosphor-icons/react';
 
 const EMPTY_FILES: readonly FileRef[] = Object.freeze([]);
 const SESSION_FILE_SORT_KEY = 'hana-session-file-sort';
@@ -194,11 +196,7 @@ function revealFile(file: FileRef): void {
 
 function SortIcon() {
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <line x1="4" y1="6" x2="20" y2="6" />
-      <line x1="7" y1="12" x2="17" y2="12" />
-      <line x1="10" y1="18" x2="14" y2="18" />
-    </svg>
+    <PhosphorIcon icon={SlidersHorizontal} size={12} aria-hidden="true" />
   );
 }
 
@@ -229,53 +227,33 @@ function FileKindIcon({ file }: { file: FileRef }) {
     );
   }
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-    </svg>
+    <PhosphorIcon icon={File} size={16} />
   );
 }
 
 function ActionIcon({ type }: { type: 'preview' | 'open' | 'reveal' | 'copy' | 'download' }) {
   if (type === 'preview') {
     return (
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z" />
-        <circle cx="12" cy="12" r="2.5" />
-      </svg>
+      <PhosphorIcon icon={Eye} size={13} />
     );
   }
   if (type === 'open') {
     return (
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-        <polyline points="15 3 21 3 21 9" />
-        <line x1="10" y1="14" x2="21" y2="3" />
-      </svg>
+      <PhosphorIcon icon={ArrowSquareOut} size={13} />
     );
   }
   if (type === 'reveal') {
     return (
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M3 6h7l2 2h9v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-        <circle cx="12" cy="14" r="2.5" />
-      </svg>
+      <PhosphorIcon icon={FolderOpen} size={13} aria-hidden="true" />
     );
   }
   if (type === 'download') {
     return (
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M12 3v12" />
-        <path d="M7 10l5 5 5-5" />
-        <path d="M5 21h14" />
-      </svg>
+      <PhosphorIcon icon={DownloadSimple} size={13} aria-hidden="true" />
     );
   }
   return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="9" y="9" width="11" height="11" rx="2" />
-      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-    </svg>
+    <PhosphorIcon icon={Copy} size={13} aria-hidden="true" />
   );
 }
 

@@ -8,6 +8,8 @@ import { loadSettingsConfig } from '../actions';
 import { SettingsSection } from '../components/SettingsSection';
 import { SettingsRow } from '../components/SettingsRow';
 import styles from '../Settings.module.css';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
+import { UserCircle } from '@phosphor-icons/react';
 
 export function MeTab() {
   const { settingsConfig, userAvatarUrl } = useSettingsStore(
@@ -97,10 +99,7 @@ export function MeTab() {
               <img className={styles['avatar-preview']} src={userAvatarUrl} draggable={false} />
             ) : (
               <div className={`${styles['avatar-preview']} ${styles['avatar-preview-emoji']}`}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
+                <PhosphorIcon icon={UserCircle} size={28} />
               </div>
             )}
             <div className={styles['avatar-upload-overlay']}>{t('settings.me.changeAvatar')}</div>

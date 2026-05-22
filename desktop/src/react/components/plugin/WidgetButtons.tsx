@@ -6,6 +6,8 @@
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { DotsThree, Eye, BookOpen } from '@phosphor-icons/react';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
 import { useStore } from '../../stores';
 import { resolvePluginTitle, resolvePluginIcon } from '../../utils/resolve-plugin-title';
 import { openWidget, openDesk, hideWidget, showWidget } from '../../stores/plugin-ui-actions';
@@ -72,9 +74,7 @@ export function WidgetButtons() {
       {hiddenWidgetList.length > 0 && (
         <div ref={dropdownRef} style={{ position: 'relative' }}>
           <button className={s.btn} title="已隐藏的插件" onClick={() => setDropdownOpen(!dropdownOpen)}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
-            </svg>
+            <PhosphorIcon icon={DotsThree} size={14} />
           </button>
           {dropdownOpen && (
             <div className={s.dropdown}>
@@ -91,10 +91,7 @@ export function WidgetButtons() {
                       title="显示"
                       onClick={(e) => { e.stopPropagation(); showWidget(w.pluginId); setDropdownOpen(false); }}
                     >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                        <circle cx="12" cy="12" r="3"/>
-                      </svg>
+                      <PhosphorIcon icon={Eye} size={12} />
                     </button>
                   </div>
                 );
@@ -110,9 +107,7 @@ export function WidgetButtons() {
         title="工作台"
         onClick={() => openDesk()}
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
-        </svg>
+        <PhosphorIcon icon={BookOpen} size={14} />
       </button>
 
       <div className={s.divider} />

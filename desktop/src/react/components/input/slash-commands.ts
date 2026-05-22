@@ -7,6 +7,9 @@
 import { hanaFetch } from '../../hooks/use-hana-fetch';
 import { getWebSocket } from '../../services/websocket';
 import { useStore } from '../../stores';
+import type { ComponentType } from 'react';
+import type { IconProps } from '@phosphor-icons/react';
+import { BookOpen, Diamond, ArrowsIn, Stop, Plus, ArrowsClockwise } from '@phosphor-icons/react';
 
 // ── Xing Prompt ──
 
@@ -39,7 +42,7 @@ export interface SlashItem {
   label: string;
   description: string;
   busyLabel: string;
-  icon: string;
+  icon: ComponentType<IconProps>;
   type: 'builtin' | 'skill';
   execute: () => Promise<void> | void;
 }
@@ -196,7 +199,7 @@ export function buildSlashCommands(
       label: '/diary',
       description: t('slash.diary'),
       busyLabel: t('slash.diaryBusy'),
-      icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
+      icon: BookOpen,
       type: 'builtin',
       execute: executeDiaryFn,
     },
@@ -205,7 +208,7 @@ export function buildSlashCommands(
       label: '/xing',
       description: t('slash.xing'),
       busyLabel: '',
-      icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/></svg>',
+      icon: Diamond,
       type: 'builtin',
       execute: executeXingFn,
     },
@@ -214,7 +217,7 @@ export function buildSlashCommands(
       label: '/compact',
       description: t('slash.compact'),
       busyLabel: t('slash.compactBusy'),
-      icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>',
+      icon: ArrowsIn,
       type: 'builtin',
       execute: executeCompactFn,
     },
@@ -227,7 +230,7 @@ export function buildSlashCommands(
         label: '/stop',
         description: t('slash.stop'),
         busyLabel: '',
-        icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>',
+        icon: Stop,
         type: 'builtin',
         execute: slashViaWsFactory('stop'),
       },
@@ -236,7 +239,7 @@ export function buildSlashCommands(
         label: '/new',
         description: t('slash.new'),
         busyLabel: '',
-        icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>',
+        icon: Plus,
         type: 'builtin',
         execute: slashViaWsFactory('new'),
       },
@@ -245,7 +248,7 @@ export function buildSlashCommands(
         label: '/reset',
         description: t('slash.reset'),
         busyLabel: '',
-        icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"/></svg>',
+        icon: ArrowsClockwise,
         type: 'builtin',
         execute: slashViaWsFactory('reset'),
       },

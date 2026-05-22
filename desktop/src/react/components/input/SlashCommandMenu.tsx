@@ -1,5 +1,6 @@
 import { memo, useRef, useEffect } from 'react';
 import type { SlashItem } from '../InputArea';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
 import styles from './InputArea.module.css';
 
 export const SlashCommandMenu = memo(function SlashCommandMenu({ commands, selected, busy, onSelect, onHover }: {
@@ -26,7 +27,7 @@ export const SlashCommandMenu = memo(function SlashCommandMenu({ commands, selec
           onClick={() => !busy && onSelect(cmd)}
           disabled={!!busy}
         >
-          <span className={styles['slash-menu-icon']} dangerouslySetInnerHTML={{ __html: cmd.icon }} />
+          <span className={styles['slash-menu-icon']}><PhosphorIcon icon={cmd.icon} size={14} /></span>
           <span className={styles['slash-menu-label']}>{cmd.label}</span>
           <span className={styles['slash-menu-desc']}>{cmd.description}</span>
         </button>

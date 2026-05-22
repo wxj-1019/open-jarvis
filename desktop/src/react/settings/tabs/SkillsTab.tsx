@@ -8,6 +8,8 @@ import { CompatPathDrawer } from './skills/CompatPathDrawer';
 import { LearnedSkillsBlock } from './skills/LearnedSkillsBlock';
 import { AgentSelect } from './bridge/AgentSelect';
 import { SettingsSection } from '../components/SettingsSection';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
+import { UploadSimple, Plus } from '@phosphor-icons/react';
 import styles from '../Settings.module.css';
 
 const platform = window.platform;
@@ -458,11 +460,7 @@ export function SkillsTab() {
           onDragLeave={(e) => (e.currentTarget as HTMLElement).classList.remove(styles['drag-over'])}
           onDrop={handleDrop}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="17 8 12 3 7 8" />
-            <line x1="12" y1="3" x2="12" y2="15" />
-          </svg>
+          <PhosphorIcon icon={UploadSimple} size={18} />
           <span>{t('settings.skills.dropzone')}</span>
         </div>
 
@@ -568,9 +566,7 @@ export function SkillsTab() {
             />
           ))}
           <button className={styles['compat-add-path']} onClick={addExternalPath}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
+            <PhosphorIcon icon={Plus} size={14} />
             <span>{t('settings.skills.compatAddPath')}</span>
           </button>
         </div>

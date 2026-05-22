@@ -4,6 +4,8 @@ import { hanaFetch, hanaUrl, yuanFallbackAvatar } from '../../api';
 import { t } from '../../helpers';
 import { loadAgents } from '../../actions';
 import styles from '../../Settings.module.css';
+import { PhosphorIcon } from '../../../ui/PhosphorIcon';
+import { Plus } from '@phosphor-icons/react';
 
 interface AgentCardGeometry {
   total: number;
@@ -291,9 +293,7 @@ export function AgentCardStack({
           onClick={onAdd}
         >
           <div className={`${styles['agent-card-inner']} ${styles['agent-card-add']}`}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
+            <PhosphorIcon icon={Plus} size={20} />
           </div>
         </div>
       </div>

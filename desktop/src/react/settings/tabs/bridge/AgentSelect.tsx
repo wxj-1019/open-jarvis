@@ -3,6 +3,8 @@ import { useSettingsStore } from '../../store';
 import { hanaUrl, yuanFallbackAvatar } from '../../api';
 import { SelectWidget, type SelectOption } from '@/ui';
 import styles from '../../Settings.module.css';
+import { PhosphorIcon } from '../../../ui/PhosphorIcon';
+import { Check } from '@phosphor-icons/react';
 
 interface AgentSelectProps {
   value: string | null;
@@ -48,9 +50,7 @@ export function AgentSelect({ value, onChange }: AgentSelectProps) {
         />
         <span className={styles['bridge-agent-name']}>{option.label}</span>
         {isSelected && (
-          <svg className={styles['bridge-agent-check']} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
+          <PhosphorIcon icon={Check} className={styles['bridge-agent-check']} />
         )}
       </>
     );

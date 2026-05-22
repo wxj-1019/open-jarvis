@@ -3,6 +3,8 @@ import type { SkillInfo } from '../../store';
 import { t } from '../../helpers';
 import { SkillRow } from './SkillRow';
 import styles from '../../Settings.module.css';
+import { PhosphorIcon } from '../../../ui/PhosphorIcon';
+import { CaretLeft, X } from '@phosphor-icons/react';
 
 interface CompatPathDrawerProps {
   dirPath: string;
@@ -28,14 +30,12 @@ export function CompatPathDrawer({
         className={`${styles['compat-drawer-header']}${!exists  ? ' ' + styles['disabled'] : ''}`}
         onClick={() => { if (exists && skillCount > 0) setOpen(prev => !prev); }}
       >
-        <svg
+        <PhosphorIcon
+          icon={CaretLeft}
+          size={10}
           className={`${styles['compat-drawer-chevron']}${open  ? ' ' + styles['open'] : ''}`}
-          width="10" height="10" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
           style={{ opacity: exists && skillCount > 0 ? 1 : 0.2 }}
-        >
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
+        />
         <div className={styles['compat-drawer-info']}>
           <span className={styles['compat-drawer-label']}>{displayLabel}</span>
           {isCustom && <span className={styles['compat-drawer-path']}>{dirPath}</span>}
@@ -55,9 +55,7 @@ export function CompatPathDrawer({
               title={t('settings.skills.compatRemove')}
               style={{ opacity: 1 }}
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
+              <PhosphorIcon icon={X} size={12} />
             </button>
           )}
         </div>

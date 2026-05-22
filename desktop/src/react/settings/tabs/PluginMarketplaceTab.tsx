@@ -4,6 +4,8 @@ import { hanaFetch } from '../api';
 import { t } from '../helpers';
 import { SettingsSection } from '../components/SettingsSection';
 import { renderMarkdown } from '../../utils/markdown';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
+import { CaretLeft, ArrowsClockwise } from '@phosphor-icons/react';
 import styles from '../Settings.module.css';
 
 interface MarketplacePlugin {
@@ -163,9 +165,7 @@ export function PluginMarketplaceTab() {
           aria-label={t('settings.plugins.marketBack')}
           title={t('settings.plugins.marketBack')}
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
+          <PhosphorIcon icon={CaretLeft} size={22} />
         </button>
         <span className={styles['skills-list-desc']}>{t('settings.plugins.marketplaceHint')}</span>
         <div className={styles['plugin-marketplace-toolbar-actions']}>
@@ -181,14 +181,7 @@ export function PluginMarketplaceTab() {
             onClick={loadMarketplace}
             disabled={marketplaceLoading}
           >
-            <svg
-              width="14" height="14" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-              className={marketplaceLoading ? styles['spin'] : ''}
-            >
-              <polyline points="23 4 23 10 17 10" />
-              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-            </svg>
+            <PhosphorIcon icon={ArrowsClockwise} size={14} className={marketplaceLoading ? styles['spin'] : ''} />
           </button>
         </div>
       </div>

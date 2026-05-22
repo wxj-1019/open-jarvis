@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { t } from '../helpers';
 import { Overlay } from '../../ui';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
+import { X } from '@phosphor-icons/react';
 
 export function BridgeTutorial() {
   const [visible, setVisible] = useState(false);
@@ -28,9 +30,7 @@ export function BridgeTutorial() {
         <div className="bridge-tutorial-header">
           <h3 className="bridge-tutorial-title">{t('settings.bridge.tutorialTitle')}</h3>
           <button className="bridge-tutorial-close" onClick={close}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <PhosphorIcon icon={X} size={14} />
           </button>
         </div>
         <div className="bridge-tutorial-body">

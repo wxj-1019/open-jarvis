@@ -5,6 +5,8 @@ import { hanaFetch } from '../../api';
 import { invalidateConfigCache } from '../../../hooks/use-config';
 import { t } from '../../helpers';
 import { useAnchoredDropdown } from '../../hooks/useAnchoredDropdown';
+import { X, CaretDown } from '@phosphor-icons/react';
+import { PhosphorIcon } from '../../../ui/PhosphorIcon';
 import { SelectWidget } from '@/ui';
 import styles from '../../Settings.module.css';
 
@@ -131,9 +133,7 @@ export function MediaProviderDetail({ providerId, provider, config, onSaveConfig
                   )}
                   <div className={styles['pv-fav-item-actions']}>
                     <button className={styles['pv-fav-item-remove']} onClick={() => removeModel(m.id)} title={t('settings.api.removeModel')}>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                      </svg>
+                      <PhosphorIcon icon={X} size={10} />
                     </button>
                   </div>
                 </div>
@@ -146,9 +146,7 @@ export function MediaProviderDetail({ providerId, provider, config, onSaveConfig
         <div className={styles['pv-models-action-row']}>
           <button ref={triggerRef} className={styles['pv-model-dropdown-trigger']} onClick={() => setDropdownOpen(!dropdownOpen)}>
             <span>{t('settings.media.addModel')}</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
+            <PhosphorIcon icon={CaretDown} size={12} />
           </button>
         </div>
 

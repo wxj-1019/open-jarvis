@@ -8,7 +8,8 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { renderMarkdownPreview } from '../../utils/markdown';
 import { parseCSV, injectCopyButtons } from '../../utils/format';
-import { fileIconSvg } from '../../utils/icons';
+import { fileIconComponent } from '../../utils/icons';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
 import { openFilePreview } from '../../utils/file-preview';
 import { useStore } from '../../stores';
 import { useMermaidDiagrams } from '../../hooks/use-mermaid-diagrams';
@@ -146,10 +147,9 @@ function FileInfoPreview({ previewItem }: { previewItem: PreviewItem }) {
 
   return (
     <div className="preview-file-info">
-      <div
-        className="preview-file-icon"
-        dangerouslySetInnerHTML={{ __html: fileIconSvg(ext) }}
-      />
+      <div className="preview-file-icon">
+        <PhosphorIcon icon={fileIconComponent(ext)} size={14} />
+      </div>
       <div className="preview-file-name">{previewItem.title}</div>
       <div className="preview-file-ext">
         {ext.toUpperCase()} {t('desk.fileLabel')}

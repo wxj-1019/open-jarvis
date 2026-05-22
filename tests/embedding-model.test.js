@@ -11,13 +11,9 @@ describe("EmbeddingModelManager", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockPipeline = {
-      task: vi.fn().mockResolvedValue([
-        {
-          embedding: new Float32Array(384).map((_, i) => i * 0.01),
-        },
-      ]),
-    };
+    mockPipeline = vi.fn().mockResolvedValue({
+      data: new Float32Array(384).fill(0).map((_, i) => i * 0.01),
+    });
   });
 
   afterEach(() => {
@@ -43,7 +39,7 @@ describe("EmbeddingModelManager", () => {
   describe("initialize", () => {
     it("loads local model successfully", async () => {
       const { pipeline } = await import("@xenova/transformers");
-      pipeline.mockResolvedValue(mockPipeline);
+      pipeline.mockImplementation(mockPipeline);
 
       manager = new EmbeddingModelManager();
       await manager.initialize();
@@ -90,7 +86,7 @@ describe("EmbeddingModelManager", () => {
   describe("getEmbedding", () => {
     it("returns embedding for single text", async () => {
       const { pipeline } = await import("@xenova/transformers");
-      pipeline.mockResolvedValue(mockPipeline);
+      pipeline.mockImplementation(mockPipeline);
 
       manager = new EmbeddingModelManager();
       await manager.initialize();
@@ -111,7 +107,7 @@ describe("EmbeddingModelManager", () => {
 
     it("handles empty text", async () => {
       const { pipeline } = await import("@xenova/transformers");
-      pipeline.mockResolvedValue(mockPipeline);
+      pipeline.mockImplementation(mockPipeline);
 
       manager = new EmbeddingModelManager();
       await manager.initialize();
@@ -126,7 +122,7 @@ describe("EmbeddingModelManager", () => {
   describe("getEmbeddings (batch)", () => {
     it("returns embeddings for multiple texts", async () => {
       const { pipeline } = await import("@xenova/transformers");
-      pipeline.mockResolvedValue(mockPipeline);
+      pipeline.mockImplementation(mockPipeline);
 
       manager = new EmbeddingModelManager();
       await manager.initialize();
@@ -144,7 +140,7 @@ describe("EmbeddingModelManager", () => {
 
     it("returns empty array for empty input", async () => {
       const { pipeline } = await import("@xenova/transformers");
-      pipeline.mockResolvedValue(mockPipeline);
+      pipeline.mockImplementation(mockPipeline);
 
       manager = new EmbeddingModelManager();
       await manager.initialize();
@@ -169,10 +165,10 @@ describe("EmbeddingModelManager", () => {
     it("closes the pipeline", async () => {
       const { pipeline } = await import("@xenova/transformers");
       const mockDispose = vi.fn();
-      pipeline.mockResolvedValue({
-        ...mockPipeline,
+      pipeline.mockImplementation(() => Promise.resolve({
+        data: new Float32Array(384),
         dispose: mockDispose,
-      });
+      }));
 
       manager = new EmbeddingModelManager();
       await manager.initialize();

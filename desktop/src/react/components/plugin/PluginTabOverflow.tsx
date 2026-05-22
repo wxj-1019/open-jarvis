@@ -8,6 +8,8 @@
 import { useState, useRef, useEffect } from 'react';
 import type { TabType } from '../../types';
 import s from './PluginTabOverflow.module.css';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
+import { CaretDown, PushPin } from '@phosphor-icons/react';
 
 declare function t(key: string, vars?: Record<string, string | number>): string;
 
@@ -51,9 +53,7 @@ export function PluginTabOverflow({ tabs, currentTab, onSelect, onPin, onContext
         title={t('channel.moreTabs')}
         onClick={() => setOpen(v => !v)}
       >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
+        <PhosphorIcon icon={CaretDown} size={12} />
       </button>
       {open && (
         <div className={s.dropdown}>

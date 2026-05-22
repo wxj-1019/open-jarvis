@@ -26,7 +26,13 @@ As a tool, it is powerful: it remembers everything you've said, operates your co
 
 ## Features
 
-**Memory** — A custom memory system that keeps recent events sharp and lets older ones fade naturally.
+**Memory** — A custom memory system with multi-stage compilation pipeline, semantic search, and fault tolerance. v3 features:
+- Multi-stage compilation (Today / Week / Longterm / Facts) with automatic fingerprint caching
+- Deep memory extraction: LLM splits session summaries into atomic facts with auto-tagging
+- FTS5 full-text search + vector semantic search hybrid retrieval, with CJK ngram support
+- Compile retry mechanism: exponential backoff + degradation to cached results
+- Memory health monitoring: per-step health tracking with error deduplication
+- Full documentation: [Architecture](docs/memory-system-architecture.md) | [API Reference](docs/memory-api-reference.md) | [Configuration Guide](docs/memory-configuration-guide.md) | [Migration Guide](docs/memory-migration-guide.md)
 
 **Personality** — Not a generic "AI assistant". Each agent has its own voice and behavior through personality templates. Agents are self-contained folders, easy to back up and manage.
 

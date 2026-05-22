@@ -16,6 +16,7 @@ import {
   type FileTypeFilter,
   type CtxMenuState,
 } from './desk-types';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
 import s from './Desk.module.css';
 
 // ── Open in Finder 按钮 ──
@@ -32,7 +33,7 @@ export function DeskOpenButton() {
 
   return (
     <button className={s.openBtn} onClick={handleClick}>
-      <span dangerouslySetInnerHTML={{ __html: ICONS.finderOpen }} />
+      <PhosphorIcon icon={ICONS.finderOpen.component} size={ICONS.finderOpen.size} />
       <span>{(window.t ?? ((p: string) => p))('desk.openInFinder')}</span>
     </button>
   );
@@ -52,7 +53,7 @@ export function DeskOpenIconButton() {
 
   return (
     <button className={`${s.sortBtn} ${s.iconBtn}`} onClick={handleClick} title={label} aria-label={label} disabled={!hasDesk}>
-      <span dangerouslySetInnerHTML={{ __html: ICONS.finderOpen }} />
+      <PhosphorIcon icon={ICONS.finderOpen.component} size={ICONS.finderOpen.size} />
     </button>
   );
 }
@@ -77,7 +78,7 @@ export function DeskBreadcrumb() {
   return (
     <div className={s.nav}>
       <button className={s.backBtn} onClick={handleBack}>
-        <span dangerouslySetInnerHTML={{ __html: ICONS.back }} />
+        <PhosphorIcon icon={ICONS.back.component} size={ICONS.back.size} />
         <span>{deskCurrentPath}</span>
       </button>
     </div>
@@ -96,7 +97,7 @@ export function DeskRefreshButton() {
 
   return (
     <button className={`${s.sortBtn} ${s.iconBtn}`} onClick={handleClick} title={label} aria-label={label} disabled={!hasDesk}>
-      <span dangerouslySetInnerHTML={{ __html: ICONS.refresh }} />
+      <PhosphorIcon icon={ICONS.refresh.component} size={ICONS.refresh.size} />
     </button>
   );
 }
@@ -125,7 +126,7 @@ export function DeskSortButton({ sortMode, onSort, onShowMenu }: {
 
   return (
     <button className={s.sortBtn} onClick={handleClick}>
-      <span dangerouslySetInnerHTML={{ __html: ICONS.sort }} />
+      <PhosphorIcon icon={ICONS.sort.component} size={ICONS.sort.size} />
       <span>{getSortShort(sortMode)}</span>
     </button>
   );
@@ -172,7 +173,7 @@ export function DeskFilterButton({ filters, onFiltersChange, onShowMenu }: {
       aria-label={label}
       title={label}
     >
-      <span dangerouslySetInnerHTML={{ __html: ICONS.filter }} />
+      <PhosphorIcon icon={ICONS.filter.component} size={ICONS.filter.size} />
       <span>{getFilterShort(filters)}</span>
     </button>
   );

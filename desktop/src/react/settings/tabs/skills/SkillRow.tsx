@@ -2,6 +2,8 @@ import React from 'react';
 import type { SkillInfo } from '../../store';
 import { t } from '../../helpers';
 import styles from '../../Settings.module.css';
+import { PhosphorIcon } from '../../../ui/PhosphorIcon';
+import { X } from '@phosphor-icons/react';
 
 function truncateDesc(raw: string): string {
   const cnMatch = raw.match(/[\u4e00-\u9fff].*$/s);
@@ -77,9 +79,7 @@ export function SkillRow({
             aria-label={t('settings.skills.delete')}
             onClick={(e) => { e.stopPropagation(); onDelete(skill.name); }}
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <PhosphorIcon icon={X} size={12} />
           </button>
         )}
         {onToggle && (

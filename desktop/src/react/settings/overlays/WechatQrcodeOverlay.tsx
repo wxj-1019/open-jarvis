@@ -3,6 +3,8 @@ import { hanaFetch } from '../api';
 import { t } from '../helpers';
 import { Overlay } from '../../ui';
 import styles from './WechatQrcodeOverlay.module.css';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
+import { X } from '@phosphor-icons/react';
 
 type QrStatus = 'loading' | 'waiting' | 'scanned' | 'confirmed' | 'expired' | 'error';
 
@@ -170,10 +172,7 @@ export function WechatQrcodeOverlay() {
       disableContainerAnimation
     >
         <button className={styles.closeBtn} onClick={close} aria-label="close">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
+          <PhosphorIcon icon={X} size={16} />
         </button>
 
         <div className={styles.title}>{t('settings.bridge.wechat')}</div>

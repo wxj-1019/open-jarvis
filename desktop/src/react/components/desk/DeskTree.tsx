@@ -28,6 +28,8 @@ import {
 import type { DeskFile } from '../../types';
 import type { CtxMenuState, FileTypeFilter, SortMode } from './desk-types';
 import { ICONS, fileMatchesTypeFilters, getFileIcon, sortDeskFiles } from './desk-types';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
+import { CaretDown, CaretRight } from '@phosphor-icons/react';
 import s from './Desk.module.css';
 
 function childSubdir(parent: string, name: string): string {
@@ -153,9 +155,7 @@ function toggleExpanded(paths: string[], subdir: string): string[] {
 
 function TreeDisclosureIcon({ expanded }: { expanded: boolean }) {
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      {expanded ? <polyline points="6 9 12 15 18 9" /> : <polyline points="9 6 15 12 9 18" />}
-    </svg>
+    <PhosphorIcon icon={expanded ? CaretDown : CaretRight} size={12} aria-hidden="true" />
   );
 }
 
@@ -234,6 +234,7 @@ function PendingCreateNode({
   onCancel: () => void;
 }) {
   const isFolder = edit.kind === 'folder';
+  const icon = isFolder ? ICONS.folder : getFileIcon(edit.draftName);
   return (
     <div
       className={`${s.treeItem} ${s.treeItemSelected}`}
@@ -247,10 +248,9 @@ function PendingCreateNode({
     >
       <span className={s.treeIndent} aria-hidden="true" />
       <span className={s.treeDisclosure} aria-hidden="true" />
-      <span
-        className={s.itemIcon}
-        dangerouslySetInnerHTML={{ __html: isFolder ? ICONS.folder : getFileIcon(edit.draftName) }}
-      />
+      <span className={s.itemIcon}>
+        <PhosphorIcon icon={icon.component} size={icon.size} />
+      </span>
       <RenameInput
         initialValue={edit.draftName}
         disabled={edit.phase === 'saving'}
@@ -489,6 +489,8 @@ function TreeNode({
     }
   }, [file.isDir, subdir]);
 
+  const fileIcon = file.isDir ? ICONS.folder : getFileIcon(file.name);
+
   return (
     <>
       <div
@@ -515,10 +517,9 @@ function TreeNode({
         <span className={s.treeDisclosure} aria-hidden="true">
           {file.isDir ? <TreeDisclosureIcon expanded={expanded} /> : null}
         </span>
-        <span
-          className={s.itemIcon}
-          dangerouslySetInnerHTML={{ __html: file.isDir ? ICONS.folder : getFileIcon(file.name) }}
-        />
+        <span className={s.itemIcon}>
+          <PhosphorIcon icon={fileIcon.component} size={fileIcon.size} />
+        </span>
         {isRenaming ? (
           <RenameInput
             initialValue={file.name}

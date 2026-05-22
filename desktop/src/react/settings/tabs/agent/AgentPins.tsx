@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSettingsStore } from '../../store';
 import { t, savePins } from '../../helpers';
 import styles from '../../Settings.module.css';
+import { PhosphorIcon } from '../../../ui/PhosphorIcon';
+import { X, Plus } from '@phosphor-icons/react';
 
 export function PinItem({ text, index, onDelete }: { text: string; index: number; onDelete: (i: number) => void }) {
   const [editing, setEditing] = useState(false);
@@ -48,9 +50,7 @@ export function PinItem({ text, index, onDelete }: { text: string; index: number
       )}
       <div className={styles['pin-item-actions']}>
         <button className={`${styles['pin-item-action']} ${styles['delete']}`} title={t('settings.pins.delete')} onClick={() => onDelete(index)}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
+          <PhosphorIcon icon={X} size={12} />
         </button>
       </div>
     </div>

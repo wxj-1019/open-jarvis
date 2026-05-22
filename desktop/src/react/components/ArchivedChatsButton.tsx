@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { Archive } from '@phosphor-icons/react';
 import { useI18n } from '../hooks/use-i18n';
+import { PhosphorIcon } from '../ui/PhosphorIcon';
 import { ArchivedSessionsModal } from './ArchivedSessionsModal';
 
 /**
@@ -18,11 +20,7 @@ export function ArchivedChatsButton() {
         aria-label={t('session.archived.entry')}
         onClick={() => setOpen(true)}
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="21 8 21 21 3 21 3 8" />
-          <rect x="1" y="3" width="22" height="5" />
-          <line x1="10" y1="12" x2="14" y2="12" />
-        </svg>
+        <PhosphorIcon icon={Archive} />
       </button>
       <ArchivedSessionsModal open={open} onClose={() => setOpen(false)} />
     </>

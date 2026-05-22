@@ -25,6 +25,8 @@ import type { ChatListItem, ChatMessage, ContentBlock } from '../stores/chat-typ
 import type { AgentPhoneActivity, Channel, Model } from '../types';
 import styles from './channels/Channels.module.css';
 import chatStyles from './chat/Chat.module.css';
+import { PhosphorIcon } from '../ui/PhosphorIcon';
+import { ArrowDown, Lock, PaperPlaneTilt, Plus, X } from '@phosphor-icons/react';
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- isComposing 等 nativeEvent 字段需 as any */
 
@@ -188,10 +190,7 @@ export function ChannelMessages() {
           className={styles.channelNewMessagesBtn}
           onClick={scrollToBottom}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M12 5v14" />
-            <path d="m19 12-7 7-7-7" />
-          </svg>
+          <PhosphorIcon icon={ArrowDown} size={14} aria-hidden="true" />
           <span>{t('channel.newMessages')}</span>
         </button>
       )}
@@ -222,10 +221,7 @@ function MemberItem({ info, memberId, onRemove, removeDisabled, removeTitle }: {
           disabled={removeDisabled}
           onClick={() => onRemove(memberId || info.id, info)}
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-            <path d="M18 6 6 18" />
-            <path d="m6 6 12 12" />
-          </svg>
+          <PhosphorIcon icon={X} size={12} />
         </button>
       )}
     </div>
@@ -310,10 +306,7 @@ export function ChannelMembers() {
         onClick={handleAddClick}
         disabled={!!busyMemberId}
       >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-          <path d="M12 5v14" />
-          <path d="M5 12h14" />
-        </svg>
+        <PhosphorIcon icon={Plus} size={13} />
         <span>{t('channel.addMember')}</span>
       </button>
       {menuPos && (
@@ -1113,10 +1106,7 @@ export function ChannelReadonly() {
 
   return (
     <span>
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', marginRight: 4 }}>
-        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-      </svg>
+      <PhosphorIcon icon={Lock} size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} />
       {window.t?.('channel.readOnly') || '这是 Agent 之间的私信，仅可查看'}
     </span>
   );

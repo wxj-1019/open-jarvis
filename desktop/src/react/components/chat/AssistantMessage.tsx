@@ -3,6 +3,8 @@
  */
 
 import { memo, useCallback, useMemo, useState } from 'react';
+import { ArrowsClockwise, DownloadSimple, File, Browser, Stack } from '@phosphor-icons/react';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
 import { StreamingMarkdownContent } from './StreamingMarkdownContent';
 import { MoodBlock } from './MoodBlock';
 import { ThinkingBlock } from './ThinkingBlock';
@@ -123,7 +125,7 @@ export const AssistantMessage = memo(function AssistantMessage({
     {
       id: 'regenerate',
       title: t('common.regenerate'),
-      icon: <RegenerateIcon />,
+      icon: <PhosphorIcon icon={ArrowsClockwise} size={15} />,
       onClick: () => { void handleRegenerate(); },
       disabled: retrying || isStreaming,
     },
@@ -180,15 +182,6 @@ export const AssistantMessage = memo(function AssistantMessage({
     </div>
   );
 });
-
-function RegenerateIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 12a9 9 0 1 1-2.64-6.36" />
-      <path d="M21 3v6h-6" />
-    </svg>
-  );
-}
 
 // ── ContentBlock 分发 ──
 
@@ -331,7 +324,7 @@ const ImageOutputCard = memo(function ImageOutputCard({ fileId, filePath, label,
           title={window.t('chat.fileActions.downloadToDevice')}
           onClick={(event) => event.stopPropagation()}
         >
-          <DownloadGlyph />
+          <PhosphorIcon icon={DownloadSimple} size={13} />
         </a>
       )}
       <img
@@ -344,16 +337,6 @@ const ImageOutputCard = memo(function ImageOutputCard({ fileId, filePath, label,
     </div>
   );
 });
-
-function DownloadGlyph() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M12 3v12" />
-      <path d="M7 10l5 5 5-5" />
-      <path d="M5 21h14" />
-    </svg>
-  );
-}
 
 function buildFallbackSessionFileRef({
   fileId,
@@ -422,10 +405,7 @@ const FileOutputCard = memo(function FileOutputCard({ fileId, filePath, label, e
       aria-disabled={expired}
     >
       <div className={styles.fileOutputIcon}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-          <polyline points="14 2 14 8 20 8" />
-        </svg>
+        <PhosphorIcon icon={File} size={20} />
       </div>
       <div className={styles.fileOutputInfo}>
         <div className={styles.fileOutputName}>{displayName}</div>
@@ -519,10 +499,7 @@ const LegacyArtifactBlock = memo(function LegacyArtifactBlock({ block }: { block
 
   return (
     <div className={styles.legacyArtifactCard} onClick={handleClick} style={{ cursor: 'pointer' }}>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-        <line x1="3" y1="9" x2="21" y2="9" />
-      </svg>
+      <PhosphorIcon icon={Browser} size={14} />
       <span>{block.title || block.artifactType}</span>
       {expired && <span className={styles.legacyArtifactExpiredBadge}>{window.t('chat.fileExpired')}</span>}
     </div>
@@ -579,11 +556,7 @@ const SkillBlock = memo(function SkillBlock({ block }: { block: any }) {
     : block.skillFilePath;
   return (
     <div className={styles.skillCard} onClick={() => openSkillPreview(block.skillName, skillFilePath)} style={{ cursor: 'pointer' }}>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 2L2 7l10 5 10-5-10-5z" />
-        <path d="M2 17l10 5 10-5" />
-        <path d="M2 12l10 5 10-5" />
-      </svg>
+      <PhosphorIcon icon={Stack} size={14} />
       <span>{block.skillName}</span>
     </div>
   );

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef } from 'react';
+import { CaretLeft } from '@phosphor-icons/react';
 import { useShallow } from 'zustand/react/shallow';
 import { useSettingsStore } from './store';
 import { hanaFetch } from './api';
@@ -13,6 +14,7 @@ import {
 import { t } from './helpers';
 import { loadAgents, loadAvatars, loadSettingsConfig, loadPluginSettings } from './actions';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { PhosphorIcon } from '../ui/PhosphorIcon';
 import { SettingsNav } from './SettingsNav';
 import { Toast } from './Toast';
 import { AgentTab } from './tabs/AgentTab';
@@ -224,9 +226,7 @@ export function SettingsContent({
                   aria-label={t('settings.back')}
                   data-settings-return
                 >
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M15 18l-6-6 6-6" />
-                  </svg>
+                  <PhosphorIcon icon={CaretLeft} size={22} />
                 </button>
                 <h1 className={styles['settings-title']}>{t('settings.title')}</h1>
               </div>

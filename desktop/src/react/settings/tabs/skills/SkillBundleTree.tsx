@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react';
 import type { SkillInfo } from '../../store';
 import { SkillRow } from './SkillRow';
 import styles from '../../Settings.module.css';
+import { PhosphorIcon } from '../../../ui/PhosphorIcon';
+import { PencilSimple, DownloadSimple, X, CaretDown, CaretRight } from '@phosphor-icons/react';
 
 export interface SkillBundleInfo {
   id: string;
@@ -231,10 +233,7 @@ export function SkillBundleTree({
                       aria-label={`重命名 ${bundle.name}`}
                       onClick={() => onRenameBundle(bundle)}
                     >
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 20h9" />
-                        <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                      </svg>
+                      <PhosphorIcon icon={PencilSimple} size={13} />
                     </button>
                   ) : null}
                   {canManage && onExportBundle ? (
@@ -245,11 +244,7 @@ export function SkillBundleTree({
                       aria-label={`导出 ${bundle.name}`}
                       onClick={() => onExportBundle(bundle)}
                     >
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                        <polyline points="7 10 12 15 17 10" />
-                        <line x1="12" y1="15" x2="12" y2="3" />
-                      </svg>
+                      <PhosphorIcon icon={DownloadSimple} size={13} />
                     </button>
                   ) : null}
                   {canManage && onDeleteBundle ? (
@@ -260,9 +255,7 @@ export function SkillBundleTree({
                       aria-label={`打散 ${bundle.name}`}
                       onClick={() => onDeleteBundle(bundle)}
                     >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                      </svg>
+                      <PhosphorIcon icon={X} size={12} />
                     </button>
                   ) : null}
                 </div>

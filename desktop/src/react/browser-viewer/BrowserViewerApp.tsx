@@ -7,6 +7,8 @@
 
 import { useState, useEffect } from 'react';
 import { initTheme } from '../bootstrap';
+import { PhosphorIcon } from '../ui/PhosphorIcon';
+import { X, CaretLeft, CaretRight, ArrowsClockwise, Stop } from '@phosphor-icons/react';
 
 declare function t(key: string): string;
 declare function setTheme(name: string): void;
@@ -54,9 +56,7 @@ export function BrowserViewerApp() {
             title={t?.('browser.closeBtn') || ''}
             onClick={() => hana?.closeBrowserViewer?.()}
           >
-            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round">
-              <path d="M4 4l6 6M10 4l-6 6" />
-            </svg>
+            <PhosphorIcon icon={X} size={14} />
           </button>
 
           <div className="nav-sep" />
@@ -67,9 +67,7 @@ export function BrowserViewerApp() {
             title={t?.('browser.back') || ''}
             onClick={() => hana?.browserGoBack?.()}
           >
-            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M8.5 2.5L4.5 7l4 4.5" />
-            </svg>
+            <PhosphorIcon icon={CaretLeft} size={14} />
           </button>
 
           {/* Forward */}
@@ -78,9 +76,7 @@ export function BrowserViewerApp() {
             title={t?.('browser.forward') || ''}
             onClick={() => hana?.browserGoForward?.()}
           >
-            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M5.5 2.5L9.5 7l-4 4.5" />
-            </svg>
+            <PhosphorIcon icon={CaretRight} size={14} />
           </button>
 
           {/* Reload */}
@@ -89,10 +85,7 @@ export function BrowserViewerApp() {
             title={t?.('browser.reload') || ''}
             onClick={() => hana?.browserReload?.()}
           >
-            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M11 7a4 4 0 1 1-4-4" />
-              <path d="M11 3v2.5H8.5" />
-            </svg>
+            <PhosphorIcon icon={ArrowsClockwise} size={14} />
           </button>
         </div>
 
@@ -108,9 +101,7 @@ export function BrowserViewerApp() {
             title={t?.('browser.emergencyStop') || ''}
             onClick={() => hana?.browserEmergencyStop?.()}
           >
-            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-              <rect x="3" y="3" width="8" height="8" rx="1" fill="currentColor" stroke="none" />
-            </svg>
+            <PhosphorIcon icon={Stop} size={14} />
           </button>
         </div>
       </div>

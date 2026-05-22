@@ -3,6 +3,8 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { PencilSimple, X, CaretDown } from '@phosphor-icons/react';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
 import { SelectWidget } from '@/ui';
 import type { SelectOption } from '@/ui';
 import { Toggle } from '../../settings/widgets/Toggle';
@@ -278,16 +280,10 @@ export function ModelStep({
                     </button>
                   )}
                   <button type="button" className="ob-model-icon-btn" title={t('onboarding.model.editModel')} onClick={() => startEditing(model)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                      <path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                    </svg>
+                    <PhosphorIcon icon={PencilSimple} size={14} />
                   </button>
                   <button type="button" className="ob-model-icon-btn" title={t('onboarding.model.removeModel')} onClick={() => removeModel(model.id)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
+                    <PhosphorIcon icon={X} size={14} />
                   </button>
                 </div>
               </div>
@@ -331,9 +327,7 @@ export function ModelStep({
       <div className="ob-add-model">
         <button type="button" className="ob-add-model-trigger" onClick={() => setAddMenuOpen(open => !open)}>
           <span>{t('onboarding.model.addModel')}</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
+          <PhosphorIcon icon={CaretDown} size={14} />
         </button>
         {addMenuOpen && (
           <div className="ob-add-model-menu">
