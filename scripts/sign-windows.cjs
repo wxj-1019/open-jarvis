@@ -11,7 +11,6 @@
  *   WIN_CSC_LINK       — PFX 证书文件路径
  *   WIN_CSC_KEY_PASSWORD — PFX 证书密码
  */
-const { execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
@@ -79,11 +78,11 @@ try {
     signtool,
     [
       "sign",
-      `/f ${certPath}`,
-      `/p ${certPassword}`,
-      "/tr http://timestamp.digicert.com",
-      "/td sha256",
-      "/fd sha256",
+      "/f", certPath,
+      "/p", certPassword,
+      "/tr", "http://timestamp.digicert.com",
+      "/td", "sha256",
+      "/fd", "sha256",
       fileToSign,
     ],
     { stdio: "inherit", shell: false }
