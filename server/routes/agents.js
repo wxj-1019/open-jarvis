@@ -819,6 +819,9 @@ export function createAgentsRoute(engine) {
 
   route.post("/agents/:id/backup", async (c) => {
     const id = c.req.param("id");
+    if (!validateId(id)) {
+      return c.json({ error: "无效的助手ID" }, 400);
+    }
     try {
       const backupDir = path.join(engine.agentsDir, ".backups");
       fsSync.mkdirSync(backupDir, { recursive: true });
@@ -850,10 +853,10 @@ export function createAgentsRoute(engine) {
       fsSync.mkdirSync(backupDir, { recursive: true });
       const tmpPath = path.join(backupDir, `import-${Date.now()}.zip`);
 
-      try {
-        const arrayBuffer = await file.arrayBuffer();
-        fsSync.writeFileSync(tmpPath, Buffer.from(arrayBuffer));
+      const arrayBuffer = await file.arrayBuffer();
+      fsSync.writeFileSync(tmpPath, Buffer.from(arrayBuffer));
 
+      try {
         const { importAgent } = await import("../../lib/backup/agent-backup.js");
         const targetDir = path.join(engine.agentsDir, agentId);
         const result = await importAgent(tmpPath, targetDir);

@@ -74,24 +74,40 @@ try {
   console.log(`使用 signtool: ${signtool}`);
   console.log(`签名文件: ${fileToSign}`);
 
-  const escapedPassword = certPassword.replace(/"/g, '""');
-  const cmd = [
-    `"${signtool}"`,
-    "sign",
-    `/f "${certPath}"`,
-    `/p "${escapedPassword}"`,
-    "/tr http://timestamp.digicert.com",
-    "/td sha256",
-    "/fd sha256",
-    `"${fileToSign}"`,
-  ].join(" ");
+  const { spawnSync } = require("child_process");
+  const result = spawnSync(
+    signtool,
+    [
+      "sign",
+      `/f ${certPath}`,
+      `/p ${certPassword}`,
+      "/tr http://timestamp.digicert.com",
+      "/td sha256",
+      "/fd sha256",
+      fileToSign,
+    ],
+    { stdio: "inherit", shell: false }
+  );
 
-  execSync(cmd, { stdio: "inherit" });
+  if (result.status !== 0) {
+    throw new Error(`signtool 退出码: ${result.status}`);
+  }
+
   console.log(`\n✓ 签名成功: ${fileToSign}`);
 
   console.log("\n验证签名...");
-  execSync(`"${signtool}" verify /pa "${fileToSign}"`, { stdio: "inherit" });
-  console.log("✓ 签名验证通过");
+  const verifyResult = spawnSync(
+    signtool,
+    ["verify", "/pa", fileToSign],
+    { stdio: "inherit", shell: false }
+  );
+
+  if (verifyResult.status === 0) {
+    console.log("✓ 签名验证通过");
+  } else {
+    console.error("✗ 签名验证失败");
+    process.exit(1);
+  }
 } catch (err) {
   console.error(`\n✗ 签名失败: ${err.message}`);
   process.exit(1);

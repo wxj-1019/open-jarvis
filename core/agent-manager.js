@@ -731,6 +731,9 @@ export class AgentManager {
   }
 
   async importAgent(zipPath, agentId) {
+    if (!validateId(agentId)) {
+      throw new Error(t("error.invalidId", { id: agentId }));
+    }
     const targetDir = path.join(this._d.agentsDir, agentId);
     if (fs.existsSync(targetDir)) {
       throw new Error(t("error.agentAlreadyExists", { id: agentId }));
