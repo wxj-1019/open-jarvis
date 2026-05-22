@@ -54,6 +54,8 @@ import {
   summarizeCachePrefixContract,
 } from "../lib/llm/cache-prefix-contract.js";
 
+import { validateDeps } from './types/dependencies.js';
+
 const log = createModuleLogger("session");
 
 /** 巡检/定时任务默认工具白名单（"*" = 与 chat 一致，全部放行） */
@@ -306,26 +308,13 @@ function buildAppendSystemPromptSnapshot({
 
 export class SessionCoordinator {
   /**
-   * @param {object} deps
-   * @param {string} deps.agentsDir
-   * @param {() => object} deps.getAgent - 当前焦点 agent
-   * @param {() => string} deps.getActiveAgentId
-   * @param {() => import('./model-manager.js').ModelManager} deps.getModels
-   * @param {() => object} deps.getResourceLoader
-   * @param {() => import('./skill-manager.js').SkillManager} deps.getSkills
-   * @param {(cwd, customTools?, opts?) => object} deps.buildTools
-   * @param {(event, sp) => void} deps.emitEvent
-   * @param {() => string|null} deps.getHomeCwd
-   * @param {(path) => string|null} deps.agentIdFromSessionPath
-   * @param {(id) => Promise} deps.switchAgentOnly - 仅切换 agent 指针
-   * @param {() => object} deps.getConfig
-   * @param {() => Map} deps.getAgents
-   * @param {(agentId) => object} deps.getActivityStore
-   * @param {(agentId) => object|null} deps.getAgentById
-   * @param {() => object} deps.listAgents - 列出所有 agent
-   * @param {(cwd: string) => Promise<void>} [deps.onBeforeSessionCreate]
+   * @param {import('./types/dependencies.js').SessionCoordinatorDeps} deps
    */
   constructor(deps) {
+    validateDeps(deps, 'SessionCoordinator', {
+      required: ['agentsDir', 'getAgent', 'getActiveAgentId', 'getModels', 'getResourceLoader', 'getSkills', 'buildTools', 'emitEvent', 'getHomeCwd', 'agentIdFromSessionPath', 'switchAgentOnly', 'getConfig', 'getPrefs', 'getAgents', 'getActivityStore', 'getAgentById', 'listAgents'],
+      optional: ['emitDevLog', 'getConfirmStore', 'getDeferredResultStore', 'getTaskRegistry', 'getEngine', 'closeTerminalsForSession', 'closeAllTerminals', 'onBeforeSessionCreate', 'memoryPressure', 'sessionListProjectionCache'],
+    });
     this._d = deps;
     this._pendingModel = null;
     this._session = null;

@@ -5,6 +5,7 @@ import { freshImport } from "./fresh-import.js";
 import { normalizePluginConfigSchema } from "./plugin-config.js";
 import { semverGte } from "../lib/plugin-versioning.js";
 import { detectIncompatiblePluginFormat } from "../lib/plugin-format-guard.js";
+import { validateDeps } from './types/dependencies.js';
 import { createModuleLogger } from "../lib/debug-log.js";
 
 const log = createModuleLogger("plugin-manager");
@@ -88,25 +89,28 @@ function activationMatches(events = [], reason = {}) {
 
 export class PluginManager {
   /**
-   * @param {{ pluginsDirs: string[], dataDir: string, bus: object }} opts
-   * pluginsDirs: 多个扫描目录，先内嵌后用户（靠前的优先）
-   * 兼容旧签名 { pluginsDir: string } → 自动转为单元素数组
+   * @param {import('./types/dependencies.js').PluginManagerDeps} deps
    */
-  constructor({
-    pluginsDirs,
-    pluginsDir,
-    dataDir,
-    bus,
-    preferencesManager,
-    appVersion,
-    getSessionPath,
-    registerSessionFile,
-    slashRegistry,
-    loadTimeoutMs,
-    lifecycleTimeoutMs,
-    logSink,
-    runtimeContext,
-  }) {
+  constructor(deps) {
+    validateDeps(deps, 'PluginManager', {
+      required: ['dataDir', 'bus'],
+      optional: ['pluginsDirs', 'pluginsDir', 'preferencesManager', 'appVersion', 'getSessionPath', 'registerSessionFile', 'slashRegistry', 'loadTimeoutMs', 'lifecycleTimeoutMs', 'logSink', 'runtimeContext'],
+    });
+    const {
+      pluginsDirs,
+      pluginsDir,
+      dataDir,
+      bus,
+      preferencesManager,
+      appVersion,
+      getSessionPath,
+      registerSessionFile,
+      slashRegistry,
+      loadTimeoutMs,
+      lifecycleTimeoutMs,
+      logSink,
+      runtimeContext,
+    } = deps;
     this._pluginsDirs = pluginsDirs || (pluginsDir ? [pluginsDir] : []);
     this._dataDir = dataDir;
     this._bus = bus;

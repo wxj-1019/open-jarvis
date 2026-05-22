@@ -21,17 +21,18 @@ import {
   deleteChannel,
 } from "../lib/channels/channel-store.js";
 
+import { validateDeps } from '../types/dependencies.js';
+
 const log = createModuleLogger("channel");
 
 export class ChannelManager {
   /**
-   * @param {object} deps
-   * @param {string} deps.channelsDir - 频道目录
-   * @param {string} deps.agentsDir  - agents 根目录
-   * @param {string} deps.userDir    - 用户数据目录
-   * @param {() => object|null} deps.getHub - 返回 Hub（可能为 null）
+   * @param {import('../types/dependencies.js').ChannelManagerDeps} deps
    */
   constructor(deps) {
+    validateDeps(deps, 'ChannelManager', {
+      required: ['channelsDir', 'agentsDir', 'userDir', 'getHub'],
+    });
     this._channelsDir = deps.channelsDir;
     this._agentsDir = deps.agentsDir;
     this._userDir = deps.userDir;
