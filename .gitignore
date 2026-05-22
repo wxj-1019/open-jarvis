@@ -73,6 +73,11 @@ auth.json
 *.log
 logs/
 
+# 包管理器 lockfile（统一使用 npm）
+# ═══════════════════════════════════════════
+pnpm-lock.yaml
+yarn.lock
+
 # 系统文件
 .DS_Store
 *.db

@@ -719,6 +719,43 @@ export class AgentManager {
     log.log(`已删除助手: ${agentId}`);
   }
 
+  // ── Backup / Restore ──
+
+  async exportAgent(agentId, outputPath) {
+    const agentDir = path.join(this._d.agentsDir, agentId);
+    if (!fs.existsSync(agentDir)) {
+      throw new Error(t("error.agentNotExists", { id: agentId }));
+    }
+    const { exportAgent: doExport } = await import("../lib/backup/agent-backup.js");
+    return doExport(agentDir, outputPath);
+  }
+
+  async importAgent(zipPath, agentId) {
+    const targetDir = path.join(this._d.agentsDir, agentId);
+    if (fs.existsSync(targetDir)) {
+      throw new Error(t("error.agentAlreadyExists", { id: agentId }));
+    }
+    const { importAgent: doImport } = await import("../lib/backup/agent-backup.js");
+    const result = await doImport(zipPath, targetDir);
+
+    const ag = await this._loadAgentConfigOnly(agentId, { required: true });
+    if (ag) {
+      try {
+        await this.ensureAgentRuntime(agentId, {
+          log: () => {},
+          priority: "foreground",
+          reason: "import",
+        });
+      } catch (err) {
+        log.warn(`importAgent runtime init failed (${agentId}): ${err.message}`);
+      }
+    }
+
+    this.invalidateAgentListCache();
+    log.log(`导入助手备份: ${agentId}`);
+    return { id: agentId, manifest: result.manifest };
+  }
+
   // ── Utility ──
 
   setPrimaryAgent(agentId) {

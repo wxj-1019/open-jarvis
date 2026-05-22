@@ -147,6 +147,16 @@ jobs:
         shell: pwsh
         run: |
           npx electron-builder --win nsis --publish never
+          # 验证签名状态
+          $exe = Get-ChildItem -Path dist -Filter "*.exe" | Select-Object -First 1
+          if ($exe) {
+            $sig = Get-AuthenticodeSignature $exe.FullName
+            if ($sig.Status -eq "Valid") {
+              Write-Host "✓ Windows installer signed: $($sig.SignerCertificate.Subject)"
+            } else {
+              Write-Host "::warning::Windows installer NOT signed (status: $($sig.Status)). See docs/windows-code-signing.md"
+            }
+          }
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}

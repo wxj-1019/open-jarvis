@@ -9,6 +9,7 @@ import path from "path";
 import { loadConfig, saveConfig } from "../lib/memory/config-loader.js";
 import { safeReadFile, safeReadJSON } from "../shared/safe-fs.js";
 import { FactStore } from "../lib/memory/fact-store.js";
+import { EmbeddingModelManager } from "../lib/memory/embedding-model.js";
 import { SessionSummaryManager } from "../lib/memory/session-summary.js";
 import { createMemoryTicker } from "../lib/memory/memory-ticker.js";
 import { createMemorySearchTool } from "../lib/memory/memory-search.js";
@@ -42,6 +43,70 @@ import { assertAgentConfigPatchYuan, getAgentConfigRepairState } from "./yuan-re
 import { createModuleLogger } from "../lib/debug-log.js";
 
 const moduleLog = createModuleLogger("agent");
+
+/**
+ * 从 config.yaml 构建 FactStore 的 opts，激活向量搜索、遗忘曲线、FTS5 优化器等可选功能。
+ *
+ * 所有功能均为降级优雅：本地 embedding 模型不可用时 fallback 远程 API，
+ * 远程 API 未配置时向量搜索不可用但不影响其他功能。
+ *
+ * @param {string} agentDir - Agent 数据目录
+ * @param {object} config - loadConfig() 返回的已解析配置
+ * @returns {object} FactStore constructor opts
+ */
+function _buildFactStoreOpts(agentDir, config) {
+  const memoryDir = path.join(agentDir, "memory");
+  const vectorDbPath = path.join(memoryDir, "vectors.db");
+
+  const opts = {};
+
+  // ── Embedding 模型（向量语义搜索） ──
+  const embeddingApi = config.embedding_api;
+  if (embeddingApi?.base_url || embeddingApi?.api_key) {
+    try {
+      opts.embeddingModel = new EmbeddingModelManager({
+        remoteApiUrl: embeddingApi.base_url,
+        remoteApiKey: embeddingApi.api_key,
+        forceRemote: config.memory?.embedding?.force_remote ?? false,
+      });
+    } catch (err) {
+      moduleLog.warn(`Embedding 模型初始化失败: ${err.message}`);
+    }
+  } else {
+    // 无远程 API 配置时，尝试本地模型（@xenova/transformers）
+    try {
+      opts.embeddingModel = new EmbeddingModelManager({});
+    } catch (err) {
+      moduleLog.warn(`本地 Embedding 模型不可用: ${err.message}`);
+    }
+  }
+
+  if (opts.embeddingModel) {
+    opts.vectorDbPath = vectorDbPath;
+  }
+
+  // ── FTS5 优化器（同义词扩展、模糊匹配、CJK 4-gram） ──
+  if (config.memory?.fts5_optimization?.enabled !== false) {
+    opts.enableFts5Optimization = true;
+    opts.synonymMap = config.memory?.fts5_optimization?.synonym_map ?? {};
+  }
+
+  // ── 遗忘曲线引擎（记忆衰减 → 归档） ──
+  if (config.memory?.forgetting_curve?.enabled !== false) {
+    opts.forgettingCurveConfig = {
+      enabled: true,
+      archiveThreshold: config.memory?.forgetting_curve?.archive_threshold ?? 0.25,
+      protectedTags: config.memory?.forgetting_curve?.protected_tags ?? ["identity", "personality", "preference"],
+    };
+  }
+
+  // ── 质量评分配置 ──
+  if (config.memory?.quality) {
+    opts.qualityConfig = config.memory.quality;
+  }
+
+  return opts;
+}
 
 export class Agent {
   /**
@@ -194,7 +259,24 @@ export class Agent {
     // 4. 记忆 v2：FactStore + SessionSummaryManager + ticker
     log(`  [agent] 4. FactStore...`);
     fs.mkdirSync(path.join(this.agentDir, "memory", "summaries"), { recursive: true });
-    this._factStore = new FactStore(this.factsDbPath);
+
+    // 构建 FactStore opts，激活向量搜索、遗忘曲线、FTS5 优化器等可选功能
+    const factStoreOpts = _buildFactStoreOpts(this.agentDir, this._config);
+
+    // EmbeddingModelManager 需要异步初始化（加载本地模型或验证远程 API）
+    if (factStoreOpts.embeddingModel) {
+      await factStoreOpts.embeddingModel.initialize();
+      if (factStoreOpts.embeddingModel.isAvailable) {
+        log(`  [agent] 4. Embedding 模型初始化成功`);
+      } else {
+        // initialize() 不抛异常，需要显式检查 isAvailable
+        moduleLog.warn("Embedding 模型不可用，向量搜索已禁用（请检查本地模型安装或 embedding_api 远程配置）");
+        factStoreOpts.embeddingModel = null;
+        factStoreOpts.vectorDbPath = undefined;
+      }
+    }
+
+    this._factStore = new FactStore(this.factsDbPath, factStoreOpts);
     this._summaryManager = new SessionSummaryManager(this.summariesDir);
 
     // v1 → v2 迁移：仅当迁移标记不存在且旧 memories.db 存在时执行一次

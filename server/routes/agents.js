@@ -813,5 +813,58 @@ export function createAgentsRoute(engine) {
     }
   });
 
+  // ════════════════════════════
+  //  Backup / Restore
+  // ════════════════════════════
+
+  route.post("/agents/:id/backup", async (c) => {
+    const id = c.req.param("id");
+    try {
+      const backupDir = path.join(engine.agentsDir, ".backups");
+      fsSync.mkdirSync(backupDir, { recursive: true });
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const outPath = path.join(backupDir, `agent-backup-${id}-${timestamp}.zip`);
+
+      const { exportAgent } = await import("../../lib/backup/agent-backup.js");
+      const agentDirPath = path.join(engine.agentsDir, id);
+      const result = await exportAgent(agentDirPath, outPath);
+      return c.json({ success: true, filePath: outPath, manifest: result.manifest });
+    } catch (err) {
+      return c.json({ error: err.message }, 500);
+    }
+  });
+
+  route.post("/agents/import", bodyLimit({ maxSize: 100 * 1024 * 1024 }), async (c) => {
+    try {
+      const formData = await c.req.formData();
+      const file = formData.get("file");
+      const agentId = formData.get("agentId");
+      if (!file || typeof file === "string") {
+        return c.json({ error: "缺少备份文件" }, 400);
+      }
+      if (!agentId || !validateId(agentId)) {
+        return c.json({ error: "缺少或无效的 agentId" }, 400);
+      }
+
+      const backupDir = path.join(engine.agentsDir, ".backups");
+      fsSync.mkdirSync(backupDir, { recursive: true });
+      const tmpPath = path.join(backupDir, `import-${Date.now()}.zip`);
+
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        fsSync.writeFileSync(tmpPath, Buffer.from(arrayBuffer));
+
+        const { importAgent } = await import("../../lib/backup/agent-backup.js");
+        const targetDir = path.join(engine.agentsDir, agentId);
+        const result = await importAgent(tmpPath, targetDir);
+        return c.json({ success: true, id: agentId, manifest: result.manifest });
+      } finally {
+        fsSync.rmSync(tmpPath, { force: true });
+      }
+    } catch (err) {
+      return c.json({ error: err.message }, 500);
+    }
+  });
+
   return route;
 }

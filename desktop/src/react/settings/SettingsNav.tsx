@@ -69,7 +69,7 @@ function buildNavItems(pluginSettingsTabs: PluginSettingsTab[], platformName?: s
     .map(tab => ({
       id: tab.id,
       label: titleToLabel(tab.title),
-      icon: tab.icon || FALLBACK_PLUGIN_ICON,
+      icon: typeof tab.icon === "string" ? FALLBACK_PLUGIN_ICON : (tab.icon || FALLBACK_PLUGIN_ICON),
     }));
   if (nativeTabs.length === 0) return tabItems.map(item => ({ ...item, label: t(item.key) }));
 

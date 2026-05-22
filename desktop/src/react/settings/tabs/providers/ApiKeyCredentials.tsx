@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from '@phosphor-icons/react';
-import { PhosphorIcon } from '../../../../ui/PhosphorIcon';
+import { PhosphorIcon } from '../../../ui/PhosphorIcon';
 import { useSettingsStore, type ProviderSummary } from '../../store';
 import { hanaFetch } from '../../api';
 import { invalidateConfigCache } from '../../../hooks/use-config';
