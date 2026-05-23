@@ -132,7 +132,16 @@ function normalizeSnapshot(data, lease) {
   };
 }
 
-const WINDOWS_UIA_ALLOWED_ACTIONS = ["click_element", "type_text", "scroll", "stop"];
+const WINDOWS_UIA_ALLOWED_ACTIONS = [
+  "click_element",
+  "type_text",
+  "scroll",
+  "stop",
+  "click_point",
+  "double_click",
+  "drag",
+  "press_key",
+];
 const ELEMENT_BOUND_ACTIONS = new Set(["click_element", "double_click", "type_text", "scroll"]);
 const FOREGROUND_ONLY_ACTIONS = new Set(["click_point", "double_click", "drag", "press_key"]);
 
@@ -211,6 +220,27 @@ function helperAction(action) {
   return payload;
 }
 
+const RETRYABLE_ERROR_CODES = new Set([
+  "ETIMEDOUT",
+  "ECONNRESET",
+  "EPIPE",
+  "EBUSY",
+]);
+
+const RETRYABLE_EXIT_CODES = new Set([1, 3221225786]);
+
+function isRetryableError(err) {
+  if (err?.code && RETRYABLE_ERROR_CODES.has(err.code)) return true;
+  if (err?.details?.exitCode && RETRYABLE_EXIT_CODES.has(err.details.exitCode)) return true;
+  if (err?.message?.includes("timeout")) return true;
+  if (err?.message?.includes("timed out")) return true;
+  return false;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export function createWindowsUiaProvider({
   providerId = "windows:uia",
   platform = process.platform,
@@ -219,10 +249,34 @@ export function createWindowsUiaProvider({
   helperScript = WINDOWS_UIA_HELPER_SCRIPT,
   helperDir = defaultHelperDir(),
   timeoutMs = 30000,
+  maxRetries = 2,
+  retryBaseDelayMs = 1000,
 } = {}) {
   let helperPath = null;
+  let consecutiveFailures = 0;
+  let lastFailureTime = 0;
 
-  async function runHelper(payload) {
+  async function runHelperWithRetry(payload, retries = maxRetries) {
+    let lastError = null;
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const result = await runHelperOnce(payload);
+        consecutiveFailures = 0;
+        return result;
+      } catch (err) {
+        lastError = err;
+        if (attempt < retries && isRetryableError(err)) {
+          const delay = retryBaseDelayMs * Math.pow(2, attempt);
+          await sleep(delay);
+          continue;
+        }
+        throw err;
+      }
+    }
+    throw lastError;
+  }
+
+  async function runHelperOnce(payload) {
     helperPath ||= ensureHelperFile(helperDir, helperScript);
     let result;
     try {
@@ -238,14 +292,22 @@ export function createWindowsUiaProvider({
         timeoutMs,
       });
     } catch (err) {
-      mapHelperLaunchError(err, providerId);
+      consecutiveFailures++;
+      lastFailureTime = Date.now();
+      throw computerUseError(
+        COMPUTER_USE_ERRORS.PROVIDER_CRASHED,
+        `Windows UIA helper failed to launch: ${err?.message || String(err)}`,
+        { providerId, launchCode: err?.code || null, retryable: isRetryableError(err) },
+      );
     }
 
     if (result.exitCode !== 0) {
+      consecutiveFailures++;
+      lastFailureTime = Date.now();
       throw computerUseError(
         COMPUTER_USE_ERRORS.PROVIDER_CRASHED,
         result.stderr?.trim() || `Windows UIA helper exited with code ${result.exitCode}`,
-        { providerId, exitCode: result.exitCode },
+        { providerId, exitCode: result.exitCode, retryable: RETRYABLE_EXIT_CODES.has(result.exitCode) },
       );
     }
 
@@ -269,6 +331,8 @@ export function createWindowsUiaProvider({
     return parsed.data || {};
   }
 
+  const runHelper = runHelperWithRetry;
+
   function ensureWin32() {
     if (platform !== "win32") {
       throw computerUseError(COMPUTER_USE_ERRORS.PROVIDER_UNAVAILABLE, "Windows UIA is available only on Windows.", {
@@ -287,11 +351,11 @@ export function createWindowsUiaProvider({
       accessibilityTree: true,
       elementActions: true,
       backgroundControl: "partial",
-      pointClick: "unsupported",
-      drag: "unsupported",
+      pointClick: "foreground",
+      drag: "foreground",
       textInput: "semantic",
-      keyboardInput: "unsupported",
-      requiresForegroundForInput: false,
+      keyboardInput: "foreground",
+      requiresForegroundForInput: true,
       isolated: false,
     },
 
@@ -301,7 +365,15 @@ export function createWindowsUiaProvider({
       }
       try {
         const data = await runHelper({ command: "status" });
-        return { providerId, available: data.available !== false, permissions: data.permissions || [] };
+        return {
+          providerId,
+          available: data.available !== false,
+          permissions: data.permissions || [],
+          health: {
+            consecutiveFailures,
+            lastFailureTime: lastFailureTime ? new Date(lastFailureTime).toISOString() : null,
+          },
+        };
       } catch (err) {
         const launchCode = err?.details?.launchCode || err?.code;
         return {
@@ -309,6 +381,10 @@ export function createWindowsUiaProvider({
           available: false,
           reason: launchCode === "ENOENT" ? "powershell-not-found" : "status-failed",
           error: err?.message || String(err),
+          health: {
+            consecutiveFailures,
+            lastFailureTime: lastFailureTime ? new Date(lastFailureTime).toISOString() : null,
+          },
         };
       }
     },
@@ -372,6 +448,18 @@ export function createWindowsUiaProvider({
 
     async stop() {
       return { stopped: true };
+    },
+
+    getHealthStatus() {
+      return {
+        providerId,
+        platform,
+        consecutiveFailures,
+        lastFailureTime: lastFailureTime ? new Date(lastFailureTime).toISOString() : null,
+        healthy: consecutiveFailures < 3,
+        timeoutMs,
+        maxRetries,
+      };
     },
   };
 }
