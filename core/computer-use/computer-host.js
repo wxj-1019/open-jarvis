@@ -96,10 +96,13 @@ export class ComputerHost {
   async getStatus(ctx = {}) {
     const providers = [];
     for (const provider of this._providers.list()) {
+      const status = provider.getStatus ? await provider.getStatus(ctx) : { available: true };
+      const health = provider.getHealthStatus ? provider.getHealthStatus() : null;
       providers.push({
         providerId: provider.providerId,
         capabilities: provider.capabilities,
-        status: provider.getStatus ? await provider.getStatus(ctx) : { available: true },
+        status,
+        health,
       });
     }
     const settings = this._settings();
@@ -191,6 +194,12 @@ export class ComputerHost {
 
     const provider = this._providers.require(lease.providerId);
     this._assertCapability(provider.capabilities, action);
+    
+    // 操作前截图
+    const beforeScreenshot = this._settings().verifyActions === true 
+      ? await provider.getAppState(ctx, lease)
+      : null;
+
     const providerAction = {
       ...action,
       snapshotId,
@@ -207,7 +216,49 @@ export class ComputerHost {
       }
       providerAction.snapshotElement = snapshotElement;
     }
-    return await provider.performAction(ctx, lease, providerAction);
+    
+    const result = await provider.performAction(ctx, lease, providerAction);
+    
+    // 操作后截图验证
+    if (beforeScreenshot) {
+      const afterScreenshot = await provider.getAppState(ctx, lease);
+      const verified = this._verifyActionEffect(beforeScreenshot, afterScreenshot, action);
+      if (!verified) {
+        throw computerUseError(
+          COMPUTER_USE_ERRORS.ACTION_VERIFICATION_FAILED,
+          `Action did not produce expected effect: ${action?.type}`,
+          { action: action?.type, leaseId: lease.leaseId },
+        );
+      }
+    }
+    
+    return result;
+  }
+
+  _verifyActionEffect(before, after, action) {
+    if (!before || !after) return true;
+    
+    switch (action?.type) {
+      case "click_element":
+      case "click_point":
+      case "double_click":
+        return before.screenshot?.data !== after.screenshot?.data;
+      
+      case "type_text":
+        const beforeElements = before.elements || [];
+        const afterElements = after.elements || [];
+        return afterElements.length !== beforeElements.length ||
+          JSON.stringify(beforeElements) !== JSON.stringify(afterElements);
+      
+      case "press_key":
+        return true;
+      
+      case "scroll":
+        return true;
+      
+      default:
+        return true;
+    }
   }
 
   getActionPresentation(ctx, leaseId, actionType) {
