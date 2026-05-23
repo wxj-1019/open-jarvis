@@ -82,6 +82,7 @@ export interface SettingsState {
   activeTab: string;
   platformName: string | null;
   ready: boolean;
+  backupSelectedAgentId: string | null;
 
   // pins
   currentPins: string[];
@@ -139,6 +140,7 @@ export const useSettingsStore = create<SettingsStore>()((set, get) => ({
   activeTab: 'agent',
   platformName: null,
   ready: false,
+  backupSelectedAgentId: null,
 
   // pins
   currentPins: [],
