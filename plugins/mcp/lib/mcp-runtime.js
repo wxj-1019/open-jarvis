@@ -350,10 +350,10 @@ export class McpRuntime {
 
     const disposers = [];
     for (const prompt of prompts) {
-      const toolName = toMcpToolId(connectorId, `prompt_${prompt.name}`);
+      const toolName = toMcpToolId(connectorId, prompt.name);
       const disposer = this.ctx.registerTool({
         name: toolName,
-        description: `[MCP Prompt] ${prompt.description || prompt.name}`,
+        description: `[MCP Prompt: ${prompt.name}] ${prompt.description || prompt.name}`,
         parameters: {
           type: "object",
           properties: Object.fromEntries(
@@ -464,7 +464,17 @@ export class McpRuntime {
     } catch {
       this._cachedResourcesText = "";
     }
+    // 通知 Hub 资源缓存已更新（携带文本避免竞态）
+    this.ctx.bus?.emit?.("mcp:resources-cached", { text: this._cachedResourcesText });
     return this._cachedResourcesText;
+  }
+
+  /**
+   * 获取当前缓存的 MCP Resources 文本，供外部（Hub/Agent）同步读取。
+   * @returns {string}
+   */
+  getResourcesText() {
+    return this._cachedResourcesText || "";
   }
 
   async listConnectorPrompts(connectorId) {

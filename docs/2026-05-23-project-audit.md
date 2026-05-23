@@ -103,7 +103,7 @@
 |------|------|------|
 | 事件驱动架构 | ✅ 完成 | OSEventSource + get-windows/chokidar + EventBus capability + Scheduler 订阅, 15 测试通过 |
 | 上下文感知 | ✅ 完成 | UserContextTracker 聚合 OS 事件 → 用户状态模型 → Agent.buildSystemPrompt 注入, 18 测试通过 |
-| MCP 原生支持扩展（Resources/Prompts/通知） | ⏳ |
+| MCP 原生支持扩展（Resources/Prompts/通知） | ✅ 完成 | Resources 注入 Agent prompt（Hub 槽位 + server 接线 + `getResourcesText()` + `mcp:resources-cached` 事件）, 工具命名优化（去掉 `prompt_` 前缀）, 13 测试通过 |
 | 多步自主规划 | ⏳ |
 | 系统级快速唤起 | ⏳ |
 
@@ -149,10 +149,11 @@
 项目健康度：🟢 良好
 P0 问题：    ✅ 全部解决
 代码质量：   🟢 企业级（A级）
-本轮变更：   ✅ 系统健康检查 + 校验基础设施（已完成）
+| 本轮变更：   ✅ 系统健康检查 + 校验基础设施（已完成）
              ✅ 事件驱动架构（已完成）
              ✅ 上下文感知（已完成）
-下一步：     🔄 Phase 2 主动性架构升级 → MCP 原生支持扩展 / 多步自主规划
+             ✅ MCP 原生扩展（已完成）
+下一步：     🔄 Phase 2 主动性架构升级 → 多步自主规划 / 日历集成
 ```
 
 ### 核心结论
@@ -162,7 +163,8 @@ P0 问题：    ✅ 全部解决
 3. **关键路径突破口**：MCP 原生支持的 Resources/Prompts 扩展是 Phase 2 最佳起点——一个动作即可打通日历、邮件、项目管理等下游能力
 4. **事件驱动架构已落地**：OSEventSource 统一抽象窗口焦点 + 文件系统事件, 通过 EventBus 驱动 Scheduler 按需巡检, 15 个单元测试全部通过
 5. **上下文感知已落地**：UserContextTracker 聚合 OS 事件 → 维护用户状态模型（当前窗口/最近切换/文件活动）→ 注入 Agent.buildSystemPrompt, 18 个单元测试全部通过
-6. **下一步建议**：✅ Phase 1 收工 → 🔄 Phase 2 进行中 → **MCP Resources/Prompts 支持** 或 **多步自主规划**（无前置依赖, MCP 模块已 A 级, 改动范围清晰可控）
+6. **MCP 原生扩展已落地**：Resources 实时注入 Agent prompt（`_mcpResourcesText` + `getMcpResourcesText` 双回调降级 + `mcp:resources-cached` 事件零竞态同步）, 工具命名优化（移除 `prompt_` 前缀）, 13 个测试通过
+7. **下一步建议**：✅ Phase 1 收工 → 🔄 Phase 2 进行中 → **多步自主规划** 或 **日历集成**（无前置依赖, 改动范围清晰可控）
 
 ---
 

@@ -62,6 +62,7 @@ export class Hub {
       emit: (event) => this._eventBus.emit(event, null),
     });
     this._agentPhoneAbortHandlers = new Set();
+    this._mcpResourcesText = "";  // 由 server/index.js 在 McpRuntime 就绪后注入
 
     // 注入 Hub 回调到 Engine（单向：Hub → Engine，不再双向引用）
     engine.setHubCallbacks({
@@ -76,6 +77,7 @@ export class Hub {
       triggerChannelDelivery: (name, opts) => this._channelRouter.triggerImmediate(name, opts),
       triggerChannelTriage: (name, opts) => this._channelRouter.triggerImmediate(name, opts),
       getUserContextSummary: () => this._userContextTracker.getContextSummary(engine.locale),
+      getMcpResourcesText: () => this._mcpResourcesText,
     });
 
     // 注入 EventBus（替代旧的 proxy hack）
@@ -606,5 +608,8 @@ function extensionForVideoMime(mimeType) {
   const normalized = String(mimeType || "").toLowerCase();
   if (normalized === "video/webm") return ".webm";
   if (normalized === "video/quicktime") return ".mov";
+  return ".mp4";
+}
+}
   return ".mp4";
 }

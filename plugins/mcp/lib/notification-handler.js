@@ -74,7 +74,7 @@ export class NotificationHandler {
         this.manager.ctx.log.debug?.(`[mcp:${connectorId}] failed to refresh resources: ${err.message}`);
       }
     }
-    this.manager._refreshCachedResourcesText().catch(() => {});
+    await this.manager._refreshCachedResourcesText();
     if (this.manager.ctx.bus) {
       this.manager.ctx.bus.emit("mcp:resources-changed", { connectorId });
     }
