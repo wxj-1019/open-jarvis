@@ -250,7 +250,7 @@ export function createWindowsUiaProvider({
   helperScript = WINDOWS_UIA_HELPER_SCRIPT,
   helperDir = defaultHelperDir(),
   timeoutMs = 30000,
-  maxRetries = 2,
+  maxRetries = 3,
   retryBaseDelayMs = 1000,
 } = {}) {
   let helperPath = null;
