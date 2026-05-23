@@ -76,6 +76,7 @@ import { createMobileWorkbenchRoute } from "./routes/mobile-workbench.js";
 import { createMobileStaticRoute } from "./routes/mobile-static.js";
 import { createAccessRoute } from "./routes/access.js";
 import { configureProcessPiSdkEnv, ensureHanaPiSdkDirs, resolveHanakoHome } from "../shared/hana-runtime-paths.js";
+import { startAutoBackupScheduler, loadBackupConfig, saveBackupConfig } from "../lib/backup/auto-backup-scheduler.js";
 // internal-browser WS is handled directly via raw ws.WebSocketServer in the
 // upgrade handler below (WsTransport needs raw ws .on()/.off() methods)
 import { ConfirmStore } from "../lib/confirm-store.js";
@@ -272,6 +273,22 @@ const hub = new Hub({ engine });
 
 // ── 初始化插件系统 ──
 await engine.initPlugins(hub.eventBus);
+
+// ── 接线 MCP Resources → Hub（McpRuntime 就绪后同步缓存文本到 Agent prompt 槽位） ──
+const mcpPlugin = engine.pluginManager.getPlugin("mcp");
+if (mcpPlugin?.ctx?._mcpRuntime) {
+  const rt = mcpPlugin.ctx._mcpRuntime;
+  // 初始化 Hub 槽位（首次刷新异步，后续 mcp:resources-cached 事件驱动同步）
+  hub._mcpResourcesText = rt._cachedResourcesText || "";
+  // 订阅 mcp:resources-cached：携带文本直接更新，零竞态
+  hub.eventBus.subscribe(({ text }) => {
+    if (typeof text === "string") hub._mcpResourcesText = text;
+  }, { types: ["mcp:resources-cached"] });
+  // 异步触发一次资源刷新，完成后自动更新缓存
+  rt._refreshCachedResourcesText?.().then(() => {
+    hub._mcpResourcesText = rt._cachedResourcesText || "";
+  }).catch(() => {});
+}
 
 // 启动 Hub 调度器（Scheduler + ChannelRouter）
 hub.initSchedulers();
@@ -586,6 +603,21 @@ app.route("/api", createAccessRoute({
   engine,
   runtimeState: serverRuntimeState,
 }));
+
+// 备份配置 API
+app.get("/api/settings/backup-config", async (c) => {
+  const config = loadBackupConfig();
+  return c.json({ success: true, config });
+});
+
+app.put("/api/settings/backup-config", async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  saveBackupConfig(body);
+  return c.json({ success: true });
+});
+
+// 启动自动备份调度器
+startAutoBackupScheduler(engine);
 app.route("/api", createSessionsRoute(engine, hub));
 app.route("/api", createModelsRoute(engine));
 app.route("/api", createConfigRoute(engine));
