@@ -6,7 +6,7 @@ import path from "path";
 import os from "os";
 import { Hono } from "hono";
 import { emitAppEvent } from "../app-events.js";
-import { safeJson } from "../hono-helpers.js";
+import { validateBody } from "../utils/validate.js";
 import { buildProviderAuthHeaders, probeProvider } from "../../lib/llm/provider-client.js";
 import { filterDiscoveredProviderModels } from "../../shared/provider-model-validation.js";
 import { clearConfigCache } from "../../lib/memory/config-loader.js";
@@ -298,8 +298,8 @@ export function createProvidersRoute(engine) {
    *
    * body: { name, base_url?, api?, api_key? }
    */
-  route.post("/providers/fetch-models", async (c) => {
-    const body = await safeJson(c);
+  route.post("/providers/fetch-models", validateBody(null), async (c) => {
+    const body = c.get("validatedBody");
     const scopeDenied = denyWithoutScope(c, "providers.manage");
     if (scopeDenied) return scopeDenied;
     const secretDenied = denySecretMutationWithoutScope(c, collectSecretPatchPaths(body, ["api_key"]));
@@ -390,8 +390,8 @@ export function createProvidersRoute(engine) {
    * body: { name?, base_url?, api?, api_key? }
    * 凭证解析优先级与 fetch-models 一致：请求体 > resolveProviderCredentials > 插件默认值
    */
-  route.post("/providers/test", async (c) => {
-    const body = await safeJson(c);
+  route.post("/providers/test", validateBody(null), async (c) => {
+    const body = c.get("validatedBody");
     const scopeDenied = denyWithoutScope(c, "providers.manage");
     if (scopeDenied) return scopeDenied;
     const secretDenied = denySecretMutationWithoutScope(c, collectSecretPatchPaths(body, ["api_key"]));
@@ -428,12 +428,12 @@ export function createProvidersRoute(engine) {
    * 更新模型元数据（context/image/video/reasoning/maxOutput/name）
    * 写回 added-models.yaml → 触发 model-sync → SDK 模型对象更新
    */
-  route.put("/providers/:name/models/:modelId", async (c) => {
+  route.put("/providers/:name/models/:modelId", validateBody(null), async (c) => {
     const scopeDenied = denyWithoutScope(c, "providers.manage");
     if (scopeDenied) return scopeDenied;
     const providerName = c.req.param("name");
     const modelId = c.req.param("modelId");
-    const body = await safeJson(c);
+    const body = c.get("validatedBody");
     if (!body || typeof body !== "object") {
       return c.json({ error: "invalid body" }, 400);
     }

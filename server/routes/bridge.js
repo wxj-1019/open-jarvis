@@ -200,11 +200,10 @@ export function createBridgeRoute(engine, bridgeManagerRef) {
   });
 
   /** 更新 bridge 总设置（readOnly / receiptEnabled）— global preferences */
-  route.post("/bridge/settings", async (c) => {
-    const body = await safeJson(c);
+  route.post("/bridge/settings", validateBody(BridgeSettingsBody), async (c) => {
     const scopeDenied = denyWithoutScope(c, "bridge.manage");
     if (scopeDenied) return scopeDenied;
-    const { readOnly, receiptEnabled } = body;
+    const { readOnly, receiptEnabled } = c.get("validatedBody");
     if (typeof readOnly === "boolean") {
       engine.setBridgeReadOnly(readOnly);
     }
@@ -223,9 +222,8 @@ export function createBridgeRoute(engine, bridgeManagerRef) {
   });
 
   /** 停止指定平台 */
-  route.post("/bridge/stop", async (c) => {
-    const body = await safeJson(c);
-    const { platform } = body;
+  route.post("/bridge/stop", validateBody(BridgeStopBody), async (c) => {
+    const { platform } = c.get("validatedBody");
     if (!platform) {
       return c.json({ error: "platform required" }, 400);
     }
@@ -399,9 +397,8 @@ export function createBridgeRoute(engine, bridgeManagerRef) {
   });
 
   /** 发送媒体到 bridge 平台（桌面端推送文件） */
-  route.post("/bridge/send-media", async (c) => {
-    const body = await safeJson(c);
-    const { platform, chatId, filePath } = body;
+  route.post("/bridge/send-media", validateBody(BridgeMediaBody), async (c) => {
+    const { platform, chatId, filePath } = c.get("validatedBody");
     if (!platform || !chatId || !filePath) {
       return c.json({ error: "platform, chatId, filePath required" }, 400);
     }
@@ -470,8 +467,8 @@ export function createBridgeRoute(engine, bridgeManagerRef) {
   });
 
   /** 测试凭证（不启动轮询） */
-  route.post("/bridge/test", async (c) => {
-    const body = await safeJson(c);
+  route.post("/bridge/test", validateBody(null), async (c) => {
+    const body = c.get("validatedBody");
     const { platform, credentials } = body;
     if (!platform || !credentials) {
       return c.json({ error: "platform and credentials required" }, 400);
@@ -564,9 +561,8 @@ export function createBridgeRoute(engine, bridgeManagerRef) {
   });
 
   /** 轮询微信扫码状态 */
-  route.post("/bridge/wechat/qrcode-status", async (c) => {
-    const body = await safeJson(c);
-    const { qrcodeId } = body;
+  route.post("/bridge/wechat/qrcode-status", validateBody(BridgeQrcodeBody), async (c) => {
+    const { qrcodeId } = c.get("validatedBody");
     const { pollWechatQrcodeStatus } = await import("../../lib/bridge/wechat-login.js");
     return c.json(await pollWechatQrcodeStatus(qrcodeId));
   });

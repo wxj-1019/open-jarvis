@@ -78,9 +78,11 @@ export class Scheduler {
     this.startHeartbeat();
     this._startStudioCron();
     this._freshCompactScheduler.start();
+    this._subscribeOsEvents();
   }
 
   async stop() {
+    this._unsubscribeOsEvents();
     this._freshCompactScheduler.stop();
     await this.stopHeartbeat();
     if (this._cronScheduler) {
@@ -352,6 +354,96 @@ export class Scheduler {
     }
 
     engine.emitDevLog(`活动记录: ${entry.summary}`, "heartbeat");
+  }
+
+  // ──────────── OS 事件订阅 ────────────
+
+  _subscribeOsEvents() {
+    const bus = this._hub.eventBus;
+    if (!bus) return;
+    this._osSubscriptions = [
+      bus.subscribe(this._onWindowFocusChanged.bind(this), {
+        types: ["window_focus_changed"],
+      }),
+      bus.subscribe(this._onFileSystemChanged.bind(this), {
+        types: ["file_system_changed"],
+      }),
+      bus.subscribe(this._onUserContextChanged.bind(this), {
+        types: ["window_focus_changed", "file_system_changed"],
+      }),
+    ];
+  }
+
+  _unsubscribeOsEvents() {
+    if (this._osSubscriptions) {
+      this._osSubscriptions.forEach((unsub) => unsub());
+      this._osSubscriptions = null;
+    }
+  }
+
+  /**
+   * 窗口焦点变化处理
+   * 当前阶段仅记录日志，实际规则留给 ProactiveRuleEngine
+   * @param {object} event { type, app, title, platform, timestamp }
+   */
+  _onWindowFocusChanged(event) {
+    log.log(`窗口焦点变化: ${event.app} - ${event.title}`);
+  }
+
+  /**
+   * 文件系统变化处理
+   * 文件变化时触发对应 agent 的按需巡检（Jian Beat）
+   * @param {object} event { type, path, event: "add"|"change"|"unlink", timestamp }
+   */
+  _onFileSystemChanged(event) {
+    const agentId = this._resolveWorkspaceAgent(event.path);
+    if (!agentId) return;
+
+    // 防抖：同一 agent 2s 内只触发一次
+    if (!this._pendingJianAgents) this._pendingJianAgents = new Set();
+    if (this._pendingJianAgents.has(agentId)) return;
+    this._pendingJianAgents.add(agentId);
+
+    setTimeout(() => {
+      this._pendingJianAgents.delete(agentId);
+      const hb = this._heartbeats.get(agentId);
+      if (hb && hb.triggerJianBeat) {
+        hb.triggerJianBeat(event.path);
+      }
+    }, 2000);
+  }
+
+  /**
+   * 用户上下文变化处理（基础阶段：仅记录日志）
+   * 为 3.2.4 意图预测与主动介入做铺垫
+   * @param {object} event { type, ... }
+   */
+  _onUserContextChanged(event) {
+    switch (event.type) {
+      case "window_focus_changed":
+        log.log(`[context] 窗口切换: ${event.app} - ${event.title}`);
+        break;
+      case "file_system_changed":
+        log.log(`[context] 文件变化: ${event.path} (${event.event})`);
+        break;
+    }
+  }
+
+  /**
+   * 根据文件路径确定所属 agent
+   * @param {string} filePath
+   * @returns {string|null}
+   */
+  _resolveWorkspaceAgent(filePath) {
+    if (!filePath) return null;
+    const engine = this._engine;
+    const agents = engine.agents;
+    if (!agents) return null;
+    for (const [agentId] of agents) {
+      const cwd = engine.getHomeCwd?.(agentId);
+      if (cwd && filePath.startsWith(cwd)) return agentId;
+    }
+    return null;
   }
 
 }

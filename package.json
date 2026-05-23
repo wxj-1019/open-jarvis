@@ -84,6 +84,7 @@
     "electron-updater": "^6.8.3",
     "exceljs": "^4.4.0",
     "extract-zip": "^2.0.1",
+    "get-windows": "^9.3.0",
     "hono": "^4.12.9",
     "js-yaml": "^4.1.0",
     "jsdom": "^29.0.2",

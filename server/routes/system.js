@@ -1,11 +1,103 @@
 import { Hono } from "hono";
 import { exec } from "child_process";
 import { promisify } from "util";
+import path from "path";
+import fs from "fs";
 import { createModuleLogger } from "../../lib/debug-log.js";
 import { runHealthChecks, getFixAction } from "../utils/health-checks.js";
 
 const execAsync = promisify(exec);
 const log = createModuleLogger("system-health");
+
+async function verifyWindowsSignature(filePath) {
+  if (process.platform !== "win32") {
+    return {
+      supported: false,
+      platform: process.platform,
+      message: "Code signing verification is only available on Windows",
+    };
+  }
+
+  const sanitizedPath = filePath.replace(/'/g, "''");
+
+  try {
+    const psCommand = `
+      $sig = Get-AuthenticodeSignature -FilePath '${sanitizedPath}'
+      [PSCustomObject]@{
+        Status = $sig.Status.ToString()
+        StatusMessage = $sig.StatusMessage
+        SignerCertificate = if ($sig.SignerCertificate) {
+          [PSCustomObject]@{
+            Subject = $sig.SignerCertificate.Subject
+            Issuer = $sig.SignerCertificate.Issuer
+            NotBefore = $sig.SignerCertificate.NotBefore.ToString("o")
+            NotAfter = $sig.SignerCertificate.NotAfter.ToString("o")
+            Thumbprint = $sig.SignerCertificate.Thumbprint
+          }
+        } else { $null }
+      } | ConvertTo-Json -Depth 3
+    `.trim();
+
+    const { stdout } = await execAsync(
+      `powershell.exe -NoProfile -NonInteractive -Command "${psCommand.replace(/"/g, '\\"')}"`,
+      { timeout: 15000 }
+    );
+
+    const result = JSON.parse(stdout.trim());
+    const isValid = result.Status === "Valid";
+
+    return {
+      supported: true,
+      signed: result.Status !== "NotSigned",
+      valid: isValid,
+      status: result.Status,
+      message: result.StatusMessage || null,
+      signer: result.SignerCertificate
+        ? {
+            subject: result.SignerCertificate.Subject,
+            issuer: result.SignerCertificate.Issuer,
+            validFrom: result.SignerCertificate.NotBefore,
+            validTo: result.SignerCertificate.NotAfter,
+            thumbprint: result.SignerCertificate.Thumbprint,
+          }
+        : null,
+    };
+  } catch (err) {
+    log.error("Signature verification failed:", err.message);
+    return {
+      supported: true,
+      signed: null,
+      valid: null,
+      status: "Error",
+      message: err.message,
+      signer: null,
+    };
+  }
+}
+
+function findSignableExecutables() {
+  const cwd = process.cwd();
+  const candidates = [];
+
+  const possiblePaths = [
+    { path: path.join(cwd, "dist", "win-unpacked", "Jarvis.exe"), name: "Jarvis.exe (built)" },
+    { path: path.join(cwd, "dist", "win-unpacked", "open-jarvis.exe"), name: "open-jarvis.exe (built)" },
+    { path: path.join(cwd, "dist", "win-unpacked", "hana.exe"), name: "hana.exe (built)" },
+  ];
+
+  for (const candidate of possiblePaths) {
+    if (fs.existsSync(candidate.path)) {
+      candidates.push(candidate);
+    }
+  }
+
+  if (process.platform === "win32" && process.execPath) {
+    const exeName = path.basename(process.execPath);
+    candidates.push({ path: process.execPath, name: `${exeName} (current process)` });
+  }
+
+  return candidates;
+}
 
 export function createSystemRoute() {
   const app = new Hono();
@@ -58,6 +150,51 @@ export function createSystemRoute() {
         500
       );
     }
+  });
+
+  app.get("/system/code-signing", async (c) => {
+    const executables = findSignableExecutables();
+    const results = [];
+
+    for (const exe of executables) {
+      const verification = await verifyWindowsSignature(exe.path);
+      results.push({
+        name: exe.name,
+        path: exe.path,
+        ...verification,
+      });
+    }
+
+    return c.json({
+      platform: process.platform,
+      supported: process.platform === "win32",
+      executables: results,
+    });
+  });
+
+  app.post("/system/code-signing/verify", async (c) => {
+    const body = await c.req.json().catch(() => ({}));
+    const filePath = body.path;
+
+    if (!filePath) {
+      return c.json(
+        { success: false, error: "File path is required" },
+        400
+      );
+    }
+
+    if (!fs.existsSync(filePath)) {
+      return c.json(
+        { success: false, error: `File not found: ${filePath}` },
+        404
+      );
+    }
+
+    const verification = await verifyWindowsSignature(filePath);
+    return c.json({
+      success: true,
+      ...verification,
+    });
   });
 
   return app;

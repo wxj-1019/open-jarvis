@@ -16,7 +16,8 @@ import fs from "fs/promises";
 import path from "path";
 import crypto from "crypto";
 import { Hono } from "hono";
-import { safeJson } from "../hono-helpers.js";
+import { validateBody } from "../utils/validate.js";
+import { UploadPathsBody } from "../utils/schemas.js";
 import { t } from "../i18n.js";
 import { isSensitivePath } from "../utils/path-security.js";
 import {
@@ -202,8 +203,8 @@ function uniqueUploadName(base, ext) {
 export function createUploadRoute(engine) {
   const route = new Hono();
 
-  route.post("/upload", async (c) => {
-    const body = await safeJson(c);
+  route.post("/upload", validateBody(UploadPathsBody), async (c) => {
+    const body = c.get("validatedBody");
     const { paths } = body;
     const sessionPath = normalizeSessionPath(body?.sessionPath);
     if (!Array.isArray(paths) || paths.length === 0) {
@@ -310,8 +311,8 @@ export function createUploadRoute(engine) {
   // POST /api/upload-blob
   // Body: { blobs: [{ name, base64Data, mimeType }, ...] }  (also accepts singular { name, base64Data, mimeType })
   // 把内存中的 base64 数据落到与 /api/upload 同一个 uploads 目录，输出形态保持一致
-  route.post("/upload-blob", async (c) => {
-    const body = await safeJson(c);
+  route.post("/upload-blob", validateBody(null), async (c) => {
+    const body = c.get("validatedBody");
     const sessionPath = normalizeSessionPath(body?.sessionPath);
     let blobs = body?.blobs;
     if (!Array.isArray(blobs)) {

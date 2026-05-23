@@ -15,7 +15,7 @@
 
 import { Hono } from "hono";
 import { emitAppEvent } from "../app-events.js";
-import { safeJson } from "../hono-helpers.js";
+import { validateBody } from "../utils/validate.js";
 import { debugLog } from "../../lib/debug-log.js";
 import { normalizeWorkspacePath } from "../../shared/workspace-history.js";
 import {
@@ -123,9 +123,9 @@ export function createPreferencesRoute(engine, { platform = process.platform } =
   });
 
   // 更新全局模型 + 搜索配置
-  route.put("/preferences/models", async (c) => {
+  route.put("/preferences/models", validateBody(null), async (c) => {
     try {
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       if (!body || typeof body !== "object") {
         return c.json({ error: "invalid JSON body" }, 400);
       }
@@ -206,9 +206,9 @@ export function createPreferencesRoute(engine, { platform = process.platform } =
     }
   });
 
-  route.put("/preferences/appearance", async (c) => {
+  route.put("/preferences/appearance", validateBody(null), async (c) => {
     try {
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       if (!body || typeof body !== "object") {
         return c.json({ error: "invalid JSON body" }, 400);
       }
@@ -251,9 +251,9 @@ export function createPreferencesRoute(engine, { platform = process.platform } =
     }
   });
 
-  route.put("/preferences/workspace-ui-state", async (c) => {
+  route.put("/preferences/workspace-ui-state", validateBody(null), async (c) => {
     try {
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       if (!body || typeof body !== "object") {
         return c.json({ error: "invalid JSON body" }, 400);
       }
@@ -279,9 +279,9 @@ export function createPreferencesRoute(engine, { platform = process.platform } =
     }
   });
 
-  route.put("/preferences/plugin-ui", async (c) => {
+  route.put("/preferences/plugin-ui", validateBody(null), async (c) => {
     try {
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       if (!body || typeof body !== "object") {
         return c.json({ error: "invalid JSON body" }, 400);
       }
@@ -314,12 +314,12 @@ export function createPreferencesRoute(engine, { platform = process.platform } =
     }
   });
 
-  route.put("/preferences/computer-use", async (c) => {
+  route.put("/preferences/computer-use", validateBody(null), async (c) => {
     try {
       if (!isComputerUsePlatformSupported(platform)) {
         return c.json({ error: "Computer Use is not supported on Linux Preview." }, 400);
       }
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       if (!body || typeof body !== "object") {
         return c.json({ error: "invalid JSON body" }, 400);
       }
@@ -335,12 +335,12 @@ export function createPreferencesRoute(engine, { platform = process.platform } =
     }
   });
 
-  route.post("/preferences/computer-use/request-permissions", async (c) => {
+  route.post("/preferences/computer-use/request-permissions", validateBody(null), async (c) => {
     try {
       if (!isComputerUsePlatformSupported(platform)) {
         return c.json({ error: "Computer Use is not supported on Linux Preview." }, 400);
       }
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       const providerId = body && typeof body === "object" ? body.providerId || null : null;
       const result = await engine.getComputerHost?.()?.requestPermissions?.({}, providerId);
       emitAppEvent(engine, "computer-use-permissions-requested", { providerId: providerId || result?.providerId || null });
@@ -350,12 +350,12 @@ export function createPreferencesRoute(engine, { platform = process.platform } =
     }
   });
 
-  route.post("/preferences/computer-use/approvals", async (c) => {
+  route.post("/preferences/computer-use/approvals", validateBody(null), async (c) => {
     try {
       if (!isComputerUsePlatformSupported(platform)) {
         return c.json({ error: "Computer Use is not supported on Linux Preview." }, 400);
       }
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       if (!body || typeof body !== "object") {
         return c.json({ error: "invalid JSON body" }, 400);
       }
@@ -367,12 +367,12 @@ export function createPreferencesRoute(engine, { platform = process.platform } =
     }
   });
 
-  route.delete("/preferences/computer-use/approvals", async (c) => {
+  route.delete("/preferences/computer-use/approvals", validateBody(null), async (c) => {
     try {
       if (!isComputerUsePlatformSupported(platform)) {
         return c.json({ error: "Computer Use is not supported on Linux Preview." }, 400);
       }
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       if (!body || typeof body !== "object") {
         return c.json({ error: "invalid JSON body" }, 400);
       }

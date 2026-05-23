@@ -421,6 +421,47 @@ export const BUILTIN_EVENT_BUS_CAPABILITIES = Object.freeze([
     stability: "experimental",
     owner: "system",
   },
+  {
+    type: "window_focus_changed",
+    title: "Window focus changed",
+    description: "Emitted when the active window changes. Includes app name, window title, platform, and timestamp.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        app: { type: "string" },
+        title: { type: "string" },
+        platform: { type: "string" },
+        timestamp: { type: "number" },
+      },
+      required: ["app", "platform", "timestamp"],
+      additionalProperties: true,
+    },
+    outputSchema: OBJECT_SCHEMA,
+    permission: "os.events.read",
+    errors: [],
+    stability: "experimental",
+    owner: "system",
+  },
+  {
+    type: "file_system_changed",
+    title: "File system changed",
+    description: "Emitted when a file in a watched agent workspace changes. Includes file path, change event type (add/change/unlink), and timestamp.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        path: { type: "string" },
+        event: { type: "string", enum: ["add", "change", "unlink"] },
+        timestamp: { type: "number" },
+      },
+      required: ["path", "event", "timestamp"],
+      additionalProperties: true,
+    },
+    outputSchema: OBJECT_SCHEMA,
+    permission: "os.events.read",
+    errors: [],
+    stability: "experimental",
+    owner: "system",
+  },
 ]);
 
 export class EventBusCapabilityDirectory {

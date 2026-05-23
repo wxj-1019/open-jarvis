@@ -12,7 +12,7 @@ import fsSync from "node:fs";
 import path from "path";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
-import { safeJson } from "../hono-helpers.js";
+import { validateBody } from "../utils/validate.js";
 import { resolveAgent } from "../utils/resolve-agent.js";
 
 const VALID_ROLES = new Set(["agent", "user"]);
@@ -72,13 +72,13 @@ export function createAvatarRoute(engine) {
   });
 
   // ── 上传头像（base64） ──
-  route.post("/avatar/:role", bodyLimit({ maxSize: 15 * 1024 * 1024 }), async (c) => {
+  route.post("/avatar/:role", bodyLimit({ maxSize: 15 * 1024 * 1024 }), validateBody(null), async (c) => {
     const role = c.req.param("role");
     if (!VALID_ROLES.has(role)) {
       return c.json({ error: "role must be agent or user" }, 400);
     }
 
-    const body = await safeJson(c);
+    const body = c.get("validatedBody");
     const { data } = body;
     if (!data || typeof data !== "string") {
       return c.json({ error: "data (base64) is required" }, 400);

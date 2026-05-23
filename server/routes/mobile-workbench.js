@@ -7,7 +7,7 @@ import {
   issueRemoteWriteLease,
   revokeRemoteWriteLease,
 } from "../../core/execution-lease-service.js";
-import { safeJson } from "../hono-helpers.js";
+import { validateBody } from "../utils/validate.js";
 import { serveFileContent } from "../http/file-content.js";
 import { createRequestContext } from "../http/boundary.js";
 import { recordSecurityAuditEvent } from "../http/security-audit.js";
@@ -58,10 +58,10 @@ export function createMobileWorkbenchRoute(engine) {
   route.get("/mobile/workbench/content", (c) => serveContent(c, engine, false));
   route.on("HEAD", "/mobile/workbench/content", (c) => serveContent(c, engine, true));
 
-  route.post("/mobile/workbench/actions", async (c) => {
+  route.post("/mobile/workbench/actions", validateBody(null), async (c) => {
     const auth = authorizeWorkbench(c, engine, "files.write");
     if (auth.response) return auth.response;
-    const body = await safeJson(c);
+    const body = c.get("validatedBody");
     const files = fileService(engine, auth.requestContext);
     const rootId = body.rootId || "default";
     const subdir = body.subdir || "";
@@ -87,10 +87,10 @@ export function createMobileWorkbenchRoute(engine) {
     }
   });
 
-  route.post("/mobile/workbench/upload", async (c) => {
+  route.post("/mobile/workbench/upload", validateBody(null), async (c) => {
     const auth = authorizeWorkbench(c, engine, "files.write");
     if (auth.response) return auth.response;
-    const body = await safeJson(c);
+    const body = c.get("validatedBody");
     const filesService = fileService(engine, auth.requestContext);
     const rootId = body.rootId || "default";
     const subdir = body.subdir || "";

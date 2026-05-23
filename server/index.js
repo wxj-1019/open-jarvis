@@ -27,9 +27,8 @@ import {
   runWin32LegacySandboxMigration,
   summarizeWin32LegacySandboxMigration,
 } from "../lib/sandbox/win32-legacy-migration.js";
-import { safeJson } from "./hono-helpers.js";
-import { LogBody, PlanModeBody } from "./utils/schemas.js";
 import { validateBody } from "./utils/validate.js";
+import { LogBody, PlanModeBody } from "./utils/schemas.js";
 
 const log = createModuleLogger("server");
 const checkpointLog = createModuleLogger("checkpoint");
@@ -686,8 +685,8 @@ app.get("/api/session-permission-mode", async (c) => {
   });
 });
 
-app.post("/api/session-thinking-level", async (c) => {
-  const { sessionPath, level } = await safeJson(c);
+app.post("/api/session-thinking-level", validateBody(null), async (c) => {
+  const { sessionPath, level } = c.get("validatedBody");
   if (!sessionPath) return c.json({ error: "sessionPath required" }, 400);
   const result = engine.setSessionThinkingLevel(sessionPath, level);
   if (result?.ok === false) {
@@ -703,8 +702,8 @@ app.post("/api/session-thinking-level", async (c) => {
   });
 });
 
-app.post("/api/session-permission-mode", async (c) => {
-  const { mode, pendingNewSession, currentSessionOnly, sessionPath } = await safeJson(c);
+app.post("/api/session-permission-mode", validateBody(null), async (c) => {
+  const { mode, pendingNewSession, currentSessionOnly, sessionPath } = c.get("validatedBody");
   const targetSessionPath = typeof sessionPath === "string" && sessionPath ? sessionPath : null;
   const result = currentSessionOnly === true
     ? engine.setCurrentSessionPermissionMode(mode)

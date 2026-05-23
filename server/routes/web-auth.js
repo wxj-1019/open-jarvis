@@ -1,5 +1,6 @@
 import { Hono } from "hono";
-import { safeJson } from "../hono-helpers.js";
+import { validateBody } from "../utils/validate.js";
+import { WebAuthBody } from "../utils/schemas.js";
 import { verifyLocalAccountPassword } from "../../core/local-user-account.js";
 import {
   WEB_SESSION_COOKIE_NAME,
@@ -21,8 +22,8 @@ export function createWebAuthRoute({
   if (!authService) throw new Error("authService required");
   const route = new Hono();
 
-  route.post("/web-auth/login", async (c) => {
-    const body = await safeJson(c);
+  route.post("/web-auth/login", validateBody(WebAuthBody), async (c) => {
+    const body = c.get("validatedBody");
     const credential = typeof body.credential === "string"
       ? body.credential.trim()
       : "";

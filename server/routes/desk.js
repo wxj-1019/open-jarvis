@@ -10,7 +10,7 @@ import fs from "fs";
 import path from "path";
 import { execSync, execFileSync } from "child_process";
 import { Hono } from "hono";
-import { safeJson } from "../hono-helpers.js";
+import { validateBody } from "../utils/validate.js";
 import { extractZip } from "../../lib/extract-zip.js";
 import { parseSkillMetadata } from "../../lib/skills/skill-metadata.js";
 import { createSkillSourceIdentity } from "../../lib/skills/skill-file-identity.js";
@@ -319,8 +319,8 @@ export function createDeskRoute(engine, hub) {
   });
 
   /** 用小工具模型快速摘要（DevTools 调试用） */
-  route.post("/desk/activities/summarize", async (c) => {
-    const body = await safeJson(c);
+  route.post("/desk/activities/summarize", validateBody(null), async (c) => {
+    const body = c.get("validatedBody");
     const { id } = body;
     if (!id) return c.json({ error: "id required" });
     try {
@@ -358,11 +358,11 @@ export function createDeskRoute(engine, hub) {
   });
 
   /** 操作 cron 任务 */
-  route.post("/desk/cron", async (c) => {
+  route.post("/desk/cron", validateBody(null), async (c) => {
     const store = getStudioCronStore(engine);
     if (!store) return c.json({ error: "Desk not initialized" });
 
-    const body = await safeJson(c);
+    const body = c.get("validatedBody");
     const { action, ...params } = body;
 
     switch (action) {
@@ -482,8 +482,8 @@ export function createDeskRoute(engine, hub) {
    * 接收文件路径，自动创建 .agents/skills/ 并安装
    * 支持文件夹（直接复制）和 .zip/.skill（解压）
    */
-  route.post("/desk/install-skill", async (c) => {
-    const body = await safeJson(c);
+  route.post("/desk/install-skill", validateBody(null), async (c) => {
+    const body = c.get("validatedBody");
     const { filePath, dir } = body;
     const cwd = dir || defaultDeskDir(engine);
     if (!filePath || !cwd) {
@@ -560,8 +560,8 @@ export function createDeskRoute(engine, hub) {
   });
 
   /** 删除项目技能 */
-  route.post("/desk/delete-skill", async (c) => {
-    const body = await safeJson(c);
+  route.post("/desk/delete-skill", validateBody(null), async (c) => {
+    const body = c.get("validatedBody");
     const { skillDir } = body;
     if (!skillDir) {
       return c.json({ error: "skillDir is required" }, 400);
@@ -654,8 +654,8 @@ export function createDeskRoute(engine, hub) {
   });
 
   /** 保存指定目录的 jian.md（自动创建 / 内容为空时删除） */
-  route.post("/desk/jian", async (c) => {
-    const body = await safeJson(c);
+  route.post("/desk/jian", validateBody(null), async (c) => {
+    const body = c.get("validatedBody");
     const dir = body.dir ? body.dir : defaultDeskDir(engine);
     if (!dir) return c.json({ error: t("error.noWorkspace") });
     if (body.dir && !isApprovedDir(dir, engine)) return c.json({ error: t("error.dirNotAllowed") });
@@ -684,8 +684,8 @@ export function createDeskRoute(engine, hub) {
   });
 
   /** 工作台文件操作（支持 subdir + dir override） */
-  route.post("/desk/files", async (c) => {
-    const body = await safeJson(c);
+  route.post("/desk/files", validateBody(null), async (c) => {
+    const body = c.get("validatedBody");
     const baseDir = body.dir || defaultDeskDir(engine);
     if (!baseDir) return c.json({ error: t("error.noWorkspace") });
     if (body.dir && !isApprovedDir(baseDir, engine)) return c.json({ error: t("error.dirNotAllowed") });

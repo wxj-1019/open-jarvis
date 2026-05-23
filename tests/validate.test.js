@@ -28,6 +28,42 @@ const SimpleSchema = Type.Object({
 });
 
 describe("validateBody", () => {
+  describe("null schema mode", () => {
+    it("parses JSON without type checking", async () => {
+      const c = mockContext({ any: "data", nested: { ok: true }, arr: [1, 2] });
+      const next = vi.fn();
+      await validateBody(null)(c, next);
+      expect(next).toHaveBeenCalledTimes(1);
+      expect(c.set).toHaveBeenCalledWith("validatedBody", { any: "data", nested: { ok: true }, arr: [1, 2] });
+    });
+
+    it("returns 400 for malformed JSON with null schema", async () => {
+      const c = {
+        req: { text: vi.fn(() => Promise.resolve("invalid")) },
+        json: vi.fn((data, status) => ({ ...data, _status: status })),
+        set: vi.fn(),
+      };
+      const next = vi.fn();
+      const res = await validateBody(null)(c, next);
+      expect(res.error).toBe("invalid_json");
+      expect(res._status).toBe(400);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it("returns 400 on stream error with null schema", async () => {
+      const c = {
+        req: { text: vi.fn(() => Promise.reject(new Error("stream error"))) },
+        json: vi.fn((data, status) => ({ ...data, _status: status })),
+        set: vi.fn(),
+      };
+      const next = vi.fn();
+      const res = await validateBody(null)(c, next);
+      expect(res.error).toBe("failed_to_read_body");
+      expect(res._status).toBe(400);
+      expect(next).not.toHaveBeenCalled();
+    });
+  });
+
   describe("valid input", () => {
     it("passes valid JSON body through", async () => {
       const c = mockContext({ name: "Alice", age: 30 });

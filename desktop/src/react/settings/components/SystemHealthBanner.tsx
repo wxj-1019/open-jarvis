@@ -34,7 +34,8 @@ export function SystemHealthBanner() {
   const checkHealth = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await hanaFetch('/api/system/health');
+      const res = await hanaFetch('/api/system/health');
+      const data = await res.json();
       setHealth(data);
     } catch (err) {
       console.error('[SystemHealthBanner] Health check failed:', err);
@@ -59,9 +60,10 @@ export function SystemHealthBanner() {
     setFixMessage(t('settings.health.fixing'));
 
     try {
-      const result = await hanaFetch('/api/system/fix/rebuild-all', {
+      const res = await hanaFetch('/api/system/fix/rebuild-all', {
         method: 'POST',
       });
+      const result = await res.json();
 
       if (result.success) {
         setFixState('success');
@@ -85,9 +87,10 @@ export function SystemHealthBanner() {
     setFixMessage(t('settings.health.fixing'));
 
     try {
-      const result = await hanaFetch(`/api/system/fix/${action}`, {
+      const res = await hanaFetch(`/api/system/fix/${action}`, {
         method: 'POST',
       });
+      const result = await res.json();
 
       if (result.success) {
         setFixState('success');
@@ -136,7 +139,6 @@ export function SystemHealthBanner() {
               <button
                 className={styles.fixButton}
                 onClick={handleFixAll}
-                disabled={fixState === 'fixing'}
               >
                 {t('settings.health.fixButton')}
               </button>

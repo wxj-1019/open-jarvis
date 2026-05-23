@@ -1261,6 +1261,15 @@ export class Agent {
     // 以下内容会在不同 session 之间变化（用户档案编辑、cwd 切换、记忆更新、时间戳推进），
     // 统一放在 prompt 末尾以保护前面静态前缀的 cache 命中率。
 
+    // 用户上下文（当前窗口、最近活动，由 UserContextTracker 实时维护）
+    const userContextSummary = this._cb?.getUserContextSummary?.() || "";
+    if (userContextSummary) {
+      parts.push(...section(
+        isZh ? "# 用户上下文" : "# User Context",
+        userContextSummary
+      ));
+    }
+
     // 用户档案（user.md，用户偶尔手动编辑）
     parts.push(...section(
       isZh ? "# 用户档案" : "# User Profile",

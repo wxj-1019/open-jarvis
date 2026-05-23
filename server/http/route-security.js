@@ -37,6 +37,8 @@ export function classifyHttpRoute({ method = "GET", path = "" } = {}) {
   if (routePath === "/api/health") return AUTHENTICATED_ONLY;
   if (routePath === "/api/system/health") return AUTHENTICATED_ONLY;
   if (routePath.startsWith("/api/system/fix/")) return LOCAL_ONLY;
+  if (routePath === "/api/system/code-signing") return AUTHENTICATED_ONLY;
+  if (routePath === "/api/system/code-signing/verify") return LOCAL_ONLY;
   if (routePath === "/api/server/identity") return AUTHENTICATED_ONLY;
 
   if (routePath === "/ws") return scoped("chat");

@@ -718,6 +718,23 @@
       "requestPermissionsFailed": "请求系统权限失败",
       "refresh": "刷新"
     },
+    "codeSigning": {
+      "title": "代码签名验证",
+      "description": "验证应用程序的数字签名，确保软件来源可信且未被篡改。",
+      "loading": "正在检查签名状态...",
+      "unsupported": "代码签名验证仅在 Windows 平台可用",
+      "validSignature": "签名有效",
+      "invalidSignature": "签名无效",
+      "noSignature": "未签名",
+      "verify": "验证",
+      "verifySuccess": "签名验证通过",
+      "verifyFailed": "签名验证失败",
+      "verifyError": "验证过程出错",
+      "subject": "主题",
+      "issuer": "颁发者",
+      "validPeriod": "有效期",
+      "thumbprint": "指纹"
+    },
     "agent": {
       "title": "助手",
       "changeAvatar": "更换",

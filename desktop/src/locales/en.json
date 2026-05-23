@@ -718,6 +718,23 @@
       "requestPermissionsFailed": "Failed to request permissions",
       "refresh": "Refresh"
     },
+    "codeSigning": {
+      "title": "Code Signing Verification",
+      "description": "Verify the digital signature of the application to ensure the software is from a trusted source and has not been tampered with.",
+      "loading": "Checking signature status...",
+      "unsupported": "Code signing verification is only available on Windows",
+      "validSignature": "Valid Signature",
+      "invalidSignature": "Invalid Signature",
+      "noSignature": "Not Signed",
+      "verify": "Verify",
+      "verifySuccess": "Signature verification passed",
+      "verifyFailed": "Signature verification failed",
+      "verifyError": "Verification error",
+      "subject": "Subject",
+      "issuer": "Issuer",
+      "validPeriod": "Valid Period",
+      "thumbprint": "Thumbprint"
+    },
     "agent": {
       "title": "Agent",
       "changeAvatar": "Change",

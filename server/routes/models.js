@@ -2,7 +2,7 @@
  * 模型管理 REST 路由
  */
 import { Hono } from "hono";
-import { safeJson } from "../hono-helpers.js";
+import { validateBody } from "../utils/validate.js";
 import { t } from "../i18n.js";
 import { modelRefEquals, parseModelRef } from "../../shared/model-ref.js";
 import { lookupKnown } from "../../shared/known-models.js";
@@ -81,9 +81,9 @@ export function createModelsRoute(engine) {
 
   // 健康检测：走真实 utility LLM 调用入口，验证模型存在、凭证有效、provider 兼容层可用。
   // 契约：必须提供显式复合模型引用（{id, provider} 或 modelId + provider），无按 id 兜底。
-  route.post("/models/health", async (c) => {
+  route.post("/models/health", validateBody(null), async (c) => {
     try {
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       const modelRef = parseHealthModelRef(body);
       if (modelRef.error) return c.json({ error: modelRef.error }, 400);
 
@@ -117,9 +117,9 @@ export function createModelsRoute(engine) {
   });
 
   // 切换模型（下次 createSession 生效，不改活跃 session）
-  route.post("/models/set", async (c) => {
+  route.post("/models/set", validateBody(null), async (c) => {
     try {
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       const { modelId, provider } = body;
       if (!modelId) {
         return c.json({ error: t("error.missingParam", { param: "modelId" }) }, 400);
@@ -135,9 +135,9 @@ export function createModelsRoute(engine) {
   });
 
   // 会话内切换模型
-  route.post("/models/switch", async (c) => {
+  route.post("/models/switch", validateBody(null), async (c) => {
     try {
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       const { sessionPath, modelId, provider } = body;
       if (!sessionPath) return c.json({ error: t("error.missingParam", { param: "sessionPath" }) }, 400);
       if (!modelId) return c.json({ error: t("error.missingParam", { param: "modelId" }) }, 400);

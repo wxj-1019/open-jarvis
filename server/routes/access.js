@@ -15,7 +15,7 @@ import {
 import { readAuthPrincipal } from "../http/capability-guard.js";
 import { isLocalOwnerPrincipal } from "../http/route-security.js";
 import { recordSecurityAuditEvent } from "../http/security-audit.js";
-import { safeJson } from "../hono-helpers.js";
+import { validateBody } from "../utils/validate.js";
 
 const DEFAULT_REMOTE_ACCESS_SCOPES = Object.freeze(["chat", "resources.read", "files.read", "files.write"]);
 const ALLOWED_REMOTE_ACCESS_SCOPES = new Set(DEFAULT_REMOTE_ACCESS_SCOPES);
@@ -70,11 +70,11 @@ export function createAccessRoute({
     return c.body(svg);
   });
 
-  route.put("/access/network", async (c) => {
+  route.put("/access/network", validateBody(null), async (c) => {
     const denied = requireLocalOwner(c);
     if (denied) return denied;
     try {
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       const existing = loadServerNetworkConfig(engine.hanakoHome);
       const mode = normalizeNetworkMode(body?.mode);
       const listenPort = normalizePort(body?.listenPort ?? body?.configuredPort ?? existing.listenPort);
@@ -105,11 +105,11 @@ export function createAccessRoute({
     }
   });
 
-  route.post("/access/mobile-credentials", async (c) => {
+  route.post("/access/mobile-credentials", validateBody(null), async (c) => {
     return issueAccessCredential(c, ACCESS_PROFILES.mobile);
   });
 
-  route.post("/access/desktop-credentials", async (c) => {
+  route.post("/access/desktop-credentials", validateBody(null), async (c) => {
     return issueAccessCredential(c, ACCESS_PROFILES.desktop);
   });
 
@@ -117,7 +117,7 @@ export function createAccessRoute({
     const denied = requireLocalOwner(c);
     if (denied) return denied;
     try {
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       const runtimeContext = resolveRuntimeContext(c, engine);
       const scopes = normalizeScopes(body?.scopes);
       const issued = createDeviceCredential(engine.hanakoHome, {
@@ -153,11 +153,11 @@ export function createAccessRoute({
     }
   }
 
-  route.put("/access/account/profile", async (c) => {
+  route.put("/access/account/profile", validateBody(null), async (c) => {
     const denied = requireLocalOwner(c);
     if (denied) return denied;
     try {
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       const account = updateLocalAccountProfile(engine.hanakoHome, {
         username: body?.username,
         displayName: body?.displayName,
@@ -173,11 +173,11 @@ export function createAccessRoute({
     }
   });
 
-  route.put("/access/account/password", async (c) => {
+  route.put("/access/account/password", validateBody(null), async (c) => {
     const denied = requireLocalOwner(c);
     if (denied) return denied;
     try {
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       const account = setLocalAccountPassword(engine.hanakoHome, {
         password: body?.password,
         now: now(),

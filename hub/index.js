@@ -19,6 +19,8 @@ import { EventBus } from "./event-bus.js";
 import { ChannelRouter } from "./channel-router.js";
 import { GuestHandler } from "./guest-handler.js";
 import { Scheduler } from "./scheduler.js";
+import { OSEventSource } from "../lib/events/os-event-source.js";
+import { UserContextTracker } from "../lib/context/user-context-tracker.js";
 import { DmRouter } from "./dm-router.js";
 import { AgentPhoneActivityStore } from "../lib/conversations/agent-phone-activity.js";
 import {
@@ -44,6 +46,17 @@ export class Hub {
     this._channelRouter = new ChannelRouter({ hub: this });
     this._guestHandler = new GuestHandler({ hub: this });
     this._scheduler = new Scheduler({ hub: this });
+    this._osEventSource = new OSEventSource({
+      eventBus: this._eventBus,
+      agentWorkspaces: this._collectAgentWorkspaces(engine),
+      options: {
+        debounceMs: 300,
+        pollIntervalMs: 1000,
+      },
+    });
+    this._userContextTracker = new UserContextTracker({
+      eventBus: this._eventBus,
+    });
     this._dmRouter = new DmRouter({ hub: this });
     this._agentPhoneActivities = new AgentPhoneActivityStore({
       emit: (event) => this._eventBus.emit(event, null),
@@ -62,6 +75,7 @@ export class Hub {
       resumeAfterAgentSwitch: () => this.resumeAfterAgentSwitch(),
       triggerChannelDelivery: (name, opts) => this._channelRouter.triggerImmediate(name, opts),
       triggerChannelTriage: (name, opts) => this._channelRouter.triggerImmediate(name, opts),
+      getUserContextSummary: () => this._userContextTracker.getContextSummary(engine.locale),
     });
 
     // 注入 EventBus（替代旧的 proxy hack）
@@ -83,6 +97,9 @@ export class Hub {
 
   /** @returns {Scheduler} */
   get scheduler() { return this._scheduler; }
+  
+    /** @returns {UserContextTracker} */
+    get userContextTracker() { return this._userContextTracker; }
 
   /** @returns {import('../lib/bridge/bridge-manager.js').BridgeManager|null} */
   get bridgeManager() { return this._bridgeManager || null; }
@@ -280,6 +297,12 @@ export class Hub {
     // Scheduler（heartbeat + cron）
     this._scheduler.start();
 
+    // OSEventSource（窗口焦点 + 文件变化监听）
+    this._osEventSource.start();
+
+    // UserContextTracker（用户上下文追踪）
+    this._userContextTracker.start();
+
     // ChannelRouter：仅在频道总开关为开时启动
     if (engine.isChannelsEnabled?.()) {
       this._channelRouter.start();
@@ -307,6 +330,8 @@ export class Hub {
    * 停止所有调度器（dispose 用）
    */
   async stopSchedulers() {
+    await this._userContextTracker.stop();
+    await this._osEventSource.stop();
     await this._scheduler.stop();
     await this._channelRouter.stop();
   }
@@ -332,6 +357,16 @@ export class Hub {
 
   // ──────────── 生命周期 ────────────
 
+  /**
+   * 刷新 OSEventSource 的 agent workspace 映射
+   * agent 创建/删除时外部调用
+   */
+  refreshAgentWorkspaces() {
+    this._osEventSource.updateWorkspaces(
+      this._collectAgentWorkspaces(this._engine),
+    );
+  }
+
   async dispose() {
     for (const cleanup of this._sessionHandlerCleanups) cleanup();
     this._sessionHandlerCleanups = [];
@@ -341,6 +376,24 @@ export class Hub {
   }
 
   // ──────────── 内部 ────────────
+
+  /**
+   * 收集所有 agent 的 workspace 路径
+   * @param {import('../core/engine.js').HanaEngine} engine
+   * @returns {Map<string,string>}
+   */
+  _collectAgentWorkspaces(engine) {
+    const map = new Map();
+    const agents = engine.agents;
+    if (!agents) return map;
+    for (const [agentId, agent] of agents) {
+      const cwd = engine.getHomeCwd?.(agentId) || agent.homeDir;
+      if (cwd && typeof cwd === "string" && cwd.trim()) {
+        map.set(agentId, cwd);
+      }
+    }
+    return map;
+  }
 
   /** @returns {DmRouter} */
   get dmRouter() { return this._dmRouter; }

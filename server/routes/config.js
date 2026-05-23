@@ -6,7 +6,8 @@ import { existsSync } from "fs";
 import path from "path";
 import { Hono } from "hono";
 import { emitAppEvent } from "../app-events.js";
-import { safeJson } from "../hono-helpers.js";
+import { validateBody } from "../utils/validate.js";
+import { ConfigRecentWorkspaceBody, ContentBody, PinsBody, SearchVerifyBody } from "../utils/schemas.js";
 import { t } from "../i18n.js";
 import { debugLog } from "../../lib/debug-log.js";
 import { getRawConfig, clearConfigCache } from "../../lib/memory/config-loader.js";
@@ -133,9 +134,9 @@ export function createConfigRoute(engine) {
     }
   });
 
-  route.post("/config/workspaces/recent", async (c) => {
+  route.post("/config/workspaces/recent", validateBody(ConfigRecentWorkspaceBody), async (c) => {
     try {
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       const folder = normalizeWorkspacePath(body?.path);
       if (!folder) return c.json({ error: "path must be a non-empty string" }, 400);
       const stat = await fs.stat(folder).catch(() => null);
@@ -161,9 +162,9 @@ export function createConfigRoute(engine) {
   });
 
   // 更新配置
-  route.put("/config", async (c) => {
+  route.put("/config", validateBody(null), async (c) => {
     try {
-      const partial = await safeJson(c);
+      const partial = c.get("validatedBody");
       if (!partial || typeof partial !== "object") {
         return c.json({ error: t("error.invalidJson") }, 400);
       }
@@ -295,9 +296,9 @@ export function createConfigRoute(engine) {
   });
 
   // 保存 ishiki.md 内容，并触发 system prompt 重建
-  route.put("/ishiki", async (c) => {
+  route.put("/ishiki", validateBody(ContentBody), async (c) => {
     try {
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       const { content } = body;
       if (typeof content !== "string") {
         return c.json({ error: "content must be a string" }, 400);
@@ -329,9 +330,9 @@ export function createConfigRoute(engine) {
     }
   });
 
-  route.put("/identity", async (c) => {
+  route.put("/identity", validateBody(ContentBody), async (c) => {
     try {
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       const { content } = body;
       if (typeof content !== "string") {
         return c.json({ error: "content must be a string" }, 400);
@@ -365,9 +366,9 @@ export function createConfigRoute(engine) {
   });
 
   // 保存 user.md 内容，并触发 system prompt 重建
-  route.put("/user-profile", async (c) => {
+  route.put("/user-profile", validateBody(ContentBody), async (c) => {
     try {
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       const { content } = body;
       if (typeof content !== "string") {
         return c.json({ error: "content must be a string" }, 400);
@@ -408,9 +409,9 @@ export function createConfigRoute(engine) {
   });
 
   // 保存 pinned.md（覆盖写入），触发 system prompt 重建
-  route.put("/pinned", async (c) => {
+  route.put("/pinned", validateBody(PinsBody), async (c) => {
     try {
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       const { pins } = body;
       if (!Array.isArray(pins)) {
         return c.json({ error: "pins must be an array" }, 400);
@@ -545,10 +546,10 @@ export function createConfigRoute(engine) {
   });
 
   // 导入记忆（直接写入，无需 embedding）
-  route.post("/memories/import", async (c) => {
+  route.post("/memories/import", validateBody(null), async (c) => {
     let tempStore = null;
     try {
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       const { facts, memories } = body;
       // 兼容 v1 导出格式（memories 字段）和 v2 格式（facts 字段）
       const entries = facts || memories;
@@ -577,8 +578,8 @@ export function createConfigRoute(engine) {
 
   // ── 搜索 API Key 验证 ──
 
-  route.post("/search/verify", async (c) => {
-    const body = await safeJson(c);
+  route.post("/search/verify", validateBody(SearchVerifyBody), async (c) => {
+    const body = c.get("validatedBody");
     const { provider } = body;
     const selectedProvider = body.search_provider || provider;
     if (!provider) {

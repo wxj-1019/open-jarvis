@@ -21,6 +21,19 @@ import {
   SkillToggleBody,
   SkillPathsBody,
   SkillTranslateBody,
+  ChannelCreateBody,
+  ChannelPhoneModeBody,
+  ChannelMemberBody,
+  ChannelMessageBody,
+  ChannelBookmarkBody,
+  ChannelToggleBody,
+  BridgeOwnerBody,
+  BridgeSettingsBody,
+  BridgeStopBody,
+  BridgeMediaBody,
+  BridgeQrcodeBody,
+  WebAuthBody,
+  UploadPathsBody,
 } from "../server/utils/schemas.js";
 
 describe("schemas", () => {
@@ -194,6 +207,102 @@ describe("schemas", () => {
       expect(Value.Check(SkillTranslateBody, { names: ["s1"], lang: "zh", agentId: "a1" })).toBe(true);
       expect(Value.Check(SkillTranslateBody, { names: ["s1"], lang: "zh" })).toBe(false);
       expect(Value.Check(SkillTranslateBody, { names: ["s1"], agentId: "a1" })).toBe(false);
+    });
+  });
+
+  describe("ChannelCreateBody", () => {
+    it("requires name, optional description/members/intro", () => {
+      expect(Value.Check(ChannelCreateBody, { name: "general" })).toBe(true);
+      expect(Value.Check(ChannelCreateBody, { name: "dev", description: "Dev channel", members: ["a1"], intro: "hi" })).toBe(true);
+      expect(Value.Check(ChannelCreateBody, {})).toBe(false);
+    });
+  });
+
+  describe("ChannelPhoneModeBody", () => {
+    it("requires mode string", () => {
+      expect(Value.Check(ChannelPhoneModeBody, { mode: "auto" })).toBe(true);
+      expect(Value.Check(ChannelPhoneModeBody, {})).toBe(false);
+    });
+  });
+
+  describe("ChannelMemberBody", () => {
+    it("requires memberId string", () => {
+      expect(Value.Check(ChannelMemberBody, { memberId: "agent-1" })).toBe(true);
+      expect(Value.Check(ChannelMemberBody, {})).toBe(false);
+    });
+  });
+
+  describe("ChannelMessageBody", () => {
+    it("requires body string", () => {
+      expect(Value.Check(ChannelMessageBody, { body: "hello" })).toBe(true);
+      expect(Value.Check(ChannelMessageBody, {})).toBe(false);
+    });
+  });
+
+  describe("ChannelBookmarkBody", () => {
+    it("requires timestamp string", () => {
+      expect(Value.Check(ChannelBookmarkBody, { timestamp: "2026-01-01T00:00:00Z" })).toBe(true);
+      expect(Value.Check(ChannelBookmarkBody, {})).toBe(false);
+    });
+  });
+
+  describe("ChannelToggleBody", () => {
+    it("requires enabled boolean", () => {
+      expect(Value.Check(ChannelToggleBody, { enabled: true })).toBe(true);
+      expect(Value.Check(ChannelToggleBody, { enabled: false })).toBe(true);
+      expect(Value.Check(ChannelToggleBody, {})).toBe(false);
+    });
+  });
+
+  describe("BridgeOwnerBody", () => {
+    it("requires platform, optional userId", () => {
+      expect(Value.Check(BridgeOwnerBody, { platform: "telegram" })).toBe(true);
+      expect(Value.Check(BridgeOwnerBody, { platform: "telegram", userId: "u1" })).toBe(true);
+      expect(Value.Check(BridgeOwnerBody, {})).toBe(false);
+    });
+  });
+
+  describe("BridgeSettingsBody", () => {
+    it("accepts optional readOnly and receiptEnabled", () => {
+      expect(Value.Check(BridgeSettingsBody, {})).toBe(true);
+      expect(Value.Check(BridgeSettingsBody, { readOnly: true, receiptEnabled: false })).toBe(true);
+    });
+  });
+
+  describe("BridgeStopBody", () => {
+    it("requires platform string", () => {
+      expect(Value.Check(BridgeStopBody, { platform: "telegram" })).toBe(true);
+      expect(Value.Check(BridgeStopBody, {})).toBe(false);
+    });
+  });
+
+  describe("BridgeMediaBody", () => {
+    it("requires platform, chatId, filePath", () => {
+      expect(Value.Check(BridgeMediaBody, { platform: "telegram", chatId: "c1", filePath: "/a" })).toBe(true);
+      expect(Value.Check(BridgeMediaBody, { platform: "telegram" })).toBe(false);
+      expect(Value.Check(BridgeMediaBody, { platform: "telegram", chatId: "c1" })).toBe(false);
+    });
+  });
+
+  describe("BridgeQrcodeBody", () => {
+    it("requires qrcodeId string", () => {
+      expect(Value.Check(BridgeQrcodeBody, { qrcodeId: "qr-1" })).toBe(true);
+      expect(Value.Check(BridgeQrcodeBody, {})).toBe(false);
+    });
+  });
+
+  describe("WebAuthBody", () => {
+    it("accepts optional credential", () => {
+      expect(Value.Check(WebAuthBody, {})).toBe(true);
+      expect(Value.Check(WebAuthBody, { credential: "tok" })).toBe(true);
+    });
+  });
+
+  describe("UploadPathsBody", () => {
+    it("requires paths array, optional sessionPath", () => {
+      expect(Value.Check(UploadPathsBody, { paths: ["/a"] })).toBe(true);
+      expect(Value.Check(UploadPathsBody, { paths: ["/a"], sessionPath: "/s" })).toBe(true);
+      expect(Value.Check(UploadPathsBody, {})).toBe(false);
     });
   });
 });

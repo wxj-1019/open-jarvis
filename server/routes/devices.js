@@ -9,7 +9,7 @@ import {
 import { isLocalOwnerPrincipal } from "../http/route-security.js";
 import { readAuthPrincipal } from "../http/capability-guard.js";
 import { recordSecurityAuditEvent } from "../http/security-audit.js";
-import { safeJson } from "../hono-helpers.js";
+import { validateBody } from "../utils/validate.js";
 
 const DEFAULT_DEVICE_SCOPES = Object.freeze(["chat", "resources.read", "files.read", "files.write"]);
 
@@ -31,11 +31,11 @@ export function createDevicesRoute(engine) {
     }
   });
 
-  route.post("/devices/pairing-sessions", async (c) => {
+  route.post("/devices/pairing-sessions", validateBody(null), async (c) => {
     const denied = requireLocalOwner(c);
     if (denied) return denied;
     try {
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       const runtimeContext = resolveRuntimeContext(c, engine);
       const created = createPairingSession(engine.hanakoHome, {
         serverNodeId: runtimeContext.serverNodeId,
@@ -61,11 +61,11 @@ export function createDevicesRoute(engine) {
     }
   });
 
-  route.post("/devices/pairing-sessions/:pairingSessionId/approve", async (c) => {
+  route.post("/devices/pairing-sessions/:pairingSessionId/approve", validateBody(null), async (c) => {
     const denied = requireLocalOwner(c);
     if (denied) return denied;
     try {
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       const runtimeContext = resolveRuntimeContext(c, engine);
       const issued = approvePairingSession(engine.hanakoHome, {
         pairingSessionId: c.req.param("pairingSessionId"),

@@ -1,4 +1,6 @@
 allowBuilds:
+  active-win: set this to true or false
   better-sqlite3: true
+  get-windows: true
   sharp: true
 onlyBuiltDependencies: sharp,better-sqlite3

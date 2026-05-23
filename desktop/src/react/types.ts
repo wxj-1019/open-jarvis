@@ -319,6 +319,7 @@ export interface PlatformApi {
   // ── App info ──
   getAppVersion?(): Promise<string>;
   checkUpdate?(): Promise<{ version: string; downloadUrl: string } | null>;
+  restartApp?(): void;
 
   // ── Auto-update (Windows) ──
   autoUpdateCheck?(): Promise<string | null>;

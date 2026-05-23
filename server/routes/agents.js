@@ -27,7 +27,6 @@ import YAML from "js-yaml";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { emitAppEvent } from "../app-events.js";
-import { safeJson } from "../hono-helpers.js";
 import { validateBody } from "../utils/validate.js";
 import {
   AgentCreateBody,
@@ -437,13 +436,13 @@ export function createAgentsRoute(engine) {
     }
   });
 
-  route.put("/agents/:id/config", async (c) => {
+  route.put("/agents/:id/config", validateBody(null), async (c) => {
     const id = c.req.param("id");
     if (!validateId(id) || !agentExists(engine, id)) {
       return c.json({ error: "agent not found" }, 404);
     }
     try {
-      const partial = await safeJson(c);
+      const partial = c.get("validatedBody");
       if (!partial || typeof partial !== "object") {
         return c.json({ error: "invalid JSON body" }, 400);
       }

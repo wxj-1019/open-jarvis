@@ -3,7 +3,7 @@ import path from "path";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { emitAppEvent } from "../app-events.js";
-import { safeJson } from "../hono-helpers.js";
+import { validateBody } from "../utils/validate.js";
 import { createCharacterCardService, CharacterCardError } from "../../lib/character-cards/service.js";
 import { createModuleLogger } from "../../lib/debug-log.js";
 
@@ -66,7 +66,7 @@ export function createCharacterCardsRoute(engine) {
         sourcePath = await saveUploadedPackage(engine, file);
         originalName = file?.name || path.basename(sourcePath);
       } else {
-        const body = await safeJson(c);
+        const body = c.get("validatedBody");
         sourcePath = body.path;
         originalName = body.name;
       }
@@ -99,9 +99,9 @@ export function createCharacterCardsRoute(engine) {
     }
   });
 
-  route.post("/character-cards/import", async (c) => {
+  route.post("/character-cards/import", validateBody(null), async (c) => {
     try {
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       const result = await service.commitImportPlan(body.token, {
         importMemory: body.importMemory === true,
       });
@@ -115,9 +115,9 @@ export function createCharacterCardsRoute(engine) {
     }
   });
 
-  route.post("/character-cards/export/preview", async (c) => {
+  route.post("/character-cards/export/preview", validateBody(null), async (c) => {
     try {
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       const plan = await service.createExportPreview(body.agentId);
       return c.json({ ok: true, plan });
     } catch (err) {
@@ -125,9 +125,9 @@ export function createCharacterCardsRoute(engine) {
     }
   });
 
-  route.post("/character-cards/export/plan", async (c) => {
+  route.post("/character-cards/export/plan", validateBody(null), async (c) => {
     try {
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       const plan = await service.createExportPreview(body.agentId);
       return c.json({ ok: true, plan });
     } catch (err) {
@@ -135,9 +135,9 @@ export function createCharacterCardsRoute(engine) {
     }
   });
 
-  route.post("/character-cards/export", async (c) => {
+  route.post("/character-cards/export", validateBody(null), async (c) => {
     try {
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       const result = await service.exportAgentPackage(body.agentId, {
         exportMemory: body.exportMemory === true,
       });

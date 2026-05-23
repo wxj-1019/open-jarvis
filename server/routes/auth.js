@@ -12,7 +12,7 @@
  */
 import crypto from "crypto";
 import { Hono } from "hono";
-import { safeJson } from "../hono-helpers.js";
+import { validateBody } from "../utils/validate.js";
 import { createModuleLogger } from "../../lib/debug-log.js";
 
 const log = createModuleLogger("auth");
@@ -56,8 +56,8 @@ export function createAuthRoute(engine) {
    * → { sessionId, url, instructions? }
    *   instructions 存在时为设备码流程（值为 user_code）
    */
-  route.post("/auth/oauth/start", async (c) => {
-    const body = await safeJson(c);
+  route.post("/auth/oauth/start", validateBody(null), async (c) => {
+    const body = c.get("validatedBody");
     const { provider } = body;
     if (!provider) {
       return c.json({ error: "provider is required" }, 400);
@@ -144,8 +144,8 @@ export function createAuthRoute(engine) {
    * 提交授权码（授权码流程）
    * body: { sessionId, code }
    */
-  route.post("/auth/oauth/callback", async (c) => {
-    const body = await safeJson(c);
+  route.post("/auth/oauth/callback", validateBody(null), async (c) => {
+    const body = c.get("validatedBody");
     const { sessionId, code } = body;
     const flow = pendingFlows.get(sessionId);
     if (!flow) {
@@ -225,8 +225,8 @@ export function createAuthRoute(engine) {
    * 登出
    * body: { provider }
    */
-  route.post("/auth/oauth/logout", async (c) => {
-    const body = await safeJson(c);
+  route.post("/auth/oauth/logout", validateBody(null), async (c) => {
+    const body = c.get("validatedBody");
     const { provider } = body;
     if (!provider) {
       return c.json({ error: "provider is required" }, 400);
@@ -246,9 +246,9 @@ export function createAuthRoute(engine) {
   });
 
   /** 添加自定义模型到 OAuth provider */
-  route.post("/auth/oauth/:provider/custom-models", async (c) => {
+  route.post("/auth/oauth/:provider/custom-models", validateBody(null), async (c) => {
     const provider = c.req.param("provider");
-    const body = await safeJson(c);
+    const body = c.get("validatedBody");
     const { modelId } = body;
     if (!modelId || typeof modelId !== "string" || !modelId.trim()) {
       return c.json({ error: "modelId is required" }, 400);

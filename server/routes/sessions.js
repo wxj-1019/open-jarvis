@@ -5,7 +5,6 @@ import { appendFileSync } from "fs";
 import fs from "fs/promises";
 import path from "path";
 import { Hono } from "hono";
-import { safeJson } from "../hono-helpers.js";
 import { validateBody } from "../utils/validate.js";
 import {
   SessionNewBody,

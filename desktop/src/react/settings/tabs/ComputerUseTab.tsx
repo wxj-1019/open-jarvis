@@ -4,6 +4,7 @@ import { t } from '../helpers';
 import { SettingsSection } from '../components/SettingsSection';
 import { SettingsRow } from '../components/SettingsRow';
 import { Toggle } from '../widgets/Toggle';
+import { CodeSigningPanel } from '../components/CodeSigningPanel';
 import { useSettingsStore } from '../store';
 import styles from '../Settings.module.css';
 
@@ -200,6 +201,7 @@ export function ComputerUseTab() {
           control={<StatusText ok={!activeLease} text={activeLeaseText} />}
         />
       </SettingsSection>
+      <CodeSigningPanel />
     </div>
   );
 }
