@@ -151,8 +151,17 @@ export class ComputerHost {
       appId: providerLease?.appId || target.appId,
       windowId: providerLease?.windowId || target.windowId || null,
       allowedActions: providerLease?.allowedActions || ["click_element", "type_text", "press_key", "scroll", "perform_secondary_action", "stop"],
-      providerState: providerLease?.providerState || {},
+      providerState: {
+        ...providerLease?.providerState,
+        appName: target.appName || this._extractAppName(target),
+      },
     });
+  }
+
+  _extractAppName(target = {}) {
+    if (target.appName) return target.appName;
+    if (target.appId?.startsWith("pid:")) return null;
+    return target.appId || null;
   }
 
   async releaseLease(ctx, leaseId) {

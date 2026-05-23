@@ -5,6 +5,7 @@ import crypto from "crypto";
 import { COMPUTER_USE_ERRORS, computerUseError } from "../errors.js";
 import { createCommandRunner } from "./command-runner.js";
 import { WINDOWS_UIA_HELPER_SCRIPT } from "./windows-uia-script.js";
+import { compatibilityMatrix } from "../compatibility-matrix.js";
 
 function defaultPowerShellCommand(env = process.env) {
   if (process.platform !== "win32") return "powershell.exe";
@@ -434,6 +435,23 @@ export function createWindowsUiaProvider({
           action: action.type,
         });
       }
+      
+      // 应用兼容性检查
+      const appName = lease.providerState?.appName || lease.appId;
+      if (appName && !compatibilityMatrix.supportsAction(providerId, appName, action.type)) {
+        const appInfo = compatibilityMatrix.getAppInfo(providerId, appName);
+        throw computerUseError(
+          COMPUTER_USE_ERRORS.CAPABILITY_UNSUPPORTED,
+          `Action ${action.type} not supported for app ${appName}`,
+          {
+            action: action.type,
+            appName,
+            processName: appInfo?.processName,
+            notes: appInfo?.notes,
+          }
+        );
+      }
+      
       assertSnapshotBoundElement(action);
       return await runHelper({
         command: "perform_action",
