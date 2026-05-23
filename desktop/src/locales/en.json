@@ -627,7 +627,8 @@
       "access": "Access & Devices",
       "plugins": "Plugins",
       "about": "About",
-      "security": "Security"
+      "security": "Security",
+      "backup": "Backup & Restore"
     },
     "appearance": {
       "title": "Appearance",

@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   Info,
   List,
+  Database,
 } from '@phosphor-icons/react';
 import styles from './Settings.module.css';
 
@@ -38,6 +39,7 @@ const TAB_ITEMS = [
   { id: 'plugins', key: 'settings.tabs.plugins', icon: PuzzlePiece },
   { id: 'security', key: 'settings.tabs.security', icon: ShieldCheck },
   { id: 'about', key: 'settings.tabs.about', icon: Info },
+  { id: 'backup', key: 'settings.tabs.backup', icon: Database },
 ];
 
 const FALLBACK_PLUGIN_ICON = List;

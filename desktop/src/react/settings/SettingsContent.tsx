@@ -33,6 +33,7 @@ import { PluginMarketplaceTab } from './tabs/PluginMarketplaceTab';
 import { SecurityTab } from './tabs/SecurityTab';
 import { SharingTab } from './tabs/SharingTab';
 import { AccessTab } from './tabs/AccessTab';
+import { BackupTab } from './tabs/BackupTab';
 import { getNativeSettingsTabComponent } from './native-settings-tabs';
 import { CropOverlay } from './overlays/CropOverlay';
 import { AgentCreateOverlay } from './overlays/AgentCreateOverlay';
@@ -61,6 +62,7 @@ const TAB_COMPONENTS: Record<string, React.ComponentType> = {
   'plugin-marketplace': PluginMarketplaceTab,
   security: SecurityTab,
   about: AboutTab,
+  backup: BackupTab,
 };
 
 function connectionState(connection: ServerConnection | null) {
@@ -97,6 +99,7 @@ const TAB_TITLES: Record<string, string> = {
   'plugin-marketplace': '插件市场',
   security: '安全',
   about: '关于',
+  backup: '备份与恢复',
 };
 
 function normalizeNativeTabForPlatform(tab: string, platformName: string | null | undefined): string {

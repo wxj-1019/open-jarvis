@@ -627,7 +627,8 @@
       "access": "访问与设备",
       "plugins": "插件",
       "about": "关于",
-      "security": "安全"
+      "security": "安全",
+      "backup": "备份与恢复"
     },
     "appearance": {
       "title": "外观",
