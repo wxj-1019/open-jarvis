@@ -35,6 +35,8 @@ export function classifyHttpRoute({ method = "GET", path = "" } = {}) {
   if (isWebAuthBootstrapRoute(verb, routePath)) return PUBLIC;
 
   if (routePath === "/api/health") return AUTHENTICATED_ONLY;
+  if (routePath === "/api/system/health") return AUTHENTICATED_ONLY;
+  if (routePath.startsWith("/api/system/fix/")) return LOCAL_ONLY;
   if (routePath === "/api/server/identity") return AUTHENTICATED_ONLY;
 
   if (routePath === "/ws") return scoped("chat");

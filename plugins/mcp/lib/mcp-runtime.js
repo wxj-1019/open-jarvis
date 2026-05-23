@@ -67,11 +67,11 @@ export class McpRuntime {
     this.registerCachedTools();
 
     if (this.ctx.bus?.registerCapability) {
-      this.ctx.bus.registerCapability("mcp:progress", { type: "event" });
-      this.ctx.bus.registerCapability("mcp:tools-changed", { type: "event" });
-      this.ctx.bus.registerCapability("mcp:resources-changed", { type: "event" });
-      this.ctx.bus.registerCapability("mcp:prompts-changed", { type: "event" });
-      this.ctx.bus.registerCapability("mcp:elicit", { type: "request" });
+      this.ctx.bus.registerCapability({ type: "mcp:progress" });
+      this.ctx.bus.registerCapability({ type: "mcp:tools-changed" });
+      this.ctx.bus.registerCapability({ type: "mcp:resources-changed" });
+      this.ctx.bus.registerCapability({ type: "mcp:prompts-changed" });
+      this.ctx.bus.registerCapability({ type: "mcp:elicit" });
     }
 
     await this._loadWorkspaceConfig();

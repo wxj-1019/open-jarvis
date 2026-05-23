@@ -7,7 +7,8 @@
 import fs from "fs";
 import path from "path";
 import { Hono } from "hono";
-import { safeJson } from "../hono-helpers.js";
+import { validateBody } from "../utils/validate.js";
+import { BridgeOwnerBody, BridgeSettingsBody, BridgeStopBody, BridgeMediaBody, BridgeQrcodeBody } from "../utils/schemas.js";
 import { debugLog } from "../../lib/debug-log.js";
 import { parseSessionKey, collectKnownUsers, KNOWN_PLATFORMS } from "../../lib/bridge/session-key.js";
 import { isBridgeOwner, resolveBridgeOwnerUserId } from "../../lib/bridge/owner-policy.js";
@@ -138,9 +139,8 @@ export function createBridgeRoute(engine, bridgeManagerRef) {
   });
 
   /** 设置 owner（哪个账号是你）— 写入 agent.config.bridge */
-  route.post("/bridge/owner", async (c) => {
-    const body = await safeJson(c);
-    const { platform, userId } = body;
+  route.post("/bridge/owner", validateBody(BridgeOwnerBody), async (c) => {
+    const { platform, userId } = c.get("validatedBody");
     if (!platform || !KNOWN_PLATFORMS.includes(platform)) {
       return c.json({ ok: false, error: "invalid platform" });
     }
@@ -153,8 +153,8 @@ export function createBridgeRoute(engine, bridgeManagerRef) {
   });
 
   /** 保存凭证 + 启停平台（写入 agent.config.bridge） */
-  route.post("/bridge/config", async (c) => {
-    const body = await safeJson(c);
+  route.post("/bridge/config", validateBody(null), async (c) => {
+    const body = c.get("validatedBody");
     const { platform, credentials, enabled } = body;
     if (!platform || !KNOWN_PLATFORMS.includes(platform)) {
       return c.json({ error: "invalid platform" }, 400);

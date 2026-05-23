@@ -73,7 +73,7 @@
 
 ### 1.8 其他已有能力
 
-办公文档读写（PDF / DOCX / XLSX / PPTX）。日记系统。5 语言国际化。10+ UI 主题。全屏媒体预览器。
+办公文档读写（PDF / DOCX / XLSX / PPTX）。日记系统。5 语言国际化。10+ UI 主题。全屏媒体预览器。**系统健康检查与引导修复**（自动检测原生模块缺失，设置页面顶部横幅提示，一键修复功能）。
 
 ---
 
@@ -83,6 +83,10 @@
 
 | 项目 | 定位 | 核心差异化 |
 |------|------|-----------|
+| **OpenClaw** | 自主 AI Agent 框架 | MCP 生态系统（15,000+ 技能）、Heartbeat 系统、跨平台消息集成（WhatsApp/Slack/Telegram） |
+| **isair/jarvis** | 个人 AI 助理 | 无限记忆、对话感知、MCP 集成、会话保持 |
+| **Natively** | 桌面 AI 助理 | 双通道音频智能（系统+麦克风）、屏幕上下文 OCR、低延迟（<500ms） |
+| **m3-memory** | AI 记忆层框架 | 96 工具、混合搜索（FTS5 + vector + MMR）、矛盾检测、双时态跟踪 |
 | **Open Interpreter** | 本地代码执行 + 自然语言控制电脑 | 终端直接执行代码，无沙盒限制 |
 | **AutoGPT / AgentGPT** | 自主任务规划与执行 | 目标分解 → 自动规划 → 多步执行 → 自我修正闭环 |
 | **CrewAI** | 多 Agent 角色协作 | 基于角色的 Agent 编排、任务委派、结果汇总 |
@@ -93,6 +97,7 @@
 | **Home Assistant + Assist** | 智能家居 AI | IoT 设备控制、语音唤醒、本地推理 |
 | **Leon AI** | 开源个人助理 | 模块化技能系统、语音交互、离线能力 |
 | **Mycroft / OVOS** | 开源语音助理 | 语音唤醒 + 本地 STT/TTS + 技能插件 |
+| **SafeClaw** | 本地 AI 助理 | 规则引擎、本地 STT/TTS、确定性行为、无 API 成本 |
 
 ### 2.2 能力对比矩阵
 
@@ -101,7 +106,7 @@
 | 桌面原生 | **强** | 弱 | 无 | 无 | 弱 |
 | 多 Agent | **强** | 无 | 弱 | **强** | 无 |
 | 安全沙盒 | **强** | 无 | 无 | 无 | 中 |
-| 记忆系统 | **强** | 无 | 弱 | 无 | 无 |
+| 记忆系统 | **强** | **强** | 弱 | 无 | 无 |
 | 语音交互 | 无 | 弱 | 无 | 无 | **强** |
 | MCP 生态 | 弱 | 无 | 无 | 无 | 弱 |
 | 日历/邮件 | 无 | 无 | 无 | 无 | 中 |
@@ -123,21 +128,87 @@
 
 ### 层级一：核心可靠性（P0）
 
-#### 3.1.1 记忆系统优化
+#### 3.1.1 记忆系统
 
-| 项 | 详情 |
-|---|------|
-| 现状 | FTS5 全文搜索 + 标签匹配，无向量语义搜索。`fact-store.js` 使用 `unicode61` tokenizer，CJK 靠手动 n-gram 绕过。`_likeFallback` 是全表扫描 `%LIKE%`，线性退化 |
-| 具体瓶颈 | ① `compileFacts` 读取 30 天全部摘要拼接送 LLM，O(n) 上下文增长 ② `memory-search.js` 标签结果和 FTS 结果无融合排序，标签优先但无权重 ③ 无时间衰减加权，新旧事实同分 |
-| **实现路径** | |
-| Step 1 | `fact-store.js`：新增 `fact_embeddings` 表（id, fact_id, embedding BLOB），加载 `sqlite-vec` 扩展，注册 `vec0` 虚拟表 |
-| Step 2 | `fact-store.js:searchFullText()`：新增第三策略——计算查询文本 embedding → KNN 搜索 → 与 FTS5 结果做 reciprocal-rank fusion 合并 |
-| Step 3 | `memory-search.js`：三路检索（标签 → FTS5 → 向量 KNN），加权融合排序，引入时间衰减因子 |
-| Step 4 | `config-loader.js`：`embedding_api` 已预留，接入本地 nomic-embed-text（Ollama）或云端嵌入 API |
-| Step 5 | `compile.js:compileFacts()`：改为分块摘要（每 50 条事实一组），避免上下文溢出 |
-| **改动文件** | `lib/memory/fact-store.js`, `lib/memory/memory-search.js`, `lib/memory/compile.js`, `lib/memory/config-loader.js` |
-| 参考 | Mem0、Zep |
-| 优先级 | **P0** |
+**架构总览**：20+ 模块的分层架构，从原始对话到最终编译的完整流水线。
+
+| 层级 | 模块 | 职责 |
+|------|------|------|
+| 存储层 | `fact-store.js` | SQLite 事实存储，FTS5 全文搜索，质量评分（五维） |
+| 向量层 | `vector-search.js` | 向量索引，混合搜索（向量+FTS+标签） |
+| 嵌入层 | `embedding-model.js` | 本地模型（@xenova/transformers）+ 远程 API 回退 |
+| 摘要层 | `session-summary.js` | 滚动摘要，增量处理，PII 脱敏 |
+| 深度层 | `deep-memory.js` | 元事实提取，snapshot diff，自动分类 |
+| 编译层 | `compile.js` | 四块独立编译（today/week/longterm/facts）+ assemble |
+| 检索层 | `memory-search.js` | 多策略检索（向量→FTS→标签），时间衰减 |
+| 调度层 | `memory-ticker.js` | turn-based 触发，每日任务调度 |
+| 质量层 | `quality-scorer.js` | 五维评分（specificity, recency, relevance, consistency, usage） |
+| 遗忘层 | `forgetting-curve.js` | Ebbinghaus 遗忘曲线，自动归档 |
+| 归档层 | `memory-archive.js` | 归档/恢复/清理/导入导出 |
+| 优化层 | `fts5-optimizer.js` | BM25 评分，CJK 分词，同义词扩展，模糊匹配 |
+| 修复层 | `quality-repair.js` | LLM 辅助修复低质量记忆 |
+| 监控层 | `performance-monitor.js` | 操作耗时统计，超时告警 |
+| 重试层 | `compile-retry.js` | 指数退避，熔断器模式，降级缓存 |
+| 工具层 | `pinned-memory.js` | 置顶记忆（pin/unpin） |
+| 配置层 | `config-loader.js` | 三通道 API 配置（api/embedding_api/utility_api） |
+
+**已实现的检索策略（5 层）**：
+
+| 层级 | 策略 | 状态 | 说明 |
+|------|------|------|------|
+| 1 | 向量搜索 | ✅ 已实现 | `vector-search.js`，cosine_similarity |
+| 2 | 混合搜索 | ✅ 已实现 | 向量(0.5) + FTS(0.3) + 标签(0.2) 加权融合 |
+| 3 | FTS5 全文搜索 | ✅ 已实现 | BM25 评分，CJK 2/3/4-gram 分词 |
+| 4 | 标签精确匹配 | ✅ 已实现 | `json_each` 精确匹配，OR 逻辑 |
+| 5 | LIKE 降级 | ✅ 已实现 | FTS 失败时的兜底方案 |
+
+**已实现的高级特性**：
+
+| 特性 | 状态 | 说明 |
+|------|------|------|
+| 时间衰减 | ✅ 已实现 | `forgetting-curve.js`，Ebbinghaus 模型 |
+| 质量评分 | ✅ 已实现 | 五维评分，自动修复建议 |
+| 遗忘曲线 | ✅ 已实现 | 自动归档低质量记忆 |
+| 归档管理 | ✅ 已实现 | 归档/恢复/清理/导入导出 |
+| FTS5 优化 | ✅ 已实现 | BM25、同义词扩展、模糊匹配 |
+| 编译重试 | ✅ 已实现 | 指数退避、熔断器、降级缓存 |
+| 性能监控 | ✅ 已实现 | 操作耗时统计、超时告警 |
+| PII 脱敏 | ✅ 已实现 | 自动检测并脱敏敏感信息 |
+
+**数据流向**：
+
+```
+用户对话 → Session JSONL
+    ↓ (每 10 轮触发)
+滚动摘要 (session-summary.js)
+    ↓
+Session Summary JSON
+    ↓
+    ├──→ 编译流水线 (compile.js)
+    │       ├── compileToday() → today.md
+    │       ├── compileWeek() → week.md
+    │       ├── compileLongterm() → longterm.md
+    │       ├── compileFacts() → facts.md
+    │       └── assemble() → memory.md (≤2000 token)
+    │
+    └──→ 深度记忆 (deep-memory.js)
+            ↓
+            元事实提取 + 标签分类
+            ↓
+            fact-store.js (SQLite + FTS5 + 向量)
+            ↓
+            质量评分 + 遗忘曲线 + 归档
+```
+
+**仍需优化**：
+
+| 问题 | 严重程度 | 说明 |
+|------|---------|------|
+| `compileFacts` O(n) 上下文增长 | 中 | 读取 30 天全部摘要拼接送 LLM，需改为分块摘要 |
+| 矛盾检测缺失 | 低 | 新事实与已有事实冲突时无提示 |
+| 双时态跟踪缺失 | 低 | 无"生效时间"vs"记录时间"区分 |
+
+| 优先级 | **P0**（仅剩 compileFacts 优化） |
 
 #### 3.1.2 Windows 代码签名
 
@@ -166,14 +237,11 @@
 
 | 项 | 详情 |
 |---|------|
-| 现状 | README 承诺"后续添加"，Agent 目录结构即文件夹（config.yaml + memory + sessions + desk） |
-| **实现路径** | |
-| Step 1 | 新增 `lib/backup/agent-backup.js`：遍历 Agent 目录 → 打包为 zip（排除 node_modules、临时文件）→ 写入元数据（版本、创建时间、Agent 名称） |
-| Step 2 | `core/agent-manager.js`：新增 `exportAgent(agentId)` / `importAgent(zipPath)` 方法 |
-| Step 3 | Settings UI 新增"备份与恢复"页面：手动导出/导入、定时自动备份（可配置间隔）、备份列表管理 |
-| Step 4 | （可选）云存储备份：通过 Bridge 或插件上传到飞书/Telegram 作为备份存储 |
-| **改动文件** | 新增 `lib/backup/agent-backup.js`，修改 `core/agent-manager.js`，新增 desktop UI 组件 |
-| 优先级 | **P0** |
+| 现状 | **已实现核心功能**。`lib/backup/agent-backup.js` 已实现 `exportAgent()` 和 `importAgent()` 函数，支持将 Agent 目录打包为 zip（包含 config.yaml、memory、sessions、desk 等）。已实现 checksum 流式计算、原子写入、EXDEV fallback 等健壮性处理。**已新增 API 路由**：`POST /api/agents/:id/backup/export` 和 `POST /api/agents/:id/backup/import`。**已修复**：`server/routes/agents.js` 中新增 `crypto` 导入用于 UUID 生成 |
+| 已完成的实现 | ① `lib/backup/agent-backup.js`：完整的备份/恢复逻辑，支持排除模式、元数据写入、校验和验证 ② `server/routes/agents.js`：新增备份/导入 API 端点 ③ `core/agent-manager.js`：集成备份功能 |
+| 待完成 | ① Settings UI "备份与恢复"页面 ② 定时自动备份功能 ③ 云存储备份（可选） |
+| **改动文件** | `lib/backup/agent-backup.js`（新增），`server/routes/agents.js`（修改），`core/agent-manager.js`（修改） |
+| 优先级 | **P0**（核心功能已完成，UI 待完善） |
 
 ---
 
@@ -194,8 +262,11 @@
 | Step 4 | Linux 实现：`active-win`（X11/Wayland）+ `chokidar` + D-Bus 监听（可选） |
 | Step 5 | 新增事件类型注入 EventBus：`window_focus_changed`, `file_system_changed`, `notification_received`, `calendar_event_approaching` |
 | Step 6 | `hub/scheduler.js`：注册事件驱动 handler，替代部分 Heartbeat 轮询逻辑 |
+| Step 7 | 新增屏幕上下文 OCR：参考 Natively 的实现，定时截取屏幕内容并通过 OCR 提取文本，作为上下文注入 Agent |
+| Step 8 | 新增实时音频捕获：参考 Natively 的双通道智能（系统音频 + 麦克风），支持低延迟音频转录 |
 | **改动文件** | 新增 `lib/events/os-event-source.js`，修改 `hub/scheduler.js`, `hub/event-bus.js`, `hub/event-bus-capabilities.js` |
 | 依赖 | 无前置依赖，可独立开发 |
+| 参考 | OpenClaw（Heartbeat 系统、Cron 作业）、Natively（屏幕上下文 OCR、实时音频捕获） |
 | 优先级 | **P1** |
 
 #### 3.2.2 持续上下文感知
@@ -262,8 +333,9 @@
 
 | 项 | 详情 |
 |---|------|
-| 现状 | MCP Bridge 插件（`plugins/mcp/`）已实现 stdio + HTTP + SSE 三种传输，但**只实现了 `initialize`、`tools/list`、`tools/call` 三个方法**。工具通过 `ctx.registerTool()` 注册，名称加前缀 `mcp_{connectorId}_{toolName}`。`_handleMessage()` 静默丢弃所有非 response 消息（通知、Resources、Prompts 均被忽略）。client identity 仍硬编码为 `"hana"` |
-| 与原生 MCP 的差距 | ① 无 Resources 支持（context injection）② 无 Prompts 支持 ③ 无通知处理（`tools/list_changed` 等）④ 无 Sampling 支持 ⑤ 无 per-workspace `mcp.json` 约定 ⑥ 工具名被前缀污染 |
+| 现状 | MCP Bridge 插件（`plugins/mcp/`）已实现 stdio + HTTP + SSE 三种传输，**已实现 `initialize`、`tools/list`、`tools/call`、`resources/list`、`resources/read`、`prompts/list`、`prompts/get` 等核心方法**。工具通过 `ctx.registerTool()` 注册，名称加前缀 `mcp_{connectorId}_{toolName}`。**已修复依赖注入问题**（`ToolRegistry`、`OAuthManager`、`NotificationHandler` 现在正确接收 `McpRuntime` 实例而非 `ConnectorManager`）。**已修复 `registerCapability` 调用方式**（从双参数改为单对象参数）。**已支持通知处理**（`tools/list_changed`、`resources/list_changed`、`prompts/list_changed`）。client identity 仍硬编码为 `"hana"` |
+| 已完成的修复 | ① 依赖注入修复：`mcp-runtime.js` 构造函数中将 `this` 传给子模块 ② `registerCapability` 调用修复：从 `registerCapability("mcp:progress", { type: "event" })` 改为 `registerCapability({ type: "mcp:progress" })` ③ 通知处理：`NotificationHandler` 已能正确处理 MCP 通知 |
+| 与原生 MCP 的差距 | ① 无 Sampling 支持 ② 无 per-workspace `mcp.json` 约定 ③ 工具名被前缀污染 |
 | **实现路径** | |
 | Step 1 | `plugins/mcp/lib/mcp-stdio-client.js`：处理 `notifications/tools/list_changed` → 触发重新 `tools/list` 并更新注册。处理 `notifications/resources/list_changed` |
 | Step 2 | `plugins/mcp/lib/mcp-runtime.js`：新增 `resources/list` + `resources/read` 支持，MCP Resources 注入为 Agent 上下文 |
@@ -271,7 +343,10 @@
 | Step 4 | 修复 client identity：所有 transport 的 `clientInfo.name` 从 `"hana"` 改为 `"jarvis"` |
 | Step 5 | 支持 workspace root 下的 `mcp.json` 约定（类似 VS Code / Claude Code），启动时自动加载 |
 | Step 6 | 工具命名优化：保留原始 MCP tool name 作为 metadata，前缀仅用于内部去重，LLM 可见友好名称 |
+| Step 7 | 新增 MCP Server 市场集成：接入 ClawHub（15,000+ 技能）或社区 MCP Server 注册表，支持一键安装 |
+| Step 8 | 新增 MCP Server 会话保持：参考 isair/jarvis 的实现，保持 MCP Server 会话活跃，避免重复初始化 |
 | **改动文件** | `plugins/mcp/lib/mcp-stdio-client.js`（~190 行）, `plugins/mcp/lib/mcp-http-client.js`（~550 行）, `plugins/mcp/lib/mcp-runtime.js`（~674 行）, `plugins/mcp/routes/api.js` |
+| 参考 | OpenClaw（MCP 生态系统）、isair/jarvis（MCP 会话保持）、Ultimate MCP Server |
 | 优先级 | **P1** |
 
 #### 3.3.2 日历集成
@@ -367,8 +442,10 @@
 | Step 3 | 新增 `lib/voice/wake-word.js`：接入 openWakeWord，训练 "Hey Jarvis" 唤醒词 |
 | Step 4 | 新增 `lib/voice/voice-pipeline.js`：唤醒 → STT → Agent 对话 → TTS → 播放，全链路流水线 |
 | Step 5 | UI：语音对话模式（按住说话 / 唤醒词触发），波形可视化 |
+| Step 6 | 新增双通道音频捕获：参考 Natively 的实现，同时捕获系统音频（对方说话）和麦克风（用户说话），实现完美的对话转录 |
+| Step 7 | 优化延迟：参考 Natively 的 Rust + Zero-Copy ABI 实现，目标延迟 < 500ms |
 | **改动文件** | 新增 `lib/voice/` 目录（4 个文件），修改 `core/agent.js`（工具注册） |
-| 参考 | Home Assistant 本地 Whisper STT + Piper TTS；Mycroft/OVOS 完整语音流水线 |
+| 参考 | Natively（双通道智能、低延迟音频捕获）、SafeClaw（本地 Whisper STT + Piper TTS）、Home Assistant、Mycroft/OVOS |
 | 优先级 | **P2** |
 
 #### 3.4.3 通知智能分级
@@ -433,12 +510,14 @@
 
 1. **Agent 原生操作系统**：Windows Recall、Apple Intelligence 深度集成 OS
 2. **多模态实时交互**：GPT-4o、Gemini Live 支持实时语音+视觉+文本
-3. **MCP 成为标准**：Anthropic MCP 正成为 AI 工具调用的事实标准
-4. **本地优先（Local-First）**：端侧模型（Llama、Phi、Gemma）能力接近云端
+3. **MCP 成为标准**：Anthropic MCP 正成为 AI 工具调用的事实标准，OpenClaw 生态已有 15,000+ 技能
+4. **本地优先（Local-First）**：端侧模型（Llama、Phi、Gemma）能力接近云端，隐私保护成为核心卖点
 5. **Agentic Workflow**：从单次对话到多步自主工作流
 6. **多 Agent 协作**：CrewAI、AutoGen、MetaGPT 证明多 Agent 价值
 7. **Computer Use**：Claude Computer Use、Operator 让 Agent 直接操作 GUI
-8. **记忆即服务**：Mem0、Zep 证明记忆是 Agent 核心竞争力
+8. **记忆即服务**：m3-memory、Mem0、Zep 证明记忆是 Agent 核心竞争力，混合搜索（FTS5 + vector + MMR）成为标配
+9. **主动自动化**：OpenClaw 的 Heartbeat 系统、Natively 的屏幕上下文 OCR，Agent 从被动响应走向主动服务
+10. **语音优先**：Natively 的双通道智能、SafeClaw 的本地 STT/TTS，语音交互成为 AI 助手的标配
 
 ---
 
@@ -470,15 +549,16 @@ MCP 原生支持 (3.3.1)
 
 #### Phase 1：地基加固（独立可并行）
 
-| 任务 | 改动范围 | 预估工作量 |
-|------|---------|-----------|
-| 记忆向量化 | 4 文件修改 | 中（2-3 周） |
-| Agent 备份 | 1 新文件 + UI | 小（1 周） |
-| 电脑控制稳定性 | 3 文件修改 | 中（2 周） |
-| Windows 代码签名 | 配置 + 采购 | 小（1 周，含采购等待） |
-| 系统级快速唤起 | 1 文件修改 + UI | 小（3-5 天） |
+| 任务 | 改动范围 | 预估工作量 | 状态 |
+|------|---------|-----------|------|
+| 记忆向量化 | 4 文件修改 | 中（2-3 周） | **大部分已完成**（仅剩 compileFacts 优化） |
+| Agent 备份 | 1 新文件 + UI | 小（1 周） | **核心功能已完成**，UI 待完善 |
+| 电脑控制稳定性 | 3 文件修改 | 中（2 周） | 待开始 |
+| Windows 代码签名 | 配置 + 采购 | 小（1 周，含采购等待） | 待开始 |
+| 系统级快速唤起 | 1 文件修改 + UI | 小（3-5 天） | 待开始 |
+| 系统健康检查 | 后端 API + 前端组件 | 小（3 天） | **已完成** |
 
-> Phase 1 的 5 个任务**无相互依赖**，可全部并行开发。
+> Phase 1 的 6 个任务**无相互依赖**，可全部并行开发。Agent 备份核心功能和系统健康检查已完成。
 
 #### Phase 2：从被动到主动
 
@@ -556,22 +636,23 @@ MCP 原生支持 (3.3.1)
 
 ### 推荐实施顺序
 
-| 优先级 | 类别 | 内容 | 理由 | 改动文件 |
-|--------|------|------|------|---------|
-| **P0** | 可靠性 | 记忆系统优化 | 灵魂，没有它 Jarvis 只是个 chatbot | `lib/memory/*` 4 文件 |
-| **P0** | 可靠性 | Agent 备份功能 | 数据安全基本保障 | 新增 `lib/backup/` + UI |
-| **P0** | 可靠性 | 电脑控制稳定性 | 操作桌面软件是核心场景 | `core/computer-use/*` 3 文件 |
-| **P0** | 分发 | Windows 代码签名 | 不签名 Windows 用户无法流畅安装 | 配置文件 |
-| **P1** | 交互 | 系统级快速唤起 | 降低交互启动成本，投入极小 | `desktop/main.cjs` |
-| **P1** | 生态 | **MCP 原生支持** | 一个动作打开整个社区生态 | `plugins/mcp/*` 4 文件 |
-| **P1** | 智能 | 事件驱动架构 | 从被动到主动的基础设施 | 新增 1 文件 + 3 修改 |
-| **P1** | 智能 | 多步自主规划 | 从执行指令到完成目标 | 新增 2 文件 + 1 修改 |
-| **P1** | 生态 | 日历 / 邮件集成 | 覆盖最高频日常工作流 | MCP Server 配置 |
-| **P2** | 生态 | RAG 文档摄入 | 让 Agent 学会你的知识 | 新增 2 文件 + 1 修改 |
-| **P2** | 交互 | 语音交互 | "真正的 Jarvis"标志 | 新增 4 文件 + UI |
-| **P2** | 智能 | 反馈学习 / 子 Agent 增强 | 智能体成熟度 | 3-4 文件修改 |
-| **P3** | 交互 | 通知分级 / 多模态 | 精细化体验 | 1-3 文件修改 |
-| **P3** | 平台 | 移动端 / IoT / 行为学习 | 扩展边界 | 视具体方案 |
+| 优先级 | 类别 | 内容 | 理由 | 改动文件 | 状态 |
+|--------|------|------|------|---------|------|
+| **P0** | 可靠性 | 记忆系统优化 | 灵魂，没有它 Jarvis 只是个 chatbot | `lib/memory/*` 4 文件 | **大部分已完成**（仅剩 compileFacts 优化） |
+| **P0** | 可靠性 | Agent 备份功能 | 数据安全基本保障 | 新增 `lib/backup/` + UI | **核心功能已完成** |
+| **P0** | 可靠性 | 电脑控制稳定性 | 操作桌面软件是核心场景 | `core/computer-use/*` 3 文件 | 待开始 |
+| **P0** | 分发 | Windows 代码签名 | 不签名 Windows 用户无法流畅安装 | 配置文件 | 待开始 |
+| **P0** | 体验 | 系统健康检查 | 自动检测依赖问题，引导用户修复 | 后端 API + 前端组件 | **已完成** |
+| **P1** | 交互 | 系统级快速唤起 | 降低交互启动成本，投入极小 | `desktop/main.cjs` | 待开始 |
+| **P1** | 生态 | **MCP 原生支持** | 一个动作打开整个社区生态 | `plugins/mcp/*` 4 文件 | **部分完成**（依赖注入和通知处理已修复） |
+| **P1** | 智能 | 事件驱动架构 | 从被动到主动的基础设施 | 新增 1 文件 + 3 修改 | 待开始 |
+| **P1** | 智能 | 多步自主规划 | 从执行指令到完成目标 | 新增 2 文件 + 1 修改 | 待开始 |
+| **P1** | 生态 | 日历 / 邮件集成 | 覆盖最高频日常工作流 | MCP Server 配置 | 待开始 |
+| **P2** | 生态 | RAG 文档摄入 | 让 Agent 学会你的知识 | 新增 2 文件 + 1 修改 | 待开始 |
+| **P2** | 交互 | 语音交互 | "真正的 Jarvis"标志 | 新增 4 文件 + UI | 待开始 |
+| **P2** | 智能 | 反馈学习 / 子 Agent 增强 | 智能体成熟度 | 3-4 文件修改 | 待开始 |
+| **P3** | 交互 | 通知分级 / 多模态 | 精细化体验 | 1-3 文件修改 | 待开始 |
+| **P3** | 平台 | 移动端 / IoT / 行为学习 | 扩展边界 | 视具体方案 | 待开始 |
 
 ---
 
@@ -626,5 +707,7 @@ MCP 原生支持 + 日历/邮件/任务管理集成，让 Agent 能接入你工�
 ---
 
 > 生成日期：2026-05-21
+> 最后更新：2026-05-23
 > 项目版本：v0.222.29
 > 分析来源：项目源码深度分析（411 个源文件逐文件审查）+ GitHub 主流开源 Agent 项目对标研究
+> 更新内容：MCP 插件修复（依赖注入、registerCapability 调用）、Agent 备份核心功能实现、系统健康检查与引导修复功能

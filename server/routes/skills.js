@@ -12,7 +12,8 @@ import path from "path";
 import fs from "fs";
 import { Hono } from "hono";
 import { emitAppEvent } from "../app-events.js";
-import { safeJson } from "../hono-helpers.js";
+import { validateBody } from "../utils/validate.js";
+import { SkillBundleBody, SkillBundleOrderBody, SkillEnabledBody, SkillToggleBody, SkillPathsBody, SkillTranslateBody, SessionPathBody } from "../utils/schemas.js";
 import { extractZip } from "../../lib/extract-zip.js";
 import { saveConfig } from "../../lib/memory/config-loader.js";
 import { sanitizeSkillName } from "../../lib/tools/install-skill.js";
@@ -199,9 +200,9 @@ export function createSkillsRoute(engine) {
     }
   });
 
-  route.post("/skills/bundles", async (c) => {
+  route.post("/skills/bundles", validateBody(SkillBundleBody), async (c) => {
     try {
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       const { skillByName } = resolveBundleSkillView(c);
       assertBundleSkillsInstalled(body.skillNames, skillByName);
       const bundle = createSkillBundle(engine, {
@@ -215,9 +216,9 @@ export function createSkillsRoute(engine) {
     }
   });
 
-  route.put("/skills/bundles/order", async (c) => {
+  route.put("/skills/bundles/order", validateBody(SkillBundleOrderBody), async (c) => {
     try {
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       if (!Array.isArray(body.bundleIds)) {
         return c.json({ error: "bundleIds must be an array" }, 400);
       }
@@ -231,16 +232,16 @@ export function createSkillsRoute(engine) {
     }
   });
 
-  route.put("/skills/bundles/:id", async (c) => {
+  route.put("/skills/bundles/:id", validateBody(SkillBundleBody), async (c) => {
     try {
-      const body = await safeJson(c);
+      const { name, skillNames } = c.get("validatedBody");
       const { skillByName } = resolveBundleSkillView(c);
-      if (Array.isArray(body.skillNames)) {
-        assertBundleSkillsInstalled(body.skillNames, skillByName);
+      if (Array.isArray(skillNames)) {
+        assertBundleSkillsInstalled(skillNames, skillByName);
       }
       const bundle = updateSkillBundle(engine, c.req.param("id"), {
-        name: body.name,
-        skillNames: body.skillNames,
+        name,
+        skillNames,
       });
       emitAppEvent(engine, "skills-changed", { agentId: null });
       return c.json({ ok: true, bundle: bundleForResponse(bundle, skillByName) });
@@ -289,13 +290,12 @@ export function createSkillsRoute(engine) {
     }
   });
 
-  route.put("/agents/:id/skills", async (c) => {
+  route.put("/agents/:id/skills", validateBody(SkillEnabledBody), async (c) => {
     const id = c.req.param("id");
     const invalidAgent = validateAgentIdOrResponse(c, id);
     if (invalidAgent) return invalidAgent;
     try {
-      const body = await safeJson(c);
-      const { enabled } = body;
+      const { enabled } = c.get("validatedBody");
       if (!Array.isArray(enabled)) {
         return c.json({ error: "enabled must be an array of skill names" }, 400);
       }
@@ -317,13 +317,13 @@ export function createSkillsRoute(engine) {
     }
   });
 
-  route.patch("/agents/:id/skills/:name", async (c) => {
+  route.patch("/agents/:id/skills/:name", validateBody(SkillToggleBody), async (c) => {
     const id = c.req.param("id");
     const invalidAgent = validateAgentIdOrResponse(c, id);
     if (invalidAgent) return invalidAgent;
     try {
-      const body = await safeJson(c);
-      if (typeof body.enabled !== "boolean") {
+      const { enabled } = c.get("validatedBody");
+      if (typeof enabled !== "boolean") {
         return c.json({ error: "enabled must be a boolean" }, 400);
       }
       const name = c.req.param("name");
@@ -331,20 +331,20 @@ export function createSkillsRoute(engine) {
       if (!visibleSet.has(name)) {
         return c.json({ error: "skill not found" }, 404);
       }
-      const result = await writeSkillDelta(id, [name], body.enabled);
+      const result = await writeSkillDelta(id, [name], enabled);
       return c.json({ ok: true, ...result });
     } catch (err) {
       return c.json({ error: err.message }, 500);
     }
   });
 
-  route.patch("/agents/:id/skill-bundles/:bundleId", async (c) => {
+  route.patch("/agents/:id/skill-bundles/:bundleId", validateBody(SkillToggleBody), async (c) => {
     const id = c.req.param("id");
     const invalidAgent = validateAgentIdOrResponse(c, id);
     if (invalidAgent) return invalidAgent;
     try {
-      const body = await safeJson(c);
-      if (typeof body.enabled !== "boolean") {
+      const { enabled } = c.get("validatedBody");
+      if (typeof enabled !== "boolean") {
         return c.json({ error: "enabled must be a boolean" }, 400);
       }
       const store = loadSkillBundleStore(engine);
@@ -352,7 +352,7 @@ export function createSkillsRoute(engine) {
       if (!bundle) {
         return c.json({ error: "skill bundle not found" }, 404);
       }
-      const result = await writeSkillDelta(id, bundle.skillNames, body.enabled);
+      const result = await writeSkillDelta(id, bundle.skillNames, enabled);
       return c.json({ ok: true, ...result });
     } catch (err) {
       return c.json({ error: err.message }, err.status || 500);
@@ -360,11 +360,10 @@ export function createSkillsRoute(engine) {
   });
 
   // ── 安装用户技能 ──
-  route.post("/skills/install", async (c) => {
+  route.post("/skills/install", validateBody(SessionPathBody), async (c) => {
+    const { path: srcPath, sessionPath } = c.get("validatedBody");
     return withInstallLock(async () => {
     try {
-      const body = await safeJson(c);
-      const { path: srcPath, sessionPath } = body;
       if (!srcPath || !path.isAbsolute(srcPath)) {
         return c.json({ error: t("error.skillNeedAbsolutePath") }, 400);
       }
@@ -512,10 +511,9 @@ export function createSkillsRoute(engine) {
     }
   });
 
-  route.put("/skills/external-paths", async (c) => {
+  route.put("/skills/external-paths", validateBody(SkillPathsBody), async (c) => {
     try {
-      const body = await safeJson(c);
-      const { paths } = body;
+      const { paths } = c.get("validatedBody");
       if (!Array.isArray(paths)) {
         return c.json({ error: "paths must be an array" }, 400);
       }
@@ -633,9 +631,8 @@ export function createSkillsRoute(engine) {
   });
 
   // POST /skills/translate — 用工具模型翻译技能名
-  route.post("/skills/translate", async (c) => {
-    const body = await safeJson(c);
-    const { names, lang, agentId } = body;
+  route.post("/skills/translate", validateBody(SkillTranslateBody), async (c) => {
+    const { names, lang, agentId } = c.get("validatedBody");
     if (!Array.isArray(names) || !lang || lang === "en") {
       return c.json({});
     }

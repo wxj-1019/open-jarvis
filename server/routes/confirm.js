@@ -5,16 +5,16 @@
  */
 
 import { Hono } from "hono";
-import { safeJson } from "../hono-helpers.js";
+import { validateBody } from "../utils/validate.js";
+import { ConfirmBody } from "../utils/schemas.js";
 import { createRequestContext } from "../http/boundary.js";
 
 export function createConfirmRoute(confirmStore, engine) {
   const route = new Hono();
 
-  route.post("/confirm/:confirmId", async (c) => {
+  route.post("/confirm/:confirmId", validateBody(ConfirmBody), async (c) => {
     const confirmId = c.req.param("confirmId");
-    const body = await safeJson(c);
-    const { action, value } = body;
+    const { action, value } = c.get("validatedBody");
 
     if (!action || !["confirmed", "rejected"].includes(action)) {
       return c.json({ error: "action must be 'confirmed' or 'rejected'" }, 400);

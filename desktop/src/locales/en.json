@@ -885,6 +885,18 @@
       "invalidPort": "Port must be a number",
       "loadFailed": "Failed to load access settings"
     },
+    "health": {
+      "bannerTitle": "System Component Issue",
+      "multipleIssues": "{{count}} components need repair",
+      "fixButton": "Fix All",
+      "viewDetails": "View Details",
+      "fixSingle": "Fix",
+      "fixing": "Fixing...",
+      "fixSuccess": "Fixed! Please restart the app",
+      "fixFailed": "Fix failed",
+      "restartNow": "Restart Now",
+      "retry": "Retry"
+    },
     "security": {
       "sandbox": "Sandbox",
       "sandboxDesc": "Restrict filesystem writes; ordinary external files are read-only, and workspace files remain readable and writable",
@@ -1355,6 +1367,20 @@
       "agentTitle": "Agent Configuration",
       "agentConnectorDesc": "Enable for the selected agent, just like skills.",
       "saveError": "Save failed"
+    },
+    "health": {
+      "bannerTitle": "System Dependencies Missing",
+      "multipleIssues": "{count} dependency issues found",
+      "fixButton": "Fix All",
+      "viewDetails": "View Details",
+      "fixSingle": "Fix",
+      "fixing": "Fixing...",
+      "fixSuccess": "Fix complete, please restart the app",
+      "fixFailed": "Fix failed",
+      "restartNow": "Restart Now",
+      "retry": "Retry",
+      "better-sqlite3": "Memory Database",
+      "sharp": "Image Processing"
     },
     "screenshot": {
       "title": "Screenshot Sharing",

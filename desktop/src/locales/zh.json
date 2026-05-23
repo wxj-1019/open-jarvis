@@ -885,6 +885,18 @@
       "invalidPort": "端口必须是数字",
       "loadFailed": "读取访问设置失败"
     },
+    "health": {
+      "bannerTitle": "系统组件异常",
+      "multipleIssues": "{{count}} 个组件需要修复",
+      "fixButton": "一键修复",
+      "viewDetails": "查看详情",
+      "fixSingle": "修复",
+      "fixing": "正在修复...",
+      "fixSuccess": "修复成功，请重启应用生效",
+      "fixFailed": "修复失败",
+      "restartNow": "立即重启",
+      "retry": "重试"
+    },
     "security": {
       "sandbox": "沙盒",
       "sandboxDesc": "限制 AI 的文件系统写入范围；普通外部文件可只读访问，工作目录内可读写",
@@ -1355,6 +1367,20 @@
       "agentTitle": "助手配置",
       "agentConnectorDesc": "像技能一样，只对选中的助手启用。",
       "saveError": "保存失败"
+    },
+    "health": {
+      "bannerTitle": "系统依赖缺失",
+      "multipleIssues": "发现 {count} 个依赖问题",
+      "fixButton": "一键修复",
+      "viewDetails": "查看详情",
+      "fixSingle": "修复",
+      "fixing": "正在修复...",
+      "fixSuccess": "修复完成，请重启应用",
+      "fixFailed": "修复失败",
+      "restartNow": "立即重启",
+      "retry": "重试",
+      "better-sqlite3": "记忆数据库",
+      "sharp": "图像处理"
     },
     "screenshot": {
       "title": "截图分享",

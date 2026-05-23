@@ -28,6 +28,16 @@ import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { emitAppEvent } from "../app-events.js";
 import { safeJson } from "../hono-helpers.js";
+import { validateBody } from "../utils/validate.js";
+import {
+  AgentCreateBody,
+  AgentSwitchBody,
+  AgentPrimaryBody,
+  AgentOrderBody,
+  AvatarUploadBody,
+  ContentBody,
+  PinsBody,
+} from "../utils/schemas.js";
 import { saveConfig, clearConfigCache } from "../../lib/memory/config-loader.js";
 import {
   listExperienceDocuments,
@@ -181,10 +191,9 @@ export function createAgentsRoute(engine) {
     }
   });
 
-  route.post("/agents", async (c) => {
+  route.post("/agents", validateBody(AgentCreateBody), async (c) => {
     try {
-      const body = await safeJson(c);
-      const { name, id, yuan } = body;
+      const { name, id, yuan } = c.get("validatedBody");
       if (!name?.trim()) {
         return c.json({ error: "name is required" }, 400);
       }
@@ -196,10 +205,9 @@ export function createAgentsRoute(engine) {
     }
   });
 
-  route.post("/agents/switch", async (c) => {
+  route.post("/agents/switch", validateBody(AgentSwitchBody), async (c) => {
     try {
-      const body = await safeJson(c);
-      const { id } = body;
+      const { id } = c.get("validatedBody");
       if (!id?.trim() || !validateId(id)) {
         return c.json({ error: "invalid id" }, 400);
       }
@@ -265,10 +273,9 @@ export function createAgentsRoute(engine) {
     }
   });
 
-  route.put("/agents/primary", async (c) => {
+  route.put("/agents/primary", validateBody(AgentPrimaryBody), async (c) => {
     try {
-      const body = await safeJson(c);
-      const { id } = body;
+      const { id } = c.get("validatedBody");
       if (!id?.trim()) {
         return c.json({ error: "id is required" }, 400);
       }
@@ -283,10 +290,9 @@ export function createAgentsRoute(engine) {
   //  排序
   // ════════════════════════════
 
-  route.put("/agents/order", async (c) => {
+  route.put("/agents/order", validateBody(AgentOrderBody), async (c) => {
     try {
-      const body = await safeJson(c);
-      const { order } = body;
+      const { order } = c.get("validatedBody");
       if (!Array.isArray(order)) {
         return c.json({ error: "order must be an array" }, 400);
       }
@@ -321,13 +327,12 @@ export function createAgentsRoute(engine) {
     return c.json({ error: "no avatar" }, 404);
   });
 
-  route.post("/agents/:id/avatar", bodyLimit({ maxSize: 15 * 1024 * 1024 }), async (c) => {
+  route.post("/agents/:id/avatar", bodyLimit({ maxSize: 15 * 1024 * 1024 }), validateBody(AvatarUploadBody), async (c) => {
     const id = c.req.param("id");
     if (!validateId(id) || !agentExists(engine, id)) {
       return c.json({ error: "agent not found" }, 404);
     }
-    const body = await safeJson(c);
-    const { data } = body;
+    const { data } = c.get("validatedBody");
     if (!data || typeof data !== "string") {
       return c.json({ error: "data (base64) is required" }, 400);
     }
@@ -593,14 +598,13 @@ export function createAgentsRoute(engine) {
     }
   });
 
-  route.put("/agents/:id/identity", async (c) => {
+  route.put("/agents/:id/identity", validateBody(ContentBody), async (c) => {
     const id = c.req.param("id");
     if (!validateId(id) || !agentExists(engine, id)) {
       return c.json({ error: "agent not found" }, 404);
     }
     try {
-      const body = await safeJson(c);
-      const { content } = body;
+      const { content } = c.get("validatedBody");
       if (typeof content !== "string") {
         return c.json({ error: "content must be a string" }, 400);
       }
@@ -632,14 +636,13 @@ export function createAgentsRoute(engine) {
     }
   });
 
-  route.put("/agents/:id/ishiki", async (c) => {
+  route.put("/agents/:id/ishiki", validateBody(ContentBody), async (c) => {
     const id = c.req.param("id");
     if (!validateId(id) || !agentExists(engine, id)) {
       return c.json({ error: "agent not found" }, 404);
     }
     try {
-      const body = await safeJson(c);
-      const { content } = body;
+      const { content } = c.get("validatedBody");
       if (typeof content !== "string") {
         return c.json({ error: "content must be a string" }, 400);
       }
@@ -670,14 +673,13 @@ export function createAgentsRoute(engine) {
     }
   });
 
-  route.put("/agents/:id/public-ishiki", async (c) => {
+  route.put("/agents/:id/public-ishiki", validateBody(ContentBody), async (c) => {
     const id = c.req.param("id");
     if (!validateId(id) || !agentExists(engine, id)) {
       return c.json({ error: "agent not found" }, 404);
     }
     try {
-      const body = await safeJson(c);
-      const { content } = body;
+      const { content } = c.get("validatedBody");
       if (typeof content !== "string") {
         return c.json({ error: "content must be a string" }, 400);
       }
@@ -713,14 +715,13 @@ export function createAgentsRoute(engine) {
     }
   });
 
-  route.put("/agents/:id/pinned", async (c) => {
+  route.put("/agents/:id/pinned", validateBody(PinsBody), async (c) => {
     const id = c.req.param("id");
     if (!validateId(id) || !agentExists(engine, id)) {
       return c.json({ error: "agent not found" }, 404);
     }
     try {
-      const body = await safeJson(c);
-      const { pins } = body;
+      const { pins } = c.get("validatedBody");
       if (!Array.isArray(pins)) {
         return c.json({ error: "pins must be an array" }, 400);
       }
@@ -767,7 +768,7 @@ export function createAgentsRoute(engine) {
     }
   });
 
-  route.put("/agents/:id/experience", async (c) => {
+  route.put("/agents/:id/experience", validateBody(ContentBody), async (c) => {
     const id = c.req.param("id");
     if (!validateId(id) || !agentExists(engine, id)) {
       return c.json({ error: "agent not found" }, 404);
@@ -776,8 +777,7 @@ export function createAgentsRoute(engine) {
       return c.json({ error: "experience is paused" }, 403);
     }
     try {
-      const body = await safeJson(c);
-      const { content } = body;
+      const { content } = c.get("validatedBody");
       if (typeof content !== "string") {
         return c.json({ error: "content must be a string" }, 400);
       }

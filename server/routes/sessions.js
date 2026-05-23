@@ -6,6 +6,16 @@ import fs from "fs/promises";
 import path from "path";
 import { Hono } from "hono";
 import { safeJson } from "../hono-helpers.js";
+import { validateBody } from "../utils/validate.js";
+import {
+  SessionNewBody,
+  SessionRenameBody,
+  SessionPinBody,
+  SessionSwitchBody,
+  SessionPathBody,
+  SessionCleanupBody,
+  SessionBrowserCloseBody,
+} from "../utils/schemas.js";
 import { t } from "../i18n.js";
 import { extractBlocks, resolveMediaGenerationBlocks } from "../block-extractors.js";
 import { BrowserManager } from "../../lib/browser/browser-manager.js";
@@ -385,11 +395,10 @@ export function createSessionsRoute(engine, hub = null) {
   });
 
   // 置顶 / 取消置顶 session
-  route.post("/sessions/pin", async (c) => {
+  route.post("/sessions/pin", validateBody(SessionPinBody), async (c) => {
     try {
       const requestContext = createRequestContext(c, engine);
-      const body = await safeJson(c);
-      const { path: sessionPath, pinned } = body;
+      const { path: sessionPath, pinned } = c.get("validatedBody");
       if (!sessionPath) {
         return c.json({ error: t("error.missingParam", { param: "path" }) }, 400);
       }
@@ -601,10 +610,10 @@ export function createSessionsRoute(engine, hub = null) {
     }
   });
 
-  route.post("/sessions/latest-user-message/replay", async (c) => {
+  route.post("/sessions/latest-user-message/replay", validateBody(SessionPathBody), async (c) => {
     try {
       const requestContext = createRequestContext(c, engine);
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       const sessionPath = body?.path || body?.sessionPath || null;
       if (!sessionPath) {
         return c.json({ error: t("error.missingParam", { param: "path" }) }, 400);
@@ -640,10 +649,10 @@ export function createSessionsRoute(engine, hub = null) {
     }
   });
 
-  route.post("/sessions/todos/complete", async (c) => {
+  route.post("/sessions/todos/complete", validateBody(SessionPathBody), async (c) => {
     try {
       const requestContext = createRequestContext(c, engine);
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       const sessionPath = body?.path;
       if (!sessionPath) {
         return c.json({ error: t("error.missingParam", { param: "path" }) }, 400);
@@ -691,7 +700,7 @@ export function createSessionsRoute(engine, hub = null) {
   });
 
   // 新建 session（可选指定工作目录和 agentId）
-  route.post("/sessions/new", async (c) => {
+  route.post("/sessions/new", validateBody(SessionNewBody), async (c) => {
     try {
       const requestContext = createRequestContext(c, engine);
       const auth = authorizeSessionRoute(requestContext, "sessions.write", {
@@ -699,10 +708,9 @@ export function createSessionsRoute(engine, hub = null) {
         studioId: requestContext.studioId,
       });
       if (!auth.allowed) return c.json({ error: "insufficient_scope", reason: auth.reason }, 403);
-      const body = await safeJson(c);
-      const { cwd, memoryEnabled, agentId, currentSessionPath: oldSessionPath } = body;
-      const workspaceFolders = Array.isArray(body.workspaceFolders)
-        ? body.workspaceFolders.filter(p => typeof p === "string" && p.trim())
+      const { cwd, memoryEnabled, agentId, currentSessionPath: oldSessionPath } = c.get("validatedBody");
+      const workspaceFolders = Array.isArray(c.get("validatedBody").workspaceFolders)
+        ? c.get("validatedBody").workspaceFolders.filter(p => typeof p === "string" && p.trim())
         : [];
       const memFlag = memoryEnabled !== false; // 默认 true
       log.log(`新建 session ${JSON.stringify({
@@ -768,10 +776,9 @@ export function createSessionsRoute(engine, hub = null) {
   });
 
   // 切换 session（支持跨 agent）
-  route.post("/sessions/switch", async (c) => {
+  route.post("/sessions/switch", validateBody(SessionSwitchBody), async (c) => {
     try {
-      const body = await safeJson(c);
-      const { path: sessionPath, currentSessionPath: oldSessionPath } = body;
+      const { path: sessionPath, currentSessionPath: oldSessionPath } = c.get("validatedBody");
       if (!sessionPath) {
         return c.json({ error: t("error.missingParam", { param: "path" }) }, 400);
       }
@@ -854,9 +861,8 @@ export function createSessionsRoute(engine, hub = null) {
   });
 
   // 关闭指定 session 的浏览器
-  route.post("/browser/close-session", async (c) => {
-    const body = await safeJson(c);
-    const { sessionPath } = body;
+  route.post("/browser/close-session", validateBody(SessionBrowserCloseBody), async (c) => {
+    const { sessionPath } = c.get("validatedBody");
     if (!sessionPath) return c.json({ error: "missing sessionPath" });
     const bm = BrowserManager.instance();
     await bm.closeBrowserForSession(sessionPath);
@@ -865,10 +871,9 @@ export function createSessionsRoute(engine, hub = null) {
   });
 
   // 重命名 session
-  route.post("/sessions/rename", async (c) => {
+  route.post("/sessions/rename", validateBody(SessionRenameBody), async (c) => {
     try {
-      const body = await safeJson(c);
-      const { path: sessionPath, title } = body;
+      const { path: sessionPath, title } = c.get("validatedBody");
       if (!sessionPath) {
         return c.json({ error: t("error.missingParam", { param: "path" }) }, 400);
       }
@@ -886,10 +891,9 @@ export function createSessionsRoute(engine, hub = null) {
   });
 
   // 清理过期归档 session
-  route.post("/sessions/cleanup", async (c) => {
+  route.post("/sessions/cleanup", validateBody(SessionCleanupBody), async (c) => {
     try {
-      const body = await safeJson(c);
-      const { maxAgeDays = 90 } = body;
+      const { maxAgeDays = 90 } = c.get("validatedBody");
       const cutoff = Date.now() - maxAgeDays * 86400000;
       let deleted = 0;
 
@@ -936,10 +940,9 @@ export function createSessionsRoute(engine, hub = null) {
   });
 
   // 归档 session（支持跨 agent）
-  route.post("/sessions/archive", async (c) => {
+  route.post("/sessions/archive", validateBody(SessionPathBody), async (c) => {
     try {
-      const body = await safeJson(c);
-      const { path: sessionPath } = body;
+      const { path: sessionPath } = c.get("validatedBody");
       if (!sessionPath) {
         return c.json({ error: t("error.missingParam", { param: "path" }) }, 400);
       }
@@ -985,10 +988,9 @@ export function createSessionsRoute(engine, hub = null) {
   });
 
   // 恢复归档 session → 移回 sessions/
-  route.post("/sessions/restore", async (c) => {
+  route.post("/sessions/restore", validateBody(SessionPathBody), async (c) => {
     try {
-      const body = await safeJson(c);
-      const { path: sessionPath } = body;
+      const { path: sessionPath } = c.get("validatedBody");
       if (!sessionPath) {
         return c.json({ error: t("error.missingParam", { param: "path" }) }, 400);
       }
@@ -1027,10 +1029,9 @@ export function createSessionsRoute(engine, hub = null) {
   });
 
   // 永久删除一条归档 session
-  route.post("/sessions/archived/delete", async (c) => {
+  route.post("/sessions/archived/delete", validateBody(SessionPathBody), async (c) => {
     try {
-      const body = await safeJson(c);
-      const { path: sessionPath } = body;
+      const { path: sessionPath } = c.get("validatedBody");
       if (!sessionPath) {
         return c.json({ error: t("error.missingParam", { param: "path" }) }, 400);
       }

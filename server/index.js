@@ -12,6 +12,8 @@ import fs from "fs";
 import { setMaxListeners } from "events";
 import path from "path";
 import { Hono } from "hono";
+import { secureHeaders } from "hono/secure-headers";
+import { bodyLimit } from "hono/body-limit";
 import { createAdaptorServer } from "@hono/node-server";
 import { createNodeWebSocket } from "@hono/node-ws";
 import { WebSocketServer } from "ws";
@@ -26,6 +28,8 @@ import {
   summarizeWin32LegacySandboxMigration,
 } from "../lib/sandbox/win32-legacy-migration.js";
 import { safeJson } from "./hono-helpers.js";
+import { LogBody, PlanModeBody } from "./utils/schemas.js";
+import { validateBody } from "./utils/validate.js";
 
 const log = createModuleLogger("server");
 const checkpointLog = createModuleLogger("checkpoint");
@@ -63,6 +67,7 @@ import { createAuthRoute } from "./routes/auth.js";
 import { createDiaryRoute } from "./routes/diary.js";
 import { createConfirmRoute } from "./routes/confirm.js";
 import { createPluginsRoute } from "./routes/plugins.js";
+import { createSystemRoute } from "./routes/system.js";
 import { createCheckpointsRoute } from "./routes/checkpoints.js";
 import { createCommandsRoute } from "./routes/commands.js";
 import { createServerIdentityRoute } from "./routes/server-identity.js";
@@ -298,6 +303,10 @@ const serverAuthService = createServerAuthService({
 // ── 创建 Hono 实例 ──
 const app = new Hono();
 const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
+
+// 全局安全头 + 请求体大小限制
+app.use("*", secureHeaders());
+app.use("*", bodyLimit({ maxSize: 50 * 1024 * 1024 })); // 50MB
 
 // CORS（默认允许 localhost 开发前端和 production Electron file:// 前端；HANA_CORS_ORIGIN 可收紧到单一来源）+ 鉴权
 const corsAllowedOrigin = process.env.HANA_CORS_ORIGIN;
@@ -599,6 +608,7 @@ app.route("/api", createAuthRoute(engine));
 app.route("/api", createDiaryRoute(engine));
 app.route("/api", createConfirmRoute(confirmStore, engine));
 app.route("/api", createPluginsRoute(engine));
+app.route("/api", createSystemRoute());
 app.route("/api", createCheckpointsRoute(engine));
 app.route("/api", createCommandsRoute(engine));
 app.route("/api", createResourcesRoute(engine));
@@ -636,8 +646,8 @@ app.get("/api/health", async (c) => {
 activeFetch = app.fetch.bind(app);
 
 // 前端日志上报（desktop 端把错误 POST 到 server 写进持久化日志）
-app.post("/api/log", async (c) => {
-  const { level, module, message } = await safeJson(c);
+app.post("/api/log", validateBody(LogBody), async (c) => {
+  const { level, module, message } = c.get("validatedBody");
   if (!message) return c.json({ ok: false });
   const safeModule = redactLogLabel(module || "desktop");
   const safeMessage = redactLogText(message);
@@ -656,8 +666,8 @@ app.get("/api/plan-mode", async (c) => {
     locked: false,
   });
 });
-app.post("/api/plan-mode", async (c) => {
-  const { enabled, mode } = await safeJson(c);
+app.post("/api/plan-mode", validateBody(PlanModeBody), async (c) => {
+  const { enabled, mode } = c.get("validatedBody");
   const result = mode ? engine.setSessionPermissionMode(mode) : engine.setPlanMode(!!enabled);
   return c.json({
     ok: result?.ok !== false,

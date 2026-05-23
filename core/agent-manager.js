@@ -108,8 +108,9 @@ export class AgentManager {
       });
       activeRuntimeReady = true;
     } catch (err) {
-      log.error(`焦点 agent "${this._activeAgentId}" init 失败: ${err.message}`);
-      if (err.stack) log.error(err.stack);
+      const logger = (log && typeof log.error === 'function') ? log : console;
+      logger.error(`焦点 agent "${this._activeAgentId}" init 失败: ${err.message}`);
+      if (err.stack) logger.error(err.stack);
       // 仍然创建实例放入 map，让应用能启动。
       // 关键：必须至少把 config 加载进来，否则 agent.config.models.chat 读不到，
       // 下游会误判为"没配模型"，触发 session 创建跳过 / 记忆系统未启动等连锁崩溃（#414）。

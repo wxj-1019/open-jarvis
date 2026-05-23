@@ -17,6 +17,7 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { PhosphorIcon } from '../ui/PhosphorIcon';
 import { SettingsNav } from './SettingsNav';
 import { Toast } from './Toast';
+import { SystemHealthBanner } from './components/SystemHealthBanner';
 import { AgentTab } from './tabs/AgentTab';
 import { MeTab } from './tabs/MeTab';
 import { InterfaceTab } from './tabs/InterfaceTab';
@@ -242,6 +243,7 @@ export function SettingsContent({
             {!isModal && (
               <h1 className={styles['settings-tab-title']}>{activeTabTitle}</h1>
             )}
+            <SystemHealthBanner />
             <ErrorBoundary region={effectiveActiveTab} resetKeys={[effectiveActiveTab]}>
               <ActiveTab />
             </ErrorBoundary>

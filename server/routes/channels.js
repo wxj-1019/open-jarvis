@@ -17,7 +17,8 @@
 import fs from "fs";
 import path from "path";
 import { Hono } from "hono";
-import { safeJson } from "../hono-helpers.js";
+import { validateBody } from "../utils/validate.js";
+import { ChannelCreateBody, ChannelPhoneModeBody, ChannelMemberBody, ChannelMessageBody, ChannelBookmarkBody, ChannelToggleBody } from "../utils/schemas.js";
 import { debugLog } from "../../lib/debug-log.js";
 import {
   parseChannel,
@@ -311,12 +312,12 @@ export function createChannelsRoute(engine, hub) {
     }
   });
 
-  route.post("/conversations/:id/agent-phone-settings", async (c) => {
+  route.post("/conversations/:id/agent-phone-settings", validateBody(null), async (c) => {
     try {
       const disabled = requirePhoneEnabled(c);
       if (disabled) return disabled;
       const id = c.req.param("id");
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       const settings = normalizePhoneSettingsPayload(body);
       const saved = await writeConversationPhoneSettings(id, settings, c);
       return c.json({ ok: true, ...(saved || settings) });
@@ -336,7 +337,7 @@ export function createChannelsRoute(engine, hub) {
     }
   });
 
-  route.post("/conversations/:id/agent-phone-tool-mode", async (c) => {
+  route.post("/conversations/:id/agent-phone-tool-mode", validateBody(ChannelPhoneModeBody), async (c) => {
     try {
       const disabled = requirePhoneEnabled(c);
       if (disabled) return disabled;
@@ -345,8 +346,8 @@ export function createChannelsRoute(engine, hub) {
         ...DEFAULT_AGENT_PHONE_SETTINGS,
         mode: DEFAULT_AGENT_PHONE_SETTINGS.toolMode,
       }));
-      const body = await safeJson(c);
-      const settings = { ...current, mode: normalizeAgentPhoneToolMode(body.mode) };
+      const { mode } = c.get("validatedBody");
+      const settings = { ...current, mode: normalizeAgentPhoneToolMode(mode) };
       await writeConversationPhoneSettings(id, settings, c);
       return c.json({ ok: true, mode: settings.mode });
     } catch (err) {
@@ -412,11 +413,11 @@ export function createChannelsRoute(engine, hub) {
   });
 
   // ── 创建新频道 ──
-  route.post("/channels", async (c) => {
+  route.post("/channels", validateBody(ChannelCreateBody), async (c) => {
     try {
       const disabled = requirePhoneEnabled(c);
       if (disabled) return disabled;
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       const { name, description, members, intro } = body;
 
       if (!name || typeof name !== "string") {
@@ -492,7 +493,7 @@ export function createChannelsRoute(engine, hub) {
   });
 
   // ── 添加频道成员 ──
-  route.post("/channels/:name/members", async (c) => {
+  route.post("/channels/:name/members", validateBody(ChannelMemberBody), async (c) => {
     try {
       const disabled = requirePhoneEnabled(c);
       if (disabled) return disabled;
@@ -501,7 +502,7 @@ export function createChannelsRoute(engine, hub) {
       if (!filePath) return c.json({ error: "Invalid channel id" }, 400);
       if (!fs.existsSync(filePath)) return c.json({ error: "Channel not found" }, 404);
 
-      const body = await safeJson(c);
+      const body = c.get("validatedBody");
       const memberId = typeof body.memberId === "string" ? body.memberId.trim() : "";
       if (!memberId) return c.json({ error: "memberId is required" }, 400);
 
@@ -563,7 +564,7 @@ export function createChannelsRoute(engine, hub) {
   });
 
   // ── 用户发送消息 ──
-  route.post("/channels/:name/messages", async (c) => {
+  route.post("/channels/:name/messages", validateBody(ChannelMessageBody), async (c) => {
     try {
       const disabled = requirePhoneEnabled(c);
       if (disabled) return disabled;
@@ -571,8 +572,7 @@ export function createChannelsRoute(engine, hub) {
       const filePath = safeChannelPath(name);
       if (!filePath) return c.json({ error: "Invalid channel id" }, 400);
 
-      const reqBody = await safeJson(c);
-      const { body } = reqBody;
+      const { body } = c.get("validatedBody");
 
       if (!body) {
         return c.json({ error: "body is required" }, 400);
@@ -604,7 +604,7 @@ export function createChannelsRoute(engine, hub) {
   });
 
   // ── 更新用户已读 bookmark ──
-  route.post("/channels/:name/read", async (c) => {
+  route.post("/channels/:name/read", validateBody(ChannelBookmarkBody), async (c) => {
     try {
       const disabled = requirePhoneEnabled(c);
       if (disabled) return disabled;
@@ -612,8 +612,7 @@ export function createChannelsRoute(engine, hub) {
       const filePath = safeChannelPath(name);
       if (!filePath) return c.json({ error: "Invalid channel id" }, 400);
 
-      const body = await safeJson(c);
-      const { timestamp } = body;
+      const { timestamp } = c.get("validatedBody");
 
       if (!timestamp) {
         return c.json({ error: "timestamp is required" }, 400);
@@ -648,9 +647,8 @@ export function createChannelsRoute(engine, hub) {
 
   // ── 频道开关（唯一入口：engine.setChannelsEnabled）──
   // 写 preferences + 联动 ChannelRouter start/stop 由 config-coordinator 统一处理。
-  route.post("/channels/toggle", async (c) => {
-    const body = await safeJson(c);
-    const { enabled } = body;
+  route.post("/channels/toggle", validateBody(ChannelToggleBody), async (c) => {
+    const { enabled } = c.get("validatedBody");
     await engine.setChannelsEnabled(!!enabled);
     debugLog()?.log("api", `POST /channels/toggle enabled=${!!enabled}`);
     return c.json({ ok: true, enabled: !!enabled });
