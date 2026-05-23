@@ -870,5 +870,65 @@ export function createAgentsRoute(engine) {
     }
   });
 
+  // GET /api/agents/:id/backups - 获取备份历史列表
+  route.get("/agents/:id/backups", async (c) => {
+    const id = c.req.param("id");
+    if (!validateId(id)) {
+      return c.json({ error: "无效的助手ID" }, 400);
+    }
+
+    try {
+      const backupDir = path.join(engine.agentsDir, ".backups");
+      
+      if (!fsSync.existsSync(backupDir)) {
+        return c.json({ backups: [] });
+      }
+
+      const files = fsSync.readdirSync(backupDir)
+        .filter(f => f.startsWith(`agent-backup-${id}-`) && f.endsWith('.zip'))
+        .map(f => {
+          const filePath = path.join(backupDir, f);
+          const stats = fsSync.statSync(filePath);
+          return {
+            filename: f,
+            agentId: id,
+            agentName: id,
+            size: stats.size,
+            createdAt: stats.mtime.toISOString(),
+            checksum: "N/A",
+          };
+        })
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      return c.json({ backups: files });
+    } catch (err) {
+      return c.json({ error: err.message }, 500);
+    }
+  });
+
+  // DELETE /api/agents/:id/backups/:filename - 删除备份
+  route.delete("/agents/:id/backups/:filename", async (c) => {
+    const id = c.req.param("id");
+    const filename = c.req.param("filename");
+    
+    if (!validateId(id)) {
+      return c.json({ error: "无效的助手ID" }, 400);
+    }
+
+    try {
+      const backupDir = path.join(engine.agentsDir, ".backups");
+      const fullPath = path.join(backupDir, filename);
+      
+      if (!fsSync.existsSync(fullPath)) {
+        return c.json({ error: "备份文件不存在" }, 404);
+      }
+
+      fsSync.unlinkSync(fullPath);
+      return c.json({ success: true });
+    } catch (err) {
+      return c.json({ error: err.message }, 500);
+    }
+  });
+
   return route;
 }
