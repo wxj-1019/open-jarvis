@@ -226,22 +226,41 @@ export class ComputerHost {
       providerAction.snapshotElement = snapshotElement;
     }
     
-    const result = await provider.performAction(ctx, lease, providerAction);
-    
-    // 操作后截图验证
-    if (beforeScreenshot) {
-      const afterScreenshot = await provider.getAppState(ctx, lease);
-      const verified = this._verifyActionEffect(beforeScreenshot, afterScreenshot, action);
-      if (!verified) {
-        throw computerUseError(
-          COMPUTER_USE_ERRORS.ACTION_VERIFICATION_FAILED,
-          `Action did not produce expected effect: ${action?.type}`,
-          { action: action?.type, leaseId: lease.leaseId },
-        );
+    // 操作级重试（最多 3 次）
+    let lastError = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const result = await provider.performAction(ctx, lease, providerAction);
+        
+        // 操作验证
+        if (beforeScreenshot) {
+          const afterScreenshot = await provider.getAppState(ctx, lease);
+          const verified = this._verifyActionEffect(beforeScreenshot, afterScreenshot, action);
+          if (!verified) {
+            throw computerUseError(
+              COMPUTER_USE_ERRORS.ACTION_VERIFICATION_FAILED,
+              `Action did not produce expected effect: ${action?.type}`,
+              { action: action?.type, leaseId: lease.leaseId, attempt },
+            );
+          }
+        }
+        
+        return result;
+      } catch (err) {
+        lastError = err;
+        // 仅对可重试错误进行重试
+        if (err.code === COMPUTER_USE_ERRORS.ACTION_VERIFICATION_FAILED ||
+            err.code === COMPUTER_USE_ERRORS.PROVIDER_CRASHED) {
+          if (attempt < 2) { // 0, 1, 2 = 3 次尝试
+            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt)));
+            continue;
+          }
+        }
+        throw err;
       }
     }
     
-    return result;
+    throw lastError;
   }
 
   _verifyActionEffect(before, after, action) {
