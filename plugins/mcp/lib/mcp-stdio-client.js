@@ -181,16 +181,26 @@ export class McpStdioClient {
     this.process = null;
     this._closed = true;
     try { proc.stdin.end(); } catch { /* already closed */ }
+    
     await new Promise((resolve) => {
       const timer = setTimeout(() => {
         try { proc.kill("SIGTERM"); } catch { /* process already exited */ }
-        resolve();
+        // SIGTERM 后继续等待进程实际退出
+        proc.once("exit", () => resolve());
+        // 如果 SIGTERM 后 3 秒仍未退出，强制杀死
+        setTimeout(() => {
+          try { proc.kill("SIGKILL"); } catch {}
+          proc.once("exit", () => resolve());
+          // 最后兜底，无论进程是否退出都 resolve
+          setTimeout(resolve, 1000);
+        }, 3000);
       }, 2_000);
       proc.once("exit", () => {
         clearTimeout(timer);
         resolve();
       });
     });
+    
     // Reject any remaining pending requests after process exit
     for (const pending of this._pending.values()) {
       pending.reject(new Error("MCP client stopped"));

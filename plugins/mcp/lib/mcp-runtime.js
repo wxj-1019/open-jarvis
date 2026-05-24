@@ -104,10 +104,23 @@ export class McpRuntime {
         const id = sanitizeId(entry.id || entry.name || "workspace-connector");
         if (existingIds.has(id)) continue;
 
+        // 安全白名单：仅允许安全的环境变量注入
+        const ALLOWED_ENV_VARS = new Set([
+          'PATH', 'HOME', 'USER', 'TEMP', 'TMP', 'APPDATA', 'LOCALAPPDATA',
+          'PROGRAMFILES', 'PROGRAMDATA', 'SYSTEMROOT', 'WINDIR',
+          'NODE_PATH', 'NPM_CONFIG_PREFIX',
+        ]);
+
         const env = { ...(entry.env || {}) };
         for (const [key, val] of Object.entries(env)) {
           if (typeof val === "string") {
-            env[key] = val.replace(/\$\{env:([^}]+)\}/g, (_, varName) => process.env[varName] || "");
+            env[key] = val.replace(/\$\{env:([^}]+)\}/g, (_, varName) => {
+              if (!ALLOWED_ENV_VARS.has(varName)) {
+                moduleLog?.warn?.(`Blocked unsafe env var: ${varName}`);
+                return "";
+              }
+              return process.env[varName] || "";
+            });
           }
         }
 
@@ -195,9 +208,10 @@ export class McpRuntime {
   }
 
   addConnector(input) {
+    const sanitized = sanitizeConnectorConfig(input);
     const config = this.getConfig();
-    const id = uniqueConnectorId(config.connectors, input?.id || input?.name || input?.url || input?.command || "connector");
-    const connector = normalizeMcpConfig({ connectors: [{ ...input, id }] }).connectors[0];
+    const id = uniqueConnectorId(config.connectors, sanitized?.id || sanitized?.name || sanitized?.url || sanitized?.command || "connector");
+    const connector = normalizeMcpConfig({ connectors: [{ ...sanitized, id }] }).connectors[0];
     validateConnector(connector);
     config.connectors.push(connector);
     const saved = this.saveConfig(config);
@@ -210,12 +224,13 @@ export class McpRuntime {
   }
 
   async updateConnector(id, patch) {
+    const sanitizedPatch = sanitizeConnectorConfig(patch);
     const config = this.getConfig();
     const index = config.connectors.findIndex((s) => s.id === id);
     if (index === -1) throw new Error(`MCP connector "${id}" not found`);
     const existing = config.connectors[index];
-    const unmaskedPatch = unmaskConnectorPatch(existing, patch || {});
-    const next = normalizeMcpConfig({ connectors: [{ ...existing, ...unmaskedPatch, id: existing.id, tools: patch?.tools || existing.tools }] }).connectors[0];
+    const unmaskedPatch = unmaskConnectorPatch(existing, sanitizedPatch || {});
+    const next = normalizeMcpConfig({ connectors: [{ ...existing, ...unmaskedPatch, id: existing.id, tools: sanitizedPatch?.tools || existing.tools }] }).connectors[0];
     validateConnector(next);
     const changedClient = connectorClientFingerprint(next) !== connectorClientFingerprint(existing);
     config.connectors[index] = next;
@@ -452,8 +467,11 @@ export class McpRuntime {
   }
 
   async _refreshCachedResourcesText() {
+    const version = ++this._connectorManager._resourceRefreshVersion;
     try {
       const resources = await this.getAgentContextResources();
+      // 防止并发竞态：如果期间有更新的调用，丢弃本结果
+      if (version !== this._connectorManager._resourceRefreshVersion) return this._cachedResourcesText;
       if (resources.length > 0) {
         this._cachedResourcesText = resources
           .map((r) => `[${r.source}:${r.name}]${r.description ? ` — ${r.description}` : ""}\n${r.text}`)
@@ -462,10 +480,15 @@ export class McpRuntime {
         this._cachedResourcesText = "";
       }
     } catch {
+      if (version !== this._connectorManager._resourceRefreshVersion) return this._cachedResourcesText;
       this._cachedResourcesText = "";
     }
     // 通知 Hub 资源缓存已更新（携带文本避免竞态）
-    this.ctx.bus?.emit?.("mcp:resources-cached", { text: this._cachedResourcesText });
+    if (this.ctx.bus) {
+      this.ctx.bus.emit({ type: "mcp:resources-cached", text: this._cachedResourcesText });
+    } else {
+      this.ctx.log.debug?.("MCP: bus not ready, resources-cached event skipped");
+    }
     return this._cachedResourcesText;
   }
 

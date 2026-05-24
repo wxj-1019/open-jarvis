@@ -240,10 +240,22 @@ export class McpStreamableHttpClient {
         err.status === 404 &&
         this.sessionId
       ) {
-        this.sessionId = "";
-        this._initialized = false;
-        await this.initialize();
-        this._initialized = true;
+        // 防止并发 404 导致双重初始化
+        if (this._reinitializing) {
+          // 等待其他请求完成初始化后重试
+          await new Promise(resolve => setTimeout(resolve, 100));
+          return this._request(method, params, { initializing: false, retryOnSessionExpired: false });
+        }
+        
+        this._reinitializing = true;
+        try {
+          this.sessionId = "";
+          this._initialized = false;
+          await this.initialize();
+          this._initialized = true;
+        } finally {
+          this._reinitializing = false;
+        }
         return this._request(method, params, { initializing: false, retryOnSessionExpired: false });
       }
       throw err;
