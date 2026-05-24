@@ -1362,8 +1362,9 @@ export class Agent {
     }
 
     // Calendar & Email Tools Guidance
-    const hasCalendarTools = this._availableTools?.some((t) => t.name?.includes("calendar") || t.name?.includes("event"));
-    const hasEmailTools = this._availableTools?.some((t) => t.name?.includes("mail") || t.name?.includes("email") || t.name?.includes("gmail"));
+    const tools = this.tools;
+    const hasCalendarTools = tools?.some((t) => t.name?.includes("calendar") || t.name?.includes("event"));
+    const hasEmailTools = tools?.some((t) => t.name?.includes("mail") || t.name?.includes("email") || t.name?.includes("gmail"));
 
     if (hasCalendarTools || hasEmailTools) {
       parts.push(isZh
