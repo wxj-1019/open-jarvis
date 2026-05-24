@@ -32,6 +32,7 @@ import { createNotifyTool } from "../lib/tools/notify-tool.js";
 import { createUpdateSettingsTool } from "../lib/tools/update-settings-tool.js";
 import { createSubagentTool } from "../lib/tools/subagent-tool.js";
 import { writeSubagentSessionMeta } from "../lib/subagent-executor-metadata.js";
+import { createPlanExecuteTool } from "../lib/planner/plan-execute-tool.js";
 import { createCheckDeferredTool } from "../lib/tools/check-deferred-tool.js";
 import { createWaitTool } from "../lib/tools/wait-tool.js";
 import { createStopTaskTool } from "../lib/tools/stop-task-tool.js";
@@ -182,6 +183,7 @@ export class Agent {
     this._stopTaskTool = null;
     this._currentStatusTool = null;
     this._terminalTool = null;
+    this._planExecuteTool = null;
 
     /**
      * 外部回调注入（由 AgentManager._createAgentInstance 填充）。
@@ -570,6 +572,20 @@ export class Agent {
       persistSubagentSessionMeta: (sessionPath, meta) => writeSubagentSessionMeta(sessionPath, meta),
     });
 
+    // 11.5 plan_execute 工具（多步自主规划）
+    this._planExecuteTool = createPlanExecuteTool({
+      executeIsolated: (prompt, opts) => {
+        if (!this._cb?.executeIsolated) throw new Error("plan_execute 调用失败：engine 未初始化");
+        return this._cb.executeIsolated(prompt, opts);
+      },
+      getDeferredStore: () => this._cb?.getDeferredResults?.(),
+      getSessionPath: () => this._cb?.getCurrentSessionPath?.(),
+      getParentCwd: () => this._cb?.getCwd?.() || null,
+      currentAgentId: this.channelsDir && this.agentsDir ? this.id : undefined,
+      agentDir: this.agentDir,
+      emitEvent: (event, sp) => this._cb?.emitEvent?.(event, sp),
+    });
+
     // 12. 组装 system prompt（按 master 构建，与 per-session 开关解耦）
     log(`  [agent] 9. buildSystemPrompt...`);
     this._systemPrompt = this.buildSystemPrompt({ forceMemoryEnabled: this._memoryMasterEnabled });
@@ -724,6 +740,7 @@ export class Agent {
       this._stopTaskTool,
       this._updateSettingsTool,
       this._subagentTool,
+      this._planExecuteTool,
       this._checkDeferredTool,
       this._currentStatusTool,
       this._terminalTool,
@@ -1069,6 +1086,34 @@ export class Agent {
         "This helps the user track your progress. Simple single-step tasks (answering questions, single lookups, simple edits) do not need todo_write."
     );
 
+    // 多步自主规划引导（plan_execute 工具使用时机）
+    parts.push(isZh
+      ? "\n## 多步自主规划\n\n" +
+        "对于复杂目标（多步骤、多文件、预计需要多个子任务协同完成），使用 plan_execute 工具自动分解和编排执行。\n\n" +
+        "**何时使用 plan_execute（而非手动 todo_write）：**\n" +
+        "- 目标涉及 3+ 个独立步骤，且步骤间有先后依赖\n" +
+        "- 需要创建多个文件或修改多个模块\n" +
+        "- 任务执行时间预计超过 5 分钟\n" +
+        "- 你想让子 Agent 自动完成整个流程，自己继续和用户对话\n\n" +
+        "**何时仍用 todo_write：**\n" +
+        "- 你要自己逐步执行并观察每步结果\n" +
+        "- 步骤间需要用户确认\n" +
+        "- 只有 1-2 个简单步骤\n\n" +
+        "plan_execute 是 fire-and-forget：调用后立即返回 taskId，后台自动分解目标→生成计划→逐步执行→结果回注对话。"
+      : "\n## Multi-Step Autonomous Planning\n\n" +
+        "For complex goals (multi-step, multi-file, requiring coordinated sub-tasks), use the plan_execute tool for automatic decomposition and orchestration.\n\n" +
+        "**When to use plan_execute (instead of manual todo_write):**\n" +
+        "- Goal involves 3+ independent steps with dependencies between them\n" +
+        "- Requires creating multiple files or modifying multiple modules\n" +
+        "- Estimated execution time exceeds 5 minutes\n" +
+        "- You want sub-agents to handle the entire workflow while you continue the conversation\n\n" +
+        "**When to still use todo_write:**\n" +
+        "- You want to execute steps yourself and observe each result\n" +
+        "- Steps require user confirmation between them\n" +
+        "- Only 1-2 simple steps\n\n" +
+        "plan_execute is fire-and-forget: returns a taskId immediately, then auto-decomposes the goal → generates a plan → executes steps → injects results back into the conversation."
+    );
+
     // 经验库引导。经验是独立能力：缺省关闭，开启后才把规则写入新 session 的 prompt。
     if (experienceEnabled) {
       parts.push(isZh
@@ -1314,6 +1359,29 @@ export class Agent {
         isZh ? "# MCP 连接器资源" : "# MCP Connector Resources",
         mcpResourcesText
       ));
+    }
+
+    // Calendar & Email Tools Guidance
+    const hasCalendarTools = this._availableTools?.some((t) => t.name?.includes("calendar") || t.name?.includes("event"));
+    const hasEmailTools = this._availableTools?.some((t) => t.name?.includes("mail") || t.name?.includes("email") || t.name?.includes("gmail"));
+
+    if (hasCalendarTools || hasEmailTools) {
+      parts.push(isZh
+        ? "\n## 日历和邮件\n\n" +
+          "你已接入日历和/或邮件服务。你可以：\n" +
+          "- 查看用户的日程安排和 upcoming events\n" +
+          "- 创建、修改、删除日历事件\n" +
+          "- 读取邮件、发送邮件、管理收件箱\n" +
+          "- 主动提醒用户即将到来的会议\n" +
+          "使用相关工具时,先确认操作的影响范围（如：发送邮件前让用户确认内容）。"
+        : "\n## Calendar and Email\n\n" +
+          "You are connected to calendar and/or email services. You can:\n" +
+          "- View the user's schedule and upcoming events\n" +
+          "- Create, modify, delete calendar events\n" +
+          "- Read emails, send emails, manage inbox\n" +
+          "- Proactively remind the user of upcoming meetings\n" +
+          "When using related tools, confirm the scope of operations before proceeding (e.g., let user confirm email content before sending)."
+      );
     }
 
     // 日期时间（尊重用户时区偏好，fallback 到系统时区）
