@@ -8,7 +8,10 @@ const MCP_PRESETS = [
     transport: "stdio",
     command: "npx",
     args: ["-y", "@modelcontextprotocol/server-google-calendar"],
-    envSchema: {},
+    envSchema: {
+      GOOGLE_CLIENT_ID: { label: "Google Client ID", required: true, type: "string", secret: false },
+      GOOGLE_CLIENT_SECRET: { label: "Google Client Secret", required: true, type: "string", secret: true },
+    },
     oauthScopes: [
       "https://www.googleapis.com/auth/calendar.readonly",
       "https://www.googleapis.com/auth/calendar.events",
@@ -25,7 +28,10 @@ const MCP_PRESETS = [
     transport: "stdio",
     command: "npx",
     args: ["-y", "@modelcontextprotocol/server-gmail"],
-    envSchema: {},
+    envSchema: {
+      GOOGLE_CLIENT_ID: { label: "Google Client ID", required: true, type: "string", secret: false },
+      GOOGLE_CLIENT_SECRET: { label: "Google Client Secret", required: true, type: "string", secret: true },
+    },
     oauthScopes: [
       "https://www.googleapis.com/auth/gmail.readonly",
       "https://www.googleapis.com/auth/gmail.send",
@@ -43,7 +49,11 @@ const MCP_PRESETS = [
     transport: "stdio",
     command: "npx",
     args: ["-y", "@microsoft/mcp-server-mail"],
-    envSchema: {},
+    envSchema: {
+      AZURE_CLIENT_ID: { label: "Azure Client ID", required: true, type: "string", secret: false },
+      AZURE_CLIENT_SECRET: { label: "Azure Client Secret", required: true, type: "string", secret: true },
+      AZURE_TENANT_ID: { label: "Azure Tenant ID", required: true, type: "string", secret: false },
+    },
     oauthScopes: [
       "Mail.Read",
       "Mail.Send",
@@ -61,7 +71,11 @@ const MCP_PRESETS = [
     transport: "stdio",
     command: "npx",
     args: ["-y", "@microsoft/mcp-server-calendar"],
-    envSchema: {},
+    envSchema: {
+      AZURE_CLIENT_ID: { label: "Azure Client ID", required: true, type: "string", secret: false },
+      AZURE_CLIENT_SECRET: { label: "Azure Client Secret", required: true, type: "string", secret: true },
+      AZURE_TENANT_ID: { label: "Azure Tenant ID", required: true, type: "string", secret: false },
+    },
     oauthScopes: [
       "Calendars.Read",
       "Calendars.ReadWrite",

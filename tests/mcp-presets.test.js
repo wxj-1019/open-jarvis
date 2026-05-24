@@ -67,6 +67,27 @@ describe("mcp-presets", () => {
     });
   });
 
+  describe("getPresetsByCategory", () => {
+    it("returns calendar presets", () => {
+      const presets = getPresetsByCategory("calendar");
+      expect(Array.isArray(presets)).toBe(true);
+      expect(presets.length).toBe(2);
+      expect(presets.every((p) => p.category === "calendar")).toBe(true);
+    });
+
+    it("returns email presets", () => {
+      const presets = getPresetsByCategory("email");
+      expect(Array.isArray(presets)).toBe(true);
+      expect(presets.length).toBe(2);
+      expect(presets.every((p) => p.category === "email")).toBe(true);
+    });
+
+    it("returns empty array for unknown category", () => {
+      const presets = getPresetsByCategory("unknown");
+      expect(presets).toEqual([]);
+    });
+  });
+
   describe("preset structure", () => {
     it("each preset has all required fields", () => {
       const presets = getMcpPresets();
@@ -75,6 +96,28 @@ describe("mcp-presets", () => {
           expect(preset).toHaveProperty(field);
           expect(preset[field]).toBeDefined();
         }
+      }
+    });
+  });
+
+  describe("envSchema content", () => {
+    it("Google presets have GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET", () => {
+      const googlePresets = getMcpPresets().filter((p) => p.id.startsWith("google") || p.id === "gmail");
+      for (const preset of googlePresets) {
+        expect(preset.envSchema).toHaveProperty("GOOGLE_CLIENT_ID");
+        expect(preset.envSchema).toHaveProperty("GOOGLE_CLIENT_SECRET");
+        expect(preset.envSchema.GOOGLE_CLIENT_ID.required).toBe(true);
+        expect(preset.envSchema.GOOGLE_CLIENT_SECRET.secret).toBe(true);
+      }
+    });
+
+    it("Outlook presets have AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID", () => {
+      const outlookPresets = getMcpPresets().filter((p) => p.id.startsWith("outlook"));
+      for (const preset of outlookPresets) {
+        expect(preset.envSchema).toHaveProperty("AZURE_CLIENT_ID");
+        expect(preset.envSchema).toHaveProperty("AZURE_CLIENT_SECRET");
+        expect(preset.envSchema).toHaveProperty("AZURE_TENANT_ID");
+        expect(preset.envSchema.AZURE_CLIENT_SECRET.secret).toBe(true);
       }
     });
   });
