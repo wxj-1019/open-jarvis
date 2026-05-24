@@ -101,3 +101,25 @@ export interface McpConnectorInput {
   oauthClientId?: string;
   oauthClientSecret?: string;
 }
+
+export interface McpPreset {
+  id: string;
+  name: string;
+  description: string;
+  category: "calendar" | "email" | "productivity" | "database" | "filesystem" | "other";
+  icon: string;
+  transport: McpTransport;
+  command: string;
+  args: string[];
+  envSchema: Record<string, EnvFieldSchema>;
+  authType: McpAuthType;
+  autoStart?: boolean;
+}
+
+export interface EnvFieldSchema {
+  label: string;
+  required: boolean;
+  type: "string" | "number" | "boolean";
+  secret?: boolean;
+  placeholder?: string;
+}
