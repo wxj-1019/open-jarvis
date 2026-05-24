@@ -188,3 +188,193 @@
         transition-duration: 0.01ms !important;
     }
 }
+
+/* ========================================
+   Apple Liquid Glass 风格新增动画
+   ======================================== */
+
+/* ── 弹簧缩放进入（模态、卡片进场）──
+   从 0.92 缩放到 1，配合 spring 缓动产生轻柔回弹 */
+@keyframes hana-spring-in {
+    from {
+        opacity: 0;
+        transform: scale(0.92) translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes hana-spring-out {
+    from {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.96) translateY(-4px);
+    }
+}
+
+/* ── 弹性边界回弹（popover、tooltip、dropdown）──
+   超过终点再回弹，产生明显的"Q弹"感 */
+@keyframes hana-elastic-bounce {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* ── 平滑展开（手风琴、侧边栏展开）──
+   从 0 高度平滑展开，配合 spring-gentle 缓动 */
+@keyframes hana-smooth-expand {
+    from {
+        max-height: 0;
+        opacity: 0;
+        transform: scaleY(0.98);
+    }
+    to {
+        max-height: 2000px;
+        opacity: 1;
+        transform: scaleY(1);
+    }
+}
+
+@keyframes hana-smooth-collapse {
+    from {
+        max-height: 2000px;
+        opacity: 1;
+        transform: scaleY(1);
+    }
+    to {
+        max-height: 0;
+        opacity: 0;
+        transform: scaleY(0.98);
+    }
+}
+
+/* ── 连续脉冲（呼吸灯、加载指示器）──
+   比原有 hana-pulse 更柔和，适合持续状态指示 */
+@keyframes hana-continuous-pulse {
+    0%, 100% {
+        opacity: 0.6;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.02);
+    }
+}
+
+/* ── 脉冲光环（语音按钮、状态指示器）──
+   从中心向外扩散的 box-shadow 脉冲 */
+@keyframes hana-pulse-ring {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(var(--accent-rgb, 83 125 150), 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(var(--accent-rgb, 83 125 150), 0);
+    }
+}
+
+/* ── 形状变形（按钮状态切换、图标 morph）── */
+@keyframes hana-morph {
+    0% {
+        transform: scale(1) rotate(0deg);
+        border-radius: var(--radius-md);
+    }
+    50% {
+        transform: scale(0.95) rotate(2deg);
+        border-radius: var(--radius-lg);
+    }
+    100% {
+        transform: scale(1) rotate(0deg);
+        border-radius: var(--radius-md);
+    }
+}
+
+/* ── 视差位移（滚动时背景/装饰元素微动）── */
+@keyframes hana-parallax-shift {
+    from {
+        transform: translateY(0) scale(1);
+        opacity: 0.8;
+    }
+    to {
+        transform: translateY(-20px) scale(1.05);
+        opacity: 0.4;
+    }
+}
+
+/* ── 光泽扫过（按钮 hover 高光、卡片 shimmer）──
+   从左侧扫到右侧的渐变高光，模拟玻璃反光 */
+@keyframes hana-shimmer {
+    0% {
+        background-position: -200% center;
+    }
+    100% {
+        background-position: 200% center;
+    }
+}
+
+/* ── 轻微晃动（错误提示、注意力引导）── */
+@keyframes hana-wiggle {
+    0%, 100% { transform: rotate(0deg); }
+    20% { transform: rotate(-2deg); }
+    40% { transform: rotate(2deg); }
+    60% { transform: rotate(-1deg); }
+    80% { transform: rotate(1deg); }
+}
+
+/* ── 果冻弹跳（成功提示、庆祝动画）── */
+@keyframes hana-jelly-bounce {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.15);
+        opacity: 1;
+    }
+    70% {
+        transform: scale(0.95);
+    }
+    85% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* ── 玻璃模糊渐显（毛玻璃遮罩进场）── */
+@keyframes hana-glass-fade {
+    from {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+        -webkit-backdrop-filter: blur(0px);
+    }
+    to {
+        opacity: 1;
+        backdrop-filter: blur(var(--glass-blur, 20px));
+        -webkit-backdrop-filter: blur(var(--glass-blur, 20px));
+    }
+}
+
+/* ── 下边缘模糊（滚动时顶部导航栏效果）── */
+@keyframes hana-scroll-edge-blur {
+    from {
+        backdrop-filter: blur(0px) saturate(100%);
+        -webkit-backdrop-filter: blur(0px) saturate(100%);
+        box-shadow: none;
+    }
+    to {
+        backdrop-filter: blur(var(--glass-blur-subtle, 12px)) saturate(var(--glass-saturate, 180%));
+        -webkit-backdrop-filter: blur(var(--glass-blur-subtle, 12px)) saturate(var(--glass-saturate, 180%));
+        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+    }
+}

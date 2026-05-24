@@ -45,3 +45,19 @@
 .hana-high-performance .context-menu:hover {
     transform: none;
 }
+
+/* ── 自动性能降级：帧率检测触发 ──
+   当 JS 检测到持续低帧率时，自动给 body 添加 .hana-auto-performance 类 */
+.hana-auto-performance .float-card,
+.hana-auto-performance .context-menu,
+.hana-auto-performance .hana-toast,
+.hana-auto-performance .hana-shimmer::after,
+.hana-auto-performance .hana-skeleton::after,
+.hana-auto-performance .hana-spinner {
+    animation: none !important;
+}
+.hana-auto-performance .hana-spring-transition,
+.hana-auto-performance .hana-bounce-transition,
+.hana-auto-performance .hana-gentle-transition {
+    transition-duration: 0.01ms !important;
+}

@@ -1,0 +1,241 @@
+/* ============================================================
+   Apple Liquid Glass 主题切换动画
+   ------------------------------------------------------------
+   平滑过渡效果、主题切换反馈、自定义主题兼容。
+   ============================================================ */
+
+/* ── 主题切换平滑过渡 ── */
+
+/* 核心元素添加主题过渡动画（性能优化：避免全局选择器） */
+html,
+body,
+.hana-glass,
+.hana-glass-subtle,
+.float-card,
+.context-menu,
+.hana-toast,
+.browser-floating-card,
+.hana-warning-box,
+.navbar,
+.sidebar,
+input,
+textarea,
+select,
+button {
+    transition-property: background-color, border-color, color, box-shadow;
+    transition-duration: 0.3s;
+    transition-timing-function: var(--ease-standard, cubic-bezier(0.2, 0, 0, 1));
+}
+
+/* 排除不需要过渡的元素 */
+.hana-no-theme-transition,
+.hana-no-theme-transition *,
+canvas,
+video,
+img,
+svg {
+    transition-property: none !important;
+}
+
+/* ── 主题切换时的视觉反馈 ── */
+
+/* 主题切换指示器（可选，用于 UI 提示） */
+.theme-switcher {
+    position: relative;
+    overflow: hidden;
+}
+
+.theme-switcher::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        circle at var(--click-x, 50%) var(--click-y, 50%),
+        rgba(255, 255, 255, 0.3) 0%,
+        transparent 70%
+    );
+    opacity: 0;
+    transform: scale(0);
+    pointer-events: none;
+}
+
+.theme-switcher.switching::after {
+    animation: theme-switch-ripple 0.6s var(--ease-standard) forwards;
+}
+
+@keyframes theme-switch-ripple {
+    0% {
+        opacity: 1;
+        transform: scale(0);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(2);
+    }
+}
+
+/* ── 暗色主题深度优化 ── */
+
+/* 暗色主题毛玻璃增强对比度 */
+html[data-theme="midnight"] .hana-glass,
+html[data-theme="midnight-contrast"] .hana-glass {
+    background: rgba(28, 28, 30, 0.78);
+    backdrop-filter: blur(var(--glass-blur, 20px)) saturate(160%);
+    -webkit-backdrop-filter: blur(var(--glass-blur, 20px)) saturate(160%);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+html[data-theme="midnight"] .hana-glass-subtle,
+html[data-theme="midnight-contrast"] .hana-glass-subtle {
+    background: rgba(28, 28, 30, 0.65);
+    backdrop-filter: blur(var(--glass-blur-subtle, 12px)) saturate(150%);
+    -webkit-backdrop-filter: blur(var(--glass-blur-subtle, 12px)) saturate(150%);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* 暗色主题阴影增强（多层 + 微弱边框） */
+html[data-theme="midnight"] .hana-shadow-xs,
+html[data-theme="midnight-contrast"] .hana-shadow-xs {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
+html[data-theme="midnight"] .hana-shadow-sm,
+html[data-theme="midnight-contrast"] .hana-shadow-sm {
+    box-shadow: 0 1px 3px -1px rgba(0, 0, 0, 0.35), 0 1px 2px -1px rgba(0, 0, 0, 0.25),
+                0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+html[data-theme="midnight"] .hana-shadow-md,
+html[data-theme="midnight-contrast"] .hana-shadow-md {
+    box-shadow: 0 4px 6px -2px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.25),
+                0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+html[data-theme="midnight"] .hana-shadow-lg,
+html[data-theme="midnight-contrast"] .hana-shadow-lg {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.45), 0 4px 6px -3px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+html[data-theme="midnight"] .hana-shadow-xl,
+html[data-theme="midnight-contrast"] .hana-shadow-xl {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -5px rgba(0, 0, 0, 0.35),
+                0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+html[data-theme="midnight"] .hana-shadow-2xl,
+html[data-theme="midnight-contrast"] .hana-shadow-2xl {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.55), 0 12px 20px -8px rgba(0, 0, 0, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* 暗色主题渐变边框高光（更明显） */
+html[data-theme="midnight"] .float-card::before,
+html[data-theme="midnight-contrast"] .float-card::before,
+html[data-theme="midnight"] .context-menu::before,
+html[data-theme="midnight-contrast"] .context-menu::before,
+html[data-theme="midnight"] .hana-toast::before,
+html[data-theme="midnight-contrast"] .hana-toast::before {
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.15) 0%,
+        rgba(255, 255, 255, 0.06) 50%,
+        rgba(255, 255, 255, 0.02) 100%
+    );
+}
+
+/* 暗色主题输入框边框增强 */
+html[data-theme="midnight"] input,
+html[data-theme="midnight-contrast"] input,
+html[data-theme="midnight"] textarea,
+html[data-theme="midnight-contrast"] textarea,
+html[data-theme="midnight"] select,
+html[data-theme="midnight-contrast"] select {
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+html[data-theme="midnight"] input:focus,
+html[data-theme="midnight-contrast"] input:focus,
+html[data-theme="midnight"] textarea:focus,
+html[data-theme="midnight-contrast"] textarea:focus,
+html[data-theme="midnight"] select:focus,
+html[data-theme="midnight-contrast"] select:focus {
+    border-color: rgba(var(--accent-rgb, 83 125 150), 0.6);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb, 83 125 150), 0.15);
+}
+
+/* ── 自定义主题兼容性保障 ── */
+
+/* 确保自定义主题变量不会被覆盖 */
+.hana-custom-theme {
+    /* 标记自定义主题，跳过自动主题同步 */
+}
+
+/* 自定义主题降级方案：确保必要变量存在 */
+.hana-custom-theme.hana-glass,
+.hana-custom-theme .hana-glass {
+    background: var(--custom-glass-bg, var(--glass-bg, rgba(255, 255, 255, 0.72)));
+    backdrop-filter: blur(var(--custom-glass-blur, var(--glass-blur, 20px))) 
+                   saturate(var(--custom-glass-saturate, var(--glass-saturate, 180%)));
+    -webkit-backdrop-filter: blur(var(--custom-glass-blur, var(--glass-blur, 20px))) 
+                            saturate(var(--custom-glass-saturate, var(--glass-saturate, 180%)));
+}
+
+/* 防止主题切换时闪烁 */
+html.hana-theme-switching *,
+html.hana-theme-switching *::before,
+html.hana-theme-switching *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+}
+
+/* ── 主题特定动画优化 ── */
+
+/* 暗色主题减少 shimmer 强度（避免过度反光） */
+html[data-theme="midnight"] .hana-shimmer::after,
+html[data-theme="midnight-contrast"] .hana-shimmer::after {
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.15),
+        transparent
+    );
+}
+
+html[data-theme="midnight"] .beta-badge::after,
+html[data-theme="midnight-contrast"] .beta-badge::after {
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.15),
+        transparent
+    );
+}
+
+/* 暗色主题成功状态颜色调整（避免过于刺眼） */
+html[data-theme="midnight"] .save-success::after,
+html[data-theme="midnight-contrast"] .save-success::after {
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(34, 197, 94, 0.12),
+        transparent
+    );
+}
+
+html[data-theme="midnight"] .success-dot,
+html[data-theme="midnight-contrast"] .success-dot {
+    background: rgba(34, 197, 94, 0.85);
+}
+
+/* 暗色主题错误状态颜色调整 */
+html[data-theme="midnight"] .input-error,
+html[data-theme="midnight-contrast"] .input-error {
+    box-shadow: 0 0 0 3px rgba(var(--error-rgb, 239 68 68), 0.15);
+}
+
+html[data-theme="midnight"] .error-toast,
+html[data-theme="midnight-contrast"] .error-toast {
+    background: rgba(var(--error-rgb, 239 68 68), 0.15);
+    border-color: rgba(var(--error-rgb, 239 68 68), 0.35);
+}

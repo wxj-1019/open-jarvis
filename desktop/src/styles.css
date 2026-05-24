@@ -24,9 +24,9 @@
     --radius-md: 10px;
     --radius-lg: 16px;
 
-    /* 主题可覆盖的抽象 token（默认值和现有视觉一致；主题 CSS 可 override） */
-    --radius-input: 4px;        /* input / select widget / textarea / ghost button / media dropdown */
-    --radius-card: 10px;        /* SettingsSection body / skill-list-item 首尾 / tool-caps 首尾 */
+    /* 主题可覆盖的抽象 token（棉花糖风格大圆角；主题 CSS 可 override） */
+    --radius-input: 12px;       /* input / select widget / textarea / ghost button / media dropdown */
+    --radius-card: 20px;        /* SettingsSection body / skill-list-item 首尾 / tool-caps 首尾 */
     --radius-chat-card: 4px; /* in-message chat cards */
     --radius-chat-card-inner: max(2px, calc(var(--radius-chat-card) - 2px));
     --border-width: 1px;        /* 表单控件 / section body 边框粗细 */

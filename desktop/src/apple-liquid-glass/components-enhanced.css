@@ -3,7 +3,7 @@
    提取自 styles.css · Apple Liquid Glass 风格
    ======================================== */
 
-/* 按钮弹簧交互 */
+/* 按钮弹簧交互 — 棉花糖 Q 弹版 */
 .sidebar-action-btn,
 .float-card-bar-btn,
 .devtools-btn,
@@ -11,7 +11,7 @@
 .bridge-test-btn,
 .ob-btn,
 .ob-test-btn {
-    transition: transform var(--duration-instant) var(--ease-spring-settle),
+    transition: transform 0.2s var(--ease-spring-button),
                 background var(--duration-fast) var(--ease-standard),
                 color var(--duration-fast) var(--ease-standard),
                 border-color var(--duration-fast) var(--ease-standard),
@@ -24,17 +24,17 @@
 .bridge-test-btn:active,
 .ob-btn:active,
 .ob-test-btn:active {
-    transform: scale(0.94);
+    transform: scale(0.88);
 }
 
-/* 发送按钮弹性 */
+/* 发送按钮弹性 — 棉花糖 Q 弹版 */
 .send-btn {
-    transition: transform var(--duration-instant) var(--ease-spring-settle),
+    transition: transform 0.2s var(--ease-spring-button),
                 background var(--duration-fast) var(--ease-standard),
                 box-shadow var(--duration-fast) var(--ease-spring-gentle);
 }
 .send-btn:active {
-    transform: scale(0.92);
+    transform: scale(0.86);
 }
 
 /* 附件按钮微弹 */
@@ -48,7 +48,7 @@
     transform: scale(1.06);
 }
 .attach-btn:active {
-    transform: scale(0.94);
+    transform: scale(0.88);
 }
 
 /* Plan Mode 按钮 */
@@ -62,32 +62,32 @@
     transform: scale(1.04);
 }
 
-/* Session 列表项弹簧 */
+/* Session 列表项弹簧 — 棉花糖 Q 弹版 */
 .session-item {
     transition: background var(--duration-fast) var(--ease-standard),
                 color var(--duration-fast) var(--ease-standard),
-                transform var(--duration-fast) var(--ease-spring-gentle);
+                transform 0.2s var(--ease-spring-button);
 }
 .session-item:active {
-    transform: scale(0.98);
+    transform: scale(0.94);
 }
 
-/* 浮动卡片项微交互 */
+/* 浮动卡片项微交互 — 棉花糖 Q 弹版 */
 .float-card-item {
     transition: background var(--duration-instant) var(--ease-standard),
-                transform var(--duration-fast) var(--ease-spring-gentle);
+                transform 0.2s var(--ease-spring-button);
 }
 .float-card-item:active {
-    transform: scale(0.98);
+    transform: scale(0.94);
 }
 
-/* Context Menu 项弹簧 */
+/* Context Menu 项弹簧 — 棉花糖 Q 弹版 */
 .context-menu-item {
     transition: background var(--duration-instant) var(--ease-standard),
-                transform var(--duration-fast) var(--ease-spring-gentle);
+                transform 0.2s var(--ease-spring-button);
 }
 .context-menu-item:active {
-    transform: scale(0.98);
+    transform: scale(0.94);
 }
 
 /* 消息卡片弹簧进入 */
@@ -128,7 +128,7 @@
 .ob-provider-option:active,
 .model-item:active,
 .ob-locale-btn:active {
-    transform: scale(0.97);
+    transform: scale(0.93);
 }
 
 /* Yuan Chip 弹簧选择 */
@@ -139,7 +139,7 @@
                 color var(--duration-fast) var(--ease-standard);
 }
 .yuan-chip:active {
-    transform: scale(0.96);
+    transform: scale(0.92);
 }
 
 /* 输入区 wrapper 弹簧边界 */

@@ -1,12 +1,31 @@
 /* ========================================
    Apple Liquid Glass - 增强动画集合
-   从 desktop/src/animations.css 提取的 12 个核心动画
+   ========================================
+   从 desktop/src/animations.css 提取的核心动画
+   所有动画均使用 transform + opacity（GPU 加速）
+   
+   动画分类：
+   - 进场/退场：spring-in, spring-out, fade-in, fade-out, fade-up, fade-down
+   - 缩放/弹出：scale-in, pop-in, popout
+   - 滑动：slide-in-left, slide-out-left, card-slide-down
+   - 展开/收起：smooth-expand, smooth-collapse
+   - 特殊效果：morph, parallax-shift, shimmer, wiggle, jelly-bounce
+   - 状态指示：continuous-pulse, glass-fade
    ======================================== */
 
-/* ── 弹簧缩放进入 ──
-   用途：模态框、卡片进场动画
-   建议时长：400-500ms
-   性能：transform + opacity（GPU 加速，高性能） */
+/* ── 淡入 ── */
+@keyframes hana-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* ── 淡出 ── */
+@keyframes hana-fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+/* ── 弹簧缩放进入 ── */
 @keyframes hana-spring-in {
     from {
         opacity: 0;
@@ -191,6 +210,112 @@
         opacity: 1;
         backdrop-filter: blur(var(--glass-blur, 20px));
         -webkit-backdrop-filter: blur(var(--glass-blur, 20px));
+    }
+}
+
+/* ── 淡入上移 ──
+   用途：列表项滚动进入视口、消息卡片进场
+   建议时长：200-300ms
+   性能：transform + opacity（GPU 加速，高性能）
+   注意：需配合 --slide-y CSS 变量使用 */
+@keyframes hana-fade-up {
+    from {
+        opacity: 0;
+        transform: translateY(var(--slide-y, 4px));
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── 淡出下移 ──
+   用途：列表项退出视口、消息卡片退场
+   建议时长：200-300ms
+   性能：transform + opacity（GPU 加速，高性能） */
+@keyframes hana-fade-down {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(var(--slide-y, 4px));
+    }
+}
+
+/* ── 缩放进入 ──
+   用途：模态框、popover、dropdown 缩放进场
+   建议时长：250-350ms
+   性能：transform + opacity（GPU 加速，高性能） */
+@keyframes hana-scale-in {
+    from {
+        opacity: 0;
+        transform: scale(0.92);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* ── 左侧滑入 ──
+   用途：侧边栏导航、面板滑入
+   建议时长：200-300ms
+   性能：transform + opacity（GPU 加速，高性能） */
+@keyframes hana-slide-in-left {
+    from {
+        opacity: 0;
+        transform: translateX(-20px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+/* ── 左侧滑出 ──
+   用途：侧边栏导航、面板滑出
+   建议时长：150-200ms
+   性能：transform + opacity（GPU 加速，高性能） */
+@keyframes hana-slide-out-left {
+    from {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(-12px) scale(0.97);
+    }
+}
+
+/* ── 卡片下滑进入 ──
+   用途：浮动卡片、toast 从顶部滑入
+   建议时长：250-350ms
+   性能：transform + opacity（GPU 加速，高性能） */
+@keyframes hana-card-slide-down {
+    from {
+        transform: translateY(-110%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* ── 弹出退场 ──
+   用途：popover、tooltip 快速退出
+   建议时长：150-200ms
+   性能：transform + opacity（GPU 加速，高性能） */
+@keyframes hana-popout {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.9);
     }
 }
 

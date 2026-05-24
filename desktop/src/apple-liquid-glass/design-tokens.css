@@ -7,6 +7,8 @@
   /* === 动效系统 === */
   /* 标准缓动：通用过渡（表单、颜色），GPU 加速友好 */
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  /* 标准缓出：进场动画常用，起始快速结束平滑 */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   /* 弹簧·轻柔回弹：模态框/toast 进场，overshoot 适中 */
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   /* 弹簧·明显回弹：popover/dropdown 展开，建议配合 will-change */
@@ -44,6 +46,20 @@
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -5px rgba(0, 0, 0, 0.04);
   /* 超大阴影：critical 提示，慎用动画过渡建议直接切换 */
   --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.14), 0 12px 20px -8px rgba(0, 0, 0, 0.06);
+
+  /* === 棉花糖蓬松阴影系统 === */
+  /* 三层弥散阴影，模拟棉花糖漂浮感 */
+  --shadow-marshmallow-sm:
+    0 1px 2px rgba(0, 0, 0, 0.03),
+    0 2px 6px rgba(0, 0, 0, 0.02);
+  --shadow-marshmallow:
+    0 2px 4px rgba(0, 0, 0, 0.02),
+    0 8px 16px rgba(0, 0, 0, 0.04),
+    0 24px 48px rgba(0, 0, 0, 0.06);
+  --shadow-marshmallow-lg:
+    0 4px 8px rgba(0, 0, 0, 0.02),
+    0 16px 32px rgba(0, 0, 0, 0.04),
+    0 48px 64px rgba(0, 0, 0, 0.06);
   /* 强调色阴影：hover/focus 品牌发光,CSS 变量 RGB 支持动态主题 */
   --shadow-accent: 0 4px 14px rgba(var(--accent-rgb, 83 125 150), 0.18);
   /* 光晕阴影：霓虹/发光 active 状态,无偏移模糊开销大限制元素数量 */
@@ -65,17 +81,17 @@
   /* 9999px：圆形头像/pill，现代浏览器优化良好 */
   --radius-full: 9999px;
 
-  /* === 毛玻璃系统 · Liquid Glass === */
-  /* 浅色半透明白：导航栏/侧边栏/面板，配合 backdrop-filter 移动端注意降级 */
-  --glass-bg: rgba(255, 255, 255, 0.72);
-  /* 深色半透明：暗黑模式玻璃效果，与浅色开销相同 */
-  --glass-bg-dark: rgba(30, 30, 30, 0.72);
-  /* 标准模糊 20px：大多数玻璃态组件，iOS Safari 表现最佳 */
-  --glass-blur: 20px;
-  /* 轻微模糊 12px：overlay/遮罩层，低开销适合大面积 */
-  --glass-blur-subtle: 12px;
-  /* 强模糊 32px：深度磨砂完全遮挡，高开销避免在滚动容器中使用 */
-  --glass-blur-strong: 32px;
+  /* === 毛玻璃系统 · Liquid Glass（棉花糖轻盈版）=== */
+  /* 浅色半透明白：提升透明度至 0.88，更轻盈空气感 */
+  --glass-bg: rgba(255, 255, 255, 0.88);
+  /* 深色半透明：提升透明度至 0.82，暗色主题更通透 */
+  --glass-bg-dark: rgba(30, 30, 30, 0.82);
+  /* 标准模糊 16px：降低模糊度让背景更隐约可见，增加轻盈感 */
+  --glass-blur: 16px;
+  /* 轻微模糊 10px：overlay/遮罩层 */
+  --glass-blur-subtle: 10px;
+  /* 强模糊 28px：深度磨砂 */
+  --glass-blur-strong: 28px;
   /* 玻璃边框：半透明白模拟边缘高光，无额外性能影响 */
   --glass-border: rgba(255, 255, 255, 0.18);
   /* 玻璃高光：hover/表面反光，建议 pseudo-element 实现 */
@@ -86,4 +102,149 @@
   /* === 字体系统 === */
   /* 系统 UI 字体栈：Apple 优先跨平台回退，系统字体零加载开销 */
   --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+
+  /* === 多主题支持 === */
+  /* 强调色 RGB 值（用于动态阴影和发光） */
+  --accent-rgb: 83 125 150;
+  /* 成功色 RGB */
+  --success-rgb: 34 197 94;
+  /* 错误色 RGB */
+  --error-rgb: 239 68 68;
+  /* 警告色 RGB */
+  --warning-rgb: 245 158 11;
+  /* 加载指示器轨道色 RGB（默认黑色） */
+  --spinner-track-rgb: 0 0 0;
+  /* 骨架屏基础色 RGB（默认黑色） */
+  --skeleton-base-rgb: 0 0 0;
+}
+
+/* ── 暗色主题变量覆盖 ── */
+html[data-theme="midnight"],
+html[data-theme="midnight-contrast"] {
+  --spinner-track-rgb: 255 255 255;
+  --skeleton-base-rgb: 255 255 255;
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-tertiary: rgba(255, 255, 255, 0.5);
+  --text-quaternary: rgba(255, 255, 255, 0.35);
+}
+
+/* ── 海洋蓝主题 ── */
+html[data-theme="ocean-blue"] {
+  --accent: #3b82f6;
+  --accent-rgb: 59 130 246;
+  --success-rgb: 34 197 94;
+  --error-rgb: 239 68 68;
+  --warning-rgb: 245 158 11;
+  --glass-bg: rgba(240, 249, 255, 0.88);
+  --glass-bg-dark: rgba(15, 23, 42, 0.82);
+  --glass-border: rgba(59, 130, 246, 0.15);
+  --glass-highlight: rgba(59, 130, 246, 0.08);
+  --shadow-accent: 0 4px 14px rgba(59, 130, 246, 0.18);
+  --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.12);
+  --text-primary: rgba(15, 23, 42, 0.95);
+  --text-secondary: rgba(15, 23, 42, 0.7);
+  --text-tertiary: rgba(15, 23, 42, 0.5);
+  --text-quaternary: rgba(15, 23, 42, 0.35);
+}
+html[data-theme="ocean-blue"] .hana-glass,
+html[data-theme="ocean-blue"] .float-card,
+html[data-theme="ocean-blue"] .context-menu {
+  border-color: var(--glass-border);
+}
+
+/* ── 樱花粉主题 ── */
+html[data-theme="sakura-pink"] {
+  --accent: #ec4899;
+  --accent-rgb: 236 72 153;
+  --success-rgb: 34 197 94;
+  --error-rgb: 239 68 68;
+  --warning-rgb: 245 158 11;
+  --glass-bg: rgba(255, 245, 247, 0.88);
+  --glass-bg-dark: rgba(30, 10, 18, 0.82);
+  --glass-border: rgba(236, 72, 153, 0.15);
+  --glass-highlight: rgba(236, 72, 153, 0.08);
+  --shadow-accent: 0 4px 14px rgba(236, 72, 153, 0.18);
+  --shadow-glow: 0 0 20px rgba(236, 72, 153, 0.12);
+  --text-primary: rgba(30, 10, 18, 0.95);
+  --text-secondary: rgba(30, 10, 18, 0.7);
+  --text-tertiary: rgba(30, 10, 18, 0.5);
+  --text-quaternary: rgba(30, 10, 18, 0.35);
+}
+html[data-theme="sakura-pink"] .hana-glass,
+html[data-theme="sakura-pink"] .float-card,
+html[data-theme="sakura-pink"] .context-menu {
+  border-color: var(--glass-border);
+}
+
+/* ── 薰衣草紫主题 ── */
+html[data-theme="lavender"] {
+  --accent: #a855f7;
+  --accent-rgb: 168 85 247;
+  --success-rgb: 34 197 94;
+  --error-rgb: 239 68 68;
+  --warning-rgb: 245 158 11;
+  --glass-bg: rgba(250, 245, 255, 0.88);
+  --glass-bg-dark: rgba(20, 10, 30, 0.82);
+  --glass-border: rgba(168, 85, 247, 0.15);
+  --glass-highlight: rgba(168, 85, 247, 0.08);
+  --shadow-accent: 0 4px 14px rgba(168, 85, 247, 0.18);
+  --shadow-glow: 0 0 20px rgba(168, 85, 247, 0.12);
+  --text-primary: rgba(20, 10, 30, 0.95);
+  --text-secondary: rgba(20, 10, 30, 0.7);
+  --text-tertiary: rgba(20, 10, 30, 0.5);
+  --text-quaternary: rgba(20, 10, 30, 0.35);
+}
+html[data-theme="lavender"] .hana-glass,
+html[data-theme="lavender"] .float-card,
+html[data-theme="lavender"] .context-menu {
+  border-color: var(--glass-border);
+}
+
+/* ── 薄荷绿主题 ── */
+html[data-theme="mint-green"] {
+  --accent: #10b981;
+  --accent-rgb: 16 185 129;
+  --success-rgb: 34 197 94;
+  --error-rgb: 239 68 68;
+  --warning-rgb: 245 158 11;
+  --glass-bg: rgba(240, 253, 250, 0.88);
+  --glass-bg-dark: rgba(10, 25, 20, 0.82);
+  --glass-border: rgba(16, 185, 129, 0.15);
+  --glass-highlight: rgba(16, 185, 129, 0.08);
+  --shadow-accent: 0 4px 14px rgba(16, 185, 129, 0.18);
+  --shadow-glow: 0 0 20px rgba(16, 185, 129, 0.12);
+  --text-primary: rgba(10, 25, 20, 0.95);
+  --text-secondary: rgba(10, 25, 20, 0.7);
+  --text-tertiary: rgba(10, 25, 20, 0.5);
+  --text-quaternary: rgba(10, 25, 20, 0.35);
+}
+html[data-theme="mint-green"] .hana-glass,
+html[data-theme="mint-green"] .float-card,
+html[data-theme="mint-green"] .context-menu {
+  border-color: var(--glass-border);
+}
+
+/* ── 棉花糖粉主题 ── */
+html[data-theme="marshmallow-pink"] {
+  --accent: #f4a4b4;
+  --accent-rgb: 244 164 180;
+  --success-rgb: 34 197 94;
+  --error-rgb: 239 68 68;
+  --warning-rgb: 245 158 11;
+  --glass-bg: rgba(255, 252, 253, 0.9);
+  --glass-bg-dark: rgba(35, 20, 25, 0.82);
+  --glass-border: rgba(244, 164, 180, 0.18);
+  --glass-highlight: rgba(244, 164, 180, 0.1);
+  --shadow-accent: 0 4px 14px rgba(244, 164, 180, 0.22);
+  --shadow-glow: 0 0 20px rgba(244, 164, 180, 0.15);
+  --text-primary: rgba(35, 20, 25, 0.95);
+  --text-secondary: rgba(35, 20, 25, 0.7);
+  --text-tertiary: rgba(35, 20, 25, 0.5);
+  --text-quaternary: rgba(35, 20, 25, 0.35);
+}
+html[data-theme="marshmallow-pink"] .hana-glass,
+html[data-theme="marshmallow-pink"] .float-card,
+html[data-theme="marshmallow-pink"] .context-menu {
+  border-color: var(--glass-border);
 }

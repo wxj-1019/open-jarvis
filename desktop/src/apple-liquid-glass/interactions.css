@@ -1,0 +1,255 @@
+/* ========================================
+   Apple Liquid Glass 交互体验增强
+   ========================================
+   拖拽反馈、加载状态、错误/成功提示、滚动交互。
+   纯 CSS 实现，部分需要 JS 配合添加类名。
+   ======================================== */
+
+/* ── 拖拽反馈动画 ── */
+
+@keyframes hana-elastic-bounce {
+    0% { transform: scale(0.98); }
+    50% { transform: scale(1.03); }
+    100% { transform: scale(1.02); }
+}
+
+/* 文件拖入时的弹性反馈 */
+.drop-overlay.drag-over {
+    animation: hana-elastic-bounce 0.3s var(--ease-spring) both;
+    transform: scale(1.02);
+}
+
+/* 侧边栏拖拽调整宽度时的实时阴影 */
+.sidebar.dragging {
+    box-shadow: var(--shadow-xl);
+    transition: box-shadow 0.15s var(--ease-spring-gentle);
+}
+
+/* 频道拖拽排序动画 */
+.channel-item.dragging {
+    opacity: 0.8;
+    transform: scale(1.02);
+    box-shadow: var(--shadow-lg);
+    z-index: 100;
+}
+
+.channel-item.drop-target {
+    border-top: 2px solid var(--accent);
+    transition: border-color 0.15s var(--ease-standard);
+}
+
+/* ── 加载状态动画 ── */
+
+/* Apple 风格的旋转加载指示器 */
+.hana-spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid rgba(var(--spinner-track-rgb, 0 0 0), 0.1);
+    border-top-color: var(--accent, #537d96);
+    border-radius: 50%;
+    animation: hana-spin 0.8s linear infinite;
+}
+
+@keyframes hana-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 暗色主题 spinner 适配 */
+html[data-theme="midnight"] .hana-spinner,
+html[data-theme="midnight-contrast"] .hana-spinner {
+    border-color: rgba(255, 255, 255, 0.1);
+    border-top-color: var(--accent, #537d96);
+}
+
+/* 骨架屏 shimmer 效果（transform 位移版本，避免重绘） */
+.hana-skeleton {
+    position: relative;
+    overflow: hidden;
+    background: rgba(var(--skeleton-base-rgb, 0 0 0), 0.04);
+    border-radius: var(--radius-md);
+}
+
+.hana-skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        transparent 25%,
+        rgba(var(--skeleton-base-rgb, 0 0 0), 0.08) 50%,
+        transparent 75%
+    );
+    transform: translateX(-100%);
+    animation: hana-skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes hana-skeleton-shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* 暗色主题骨架屏适配 */
+html[data-theme="midnight"] .hana-skeleton,
+html[data-theme="midnight-contrast"] .hana-skeleton {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+html[data-theme="midnight"] .hana-skeleton::after,
+html[data-theme="midnight-contrast"] .hana-skeleton::after {
+    background: linear-gradient(
+        90deg,
+        transparent 25%,
+        rgba(255, 255, 255, 0.08) 50%,
+        transparent 75%
+    );
+}
+
+/* Toggle loading 状态优化 */
+.hana-toggle.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+.hana-toggle.loading::after {
+    animation: hana-continuous-pulse 1s ease-in-out infinite;
+}
+
+/* ── 错误提示动画 ── */
+
+/* 表单验证错误时的晃动 */
+.form-error {
+    animation: hana-wiggle 0.5s var(--ease-standard) both;
+    border-color: var(--error-color, #ef4444);
+}
+
+/* 输入框错误状态 */
+.input-error {
+    border-color: var(--error-color, #ef4444);
+    box-shadow: 0 0 0 3px rgba(var(--error-rgb, 239 68 68), 0.1);
+    animation: hana-error-pulse 2s ease-in-out infinite;
+}
+
+@keyframes hana-error-pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 3px rgba(var(--error-rgb, 239 68 68), 0.1);
+    }
+    50% {
+        box-shadow: 0 0 0 3px rgba(var(--error-rgb, 239 68 68), 0.2);
+    }
+}
+
+/* 网络错误提示的弹性出现 */
+.error-toast {
+    animation: hana-spring-in 0.3s var(--ease-spring-modal) both;
+    background: rgba(var(--error-rgb, 239 68 68), 0.1);
+    border-color: rgba(var(--error-rgb, 239 68 68), 0.3);
+    color: var(--error-color, #ef4444);
+}
+
+/* 连接断开状态点脉冲 */
+.connection-status.disconnected .status-dot {
+    background: var(--error-color, #ef4444);
+    animation: hana-error-pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes hana-error-pulse-dot {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.5;
+        transform: scale(1.2);
+    }
+}
+
+/* ── 成功反馈动画 ── */
+
+/* 操作成功时的庆祝弹跳 */
+.success-feedback {
+    animation: hana-jelly-bounce 0.6s var(--ease-spring) both;
+}
+
+/* 发送消息时的弹性缩小 + 恢复 */
+.send-btn.sending {
+    animation: hana-send-bounce 0.4s var(--ease-spring-button) both;
+}
+
+@keyframes hana-send-bounce {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.85); }
+    100% { transform: scale(1); }
+}
+
+/* 成功状态点 */
+.success-dot {
+    background: var(--success-color, #22c55e);
+    animation: hana-success-pop 0.4s var(--ease-spring) both;
+}
+
+@keyframes hana-success-pop {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    60% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* 保存成功的微光扫过 */
+.save-success {
+    position: relative;
+    overflow: hidden;
+}
+.save-success::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(var(--success-rgb, 34 197 94), 0.2),
+        transparent
+    );
+    animation: hana-success-shimmer 0.8s ease-in-out;
+    pointer-events: none;
+}
+
+@keyframes hana-success-shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* ── 滚动交互增强 ── */
+
+/* 滚动时导航栏的毛玻璃渐显（Apple Scroll Edge Effect） */
+.navbar.scrolled {
+    animation: hana-scroll-edge-blur 0.2s var(--ease-standard) both;
+}
+
+/* 滚动到底部的弹性反馈 */
+.scroll-container.at-bottom {
+    animation: hana-bottom-bounce 0.3s var(--ease-spring) both;
+}
+
+@keyframes hana-bottom-bounce {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+    100% { transform: translateY(0); }
+}
+
+/* 列表项滚动进入视口时的交错动画 */
+.list-item.in-view {
+    animation: hana-fade-up 0.3s var(--ease-spring-card) both;
+    --slide-y: 8px;
+}
+
+/* 消息列表滚动加载指示器 */
+.scroll-loader {
+    animation: hana-continuous-pulse 1.5s ease-in-out infinite;
+    opacity: 0.6;
+}

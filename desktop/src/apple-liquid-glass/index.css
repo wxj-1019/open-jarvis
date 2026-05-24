@@ -10,6 +10,7 @@
    5. transitions:         过渡与模态
    6. fine-tuning:         性能、无障碍、主题
    7. performance-utils:   性能工具类（节流、降级）
+   8. interactions:        交互体验增强（拖拽、加载、错误/成功）
    
    注意：不要修改此文件的导入顺序，
    否则可能导致样式覆盖错误。
@@ -22,3 +23,5 @@
 @import url('./transitions.css');
 @import url('./fine-tuning.css');
 @import url('./performance-utils.css');
+@import url('./interactions.css');
+@import url('./theme-transitions.css');

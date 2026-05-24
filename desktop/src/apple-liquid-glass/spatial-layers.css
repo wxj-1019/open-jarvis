@@ -9,7 +9,7 @@
     background: rgba(255, 255, 255, 0.85);
     border: 1px solid transparent;
     box-shadow: var(--shadow-lg);
-    will-change: transform, opacity;
+    /* will-change 由 JS 在动画时动态添加 .hana-animating 类控制 */
     position: relative;
 }
 
@@ -46,7 +46,7 @@ html[data-theme="midnight-contrast"] .float-card {
     background: rgba(255, 255, 255, 0.85);
     border: 1px solid transparent;
     box-shadow: var(--shadow-xl);
-    will-change: transform, opacity;
+    /* will-change 由 JS 在动画时动态添加 .hana-animating 类控制 */
     position: relative;
 }
 
@@ -118,7 +118,7 @@ html[data-theme="midnight-contrast"] .context-menu-submenu {
     background: rgba(255, 255, 255, 0.85);
     border: 1px solid transparent;
     box-shadow: var(--shadow-xl);
-    will-change: transform, opacity;
+    /* will-change 由 JS 在动画时动态添加 .hana-animating 类控制 */
     position: relative;
 }
 
@@ -155,7 +155,7 @@ html[data-theme="midnight-contrast"] .hana-toast {
     background: rgba(255, 255, 255, 0.85);
     border: 1px solid transparent;
     box-shadow: var(--shadow-lg);
-    will-change: transform, opacity;
+    /* will-change 由 JS 在动画时动态添加 .hana-animating 类控制 */
     position: relative;
 }
 
@@ -198,7 +198,7 @@ html[data-theme="midnight-contrast"] .browser-floating-card {
     background: rgba(255, 255, 255, 0.85);
     border: 1px solid transparent;
     box-shadow: var(--shadow-2xl);
-    will-change: transform, opacity;
+    /* will-change 由 JS 在动画时动态添加 .hana-animating 类控制 */
     position: relative;
 }
 
@@ -241,7 +241,7 @@ html[data-theme="midnight-contrast"] .hana-warning-box {
     background: rgba(255, 255, 255, 0.85);
     border: 1px solid transparent;
     box-shadow: var(--shadow-2xl);
-    will-change: transform, opacity;
+    /* will-change 由 JS 在动画时动态添加 .hana-animating 类控制 */
     position: relative;
 }
 
@@ -284,7 +284,7 @@ html[data-theme="midnight-contrast"] .sv-container {
     background: rgba(255, 255, 255, 0.85);
     border: 1px solid transparent;
     box-shadow: var(--shadow-xl);
-    will-change: transform, opacity;
+    /* will-change 由 JS 在动画时动态添加 .hana-animating 类控制 */
     position: relative;
 }
 
@@ -321,7 +321,7 @@ html[data-theme="midnight-contrast"] .bridge-tutorial-panel {
     background: rgba(255, 255, 255, 0.85);
     border: 1px solid transparent;
     box-shadow: var(--shadow-xl);
-    will-change: transform, opacity;
+    /* will-change 由 JS 在动画时动态添加 .hana-animating 类控制 */
     position: relative;
 }
 
