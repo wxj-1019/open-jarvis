@@ -30,6 +30,7 @@ export function SystemHealthBanner() {
   const [fixMessage, setFixMessage] = useState('');
   const [dismissed, setDismissed] = useState(false);
   const showToast = useSettingsStore(s => s.showToast);
+  const activeServerConnection = useSettingsStore(s => s.activeServerConnection);
 
   const checkHealth = useCallback(async () => {
     try {
@@ -45,8 +46,9 @@ export function SystemHealthBanner() {
   }, []);
 
   useEffect(() => {
+    if (!activeServerConnection) return;
     checkHealth();
-  }, [checkHealth]);
+  }, [checkHealth, activeServerConnection]);
 
   const failedChecks = health?.checks.filter(c => c.status !== 'ok') || [];
   const hasIssues = failedChecks.length > 0;

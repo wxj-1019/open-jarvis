@@ -237,10 +237,10 @@ export function SplashApp() {
       return () => clearTimeout(enterTimer);
     })();
 
-    // 光标闪烁
+    // 光标闪烁 — 与打字状态同步，打字时保持常亮，停顿时呼吸闪烁
     cursorTimerRef.current = setInterval(() => {
       setCursorVisible(v => !v);
-    }, 530);
+    }, 600);
 
     return () => {
       clearTypingTimer();
@@ -265,6 +265,7 @@ export function SplashApp() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentLineIndex]);
 
+  // 打字时光标常亮，停顿时呼吸闪烁
   const showCursor = mode !== 'installing' && (isTyping || cursorVisible);
 
   return (
@@ -286,6 +287,7 @@ export function SplashApp() {
           {displayText}
           <span
             className={`splash-cursor${showCursor ? ' visible' : ''}`}
+            style={isTyping ? { animation: 'none', opacity: 1 } : undefined}
           />
         </p>
         <span className="splash-sakura">{symbol}</span>

@@ -86,7 +86,7 @@ body::after {
   z-index: 0;
   transition: filter 0.5s ease, opacity 0.5s ease;
   animation: glowPulse 3s ease-in-out infinite;
-  will-change: transform, opacity;
+  /* will-change 由 JS 在动画时动态添加，避免静态声明占用 GPU 内存 */
 }
 
 @keyframes glowPulse {
@@ -109,7 +109,6 @@ body::after {
   opacity: 0.25;
   z-index: 1;
   animation: ringRotate 4s linear infinite;
-  will-change: transform;
 }
 
 /* z-index: 1 双环层 - 外环 */
@@ -127,7 +126,6 @@ body::after {
   opacity: 0.15;
   z-index: 1;
   animation: ringRotateReverse 6s linear infinite;
-  will-change: transform;
 }
 
 @keyframes ringRotate {
@@ -150,7 +148,6 @@ body::after {
   user-select: none;
   position: relative;
   z-index: 2;
-  will-change: transform, opacity, filter;
 }
 
 /* z-index: 3 眼睑层 */
@@ -205,7 +202,8 @@ body::after {
   line-height: 1.5;
   white-space: nowrap;
   font-family: 'Songti SC', 'Georgia', 'Noto Serif CJK SC', serif;
-  animation: textSettle 0.6s ease-out;
+  /* 仅在首次加载时播放 settle 动画，避免打字过程中重复触发 */
+  animation: textSettle 0.6s ease-out both;
 }
 
 @keyframes textSettle {
@@ -227,12 +225,13 @@ body::after {
 
 .splash-cursor.visible {
   opacity: 1;
-  animation: cursorBreath 1.06s step-end infinite;
+  /* 使用更平滑的呼吸动画，避免 step-end 造成的跳变感 */
+  animation: cursorBreath 1.2s ease-in-out infinite;
 }
 
 @keyframes cursorBreath {
-  0%, 100% { opacity: 1; transform: scaleY(1); }
-  50% { opacity: 0.3; transform: scaleY(0.8); }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
 }
 
 /* ── 元符号 ── */

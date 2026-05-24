@@ -148,7 +148,7 @@ function copyLegacyFiles(): Plugin {
       const srcDir = path.resolve(__dirname, 'desktop/src');
       const outDir = path.resolve(__dirname, 'desktop/dist-renderer');
 
-      const dirs = ['lib', 'modules', 'themes', 'assets', 'locales'];
+      const dirs = ['lib', 'modules', 'themes', 'assets', 'locales', 'apple-liquid-glass'];
       const files = ['styles.css', 'animations.css', 'splash.css', 'settings.css', 'onboarding.css', 'browser-viewer.css', 'viewer-window.css', 'mobile-manifest.webmanifest', 'mobile-sw.js', 'icon.png'];
 
       for (const dir of dirs) {
@@ -226,6 +226,7 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
   },
+  // @ts-expect-error vitest config extension
   test: {
     root: path.resolve(__dirname),
   },
