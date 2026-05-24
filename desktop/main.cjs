@@ -3424,12 +3424,14 @@ wrapIpcBestEffortHandler("reload-main-window", () => {
 });
 
 // 系统通知（由 agent 的 notify 工具触发）
-wrapIpcBestEffortHandler("show-notification", (_event, title, body) => {
+wrapIpcBestEffortHandler("show-notification", (_event, title, body, opts = {}) => {
   if (!Notification.isSupported()) return;
+  const { priority = "normal", sound = false } = opts;
   const notif = new Notification({
     title: title || "Hana",
     body: body || "",
-    silent: false,
+    silent: !sound,
+    urgency: priority === "urgent" ? "critical" : "normal",
   });
   notif.on("click", () => {
     if (mainWindow && !mainWindow.isDestroyed()) {

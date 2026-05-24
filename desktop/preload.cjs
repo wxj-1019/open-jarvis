@@ -121,7 +121,7 @@ contextBridge.exposeInMainWorld("hana", {
   // 原生拖拽（书桌文件拖到 Finder / 聊天区）
   startDrag: (filePaths) => ipcRenderer.send("start-drag", filePaths),
   // 系统通知
-  showNotification: (title, body) => ipcRenderer.invoke("show-notification", title, body),
+  showNotification: (title, body, opts) => ipcRenderer.invoke("show-notification", title, body, opts),
   // Spotlight 快速输入
   submitSpotlight: (text) => ipcRenderer.send("spotlight-submit", text),
   // 窗口控制（Windows/Linux 自绘标题栏）

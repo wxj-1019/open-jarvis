@@ -524,3 +524,117 @@ html[data-theme="midnight"] .hana-glass-subtle,
 html[data-theme="midnight-contrast"] .hana-glass-subtle {
     border-color: rgba(255, 255, 255, 0.06);
 }
+
+/* ── 主界面容器毛玻璃效果 ── */
+.app {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(245, 247, 250, 0.98) 100%);
+}
+
+@supports (backdrop-filter: blur(20px)) {
+    .app {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+    }
+}
+
+html[data-theme="midnight"] .app,
+html[data-theme="midnight-contrast"] .app {
+    background: var(--glass-bg-dark);
+}
+
+html[data-theme="ocean-blue"] .app {
+    background: rgba(220, 235, 250, 0.88);
+}
+
+html[data-theme="sakura-pink"] .app {
+    background: rgba(255, 240, 245, 0.88);
+}
+
+html[data-theme="lavender"] .app {
+    background: rgba(245, 235, 255, 0.88);
+}
+
+html[data-theme="mint-green"] .app {
+    background: rgba(230, 250, 240, 0.88);
+}
+
+html[data-theme="marshmallow-pink"] .app {
+    background: rgba(255, 242, 242, 0.88);
+}
+
+.main-content {
+    background: rgba(255, 255, 255, 0.6);
+}
+
+@supports (backdrop-filter: blur(12px)) {
+    .main-content {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(12px) saturate(150%);
+        -webkit-backdrop-filter: blur(12px) saturate(150%);
+    }
+}
+
+html[data-theme="midnight"] .main-content,
+html[data-theme="midnight-contrast"] .main-content {
+    background: rgba(20, 20, 20, 0.7);
+}
+
+html[data-theme="ocean-blue"] .main-content {
+    background: rgba(210, 230, 250, 0.72);
+}
+
+html[data-theme="sakura-pink"] .main-content {
+    background: rgba(255, 235, 245, 0.72);
+}
+
+html[data-theme="lavender"] .main-content {
+    background: rgba(240, 230, 255, 0.72);
+}
+
+html[data-theme="mint-green"] .main-content {
+    background: rgba(225, 248, 238, 0.72);
+}
+
+html[data-theme="marshmallow-pink"] .main-content {
+    background: rgba(255, 238, 238, 0.72);
+}
+
+/* ── 侧边栏毛玻璃效果 ── */
+.sidebar {
+    background: rgba(250, 250, 252, 0.85);
+}
+
+@supports (backdrop-filter: blur(16px)) {
+    .sidebar {
+        background: rgba(255, 255, 255, 0.82);
+        backdrop-filter: blur(16px) saturate(170%);
+        -webkit-backdrop-filter: blur(16px) saturate(170%);
+    }
+}
+
+html[data-theme="midnight"] .sidebar,
+html[data-theme="midnight-contrast"] .sidebar {
+    background: rgba(25, 25, 25, 0.85);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+html[data-theme="ocean-blue"] .sidebar {
+    background: rgba(200, 225, 250, 0.82);
+}
+
+html[data-theme="sakura-pink"] .sidebar {
+    background: rgba(255, 228, 240, 0.82);
+}
+
+html[data-theme="lavender"] .sidebar {
+    background: rgba(235, 220, 255, 0.82);
+}
+
+html[data-theme="mint-green"] .sidebar {
+    background: rgba(215, 245, 232, 0.82);
+}
+
+html[data-theme="marshmallow-pink"] .sidebar {
+    background: rgba(255, 230, 235, 0.82);
+}

@@ -437,8 +437,18 @@ export function handleServerMessage(msg: any): void {
 
     case 'notification':
       if (window.hana?.showNotification) {
-        window.hana.showNotification(msg.title, msg.body);
+        window.hana.showNotification(msg.title, msg.body, {
+          priority: msg.priority || "normal",
+          sound: msg.sound === true,
+        });
       }
+      const isUrgent = msg.priority === "urgent";
+      useStore.getState().addToast(
+        `${msg.title}${msg.body ? ` — ${msg.body}` : ""}`,
+        isUrgent ? "error" : "info",
+        isUrgent ? 0 : 5000,
+        { persistent: isUrgent }
+      );
       break;
 
     case 'bridge_status':

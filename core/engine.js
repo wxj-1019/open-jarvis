@@ -282,8 +282,8 @@ export class HanaEngine {
       ensureAgentRuntime: (id, opts) => this.ensureAgentRuntime(id, opts),
     });
     this._notifications = new NotificationService({
-      emitDesktop: ({ title, body, agentId }) => {
-        this._hubCallbacks?.eventBus?.emit({ type: "notification", title, body, agentId: agentId || null }, null);
+      emitDesktop: ({ title, body, agentId, priority, sound }) => {
+        this._hubCallbacks?.eventBus?.emit({ type: "notification", title, body, agentId: agentId || null, priority: priority || "normal", sound: sound === true }, null);
       },
       getBridgeManager: () => this._hubCallbacks?.hub?.bridgeManager || null,
     });

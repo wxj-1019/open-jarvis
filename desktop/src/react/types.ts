@@ -314,7 +314,7 @@ export interface PlatformApi {
   onboardingComplete?(): Promise<void>;
 
   // ── Notification ──
-  showNotification?(title: string, body: string): void;
+  showNotification?(title: string, body: string, opts?: { priority?: "urgent" | "normal", sound?: boolean }): void;
 
   // ── App info ──
   getAppVersion?(): Promise<string>;

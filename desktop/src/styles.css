@@ -2453,8 +2453,18 @@ body.resizing .channel-inspector-rail {
     pointer-events: auto;
 }
 .hana-toast.error {
-    background: var(--bg-card, #fff);
-    color: var(--text-muted);
+    background: linear-gradient(135deg, #fef2f2, #fff);
+    color: #991b1b;
+    border-left: 4px solid #ef4444;
+    border: 1px solid #fecaca;
+    border-left: 4px solid #ef4444;
+    box-shadow: 0 8px 28px rgba(239, 68, 68, 0.25), 0 0 0 1px rgba(239, 68, 68, 0.1);
+    font-weight: 600;
+}
+.hana-toast.error::before {
+    content: "🚨";
+    font-size: 16px;
+    margin-right: 6px;
 }
 .hana-toast-close {
     display: flex;
