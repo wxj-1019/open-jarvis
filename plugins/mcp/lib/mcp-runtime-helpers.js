@@ -149,7 +149,7 @@ export function createMcpToolDefinition({
   };
 }
 
-function normalizeConnector(connector, fallbackId = "") {
+export function normalizeConnector(connector, fallbackId = "") {
   if (!connector || typeof connector !== "object") return null;
   const id = sanitizeId(connector.id || fallbackId);
   if (!id) return null;

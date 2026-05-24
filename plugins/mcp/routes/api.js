@@ -283,10 +283,17 @@ export default function registerMcpRoutes(app, ctx) {
   app.get("/context-resources", contextResources);
 
   // ─── Presets routes ───
+  // Returns pre-configured MCP server templates for common services.
+  // oauthScopes are stripped from the response (only needed server-side for OAuth flow).
 
   app.get("/presets", (c) => {
-    const presets = getMcpPresets().map(({ oauthScopes, ...preset }) => preset);
-    return c.json({ presets });
+    try {
+      const presets = getMcpPresets().map(({ oauthScopes, ...preset }) => preset);
+      return c.json({ presets });
+    } catch (err) {
+      ctx.log.error(`get presets failed: ${err.message}`);
+      return c.json({ error: err.message }, 500);
+    }
   });
 
   // ─── Registry routes ───

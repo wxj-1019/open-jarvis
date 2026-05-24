@@ -51,11 +51,13 @@ export class NotificationHandler {
     try {
       await this.toolRegistry.refreshTools(connectorId);
       if (this.manager.ctx.bus) {
-        this.manager.ctx.bus.emit("mcp:tools-changed", { connectorId });
+        this.manager.ctx.bus.emit({ type: "mcp:tools-changed", connectorId });
       }
     } catch (err) {
       this.manager.ctx.log.error(`[mcp:${connectorId}] failed to refresh tools: ${err.message}`);
     }
+    // 注意：此处不 await _refreshCachedResourcesText()，因为 Tools 和 Resources 是 MCP
+    // 中独立的概念。工具列表变化不影响 Resources 缓存，Resources 刷新由 _onResourcesChanged 负责。
   }
 
   async _onResourcesChanged(connectorId) {
@@ -76,14 +78,16 @@ export class NotificationHandler {
     }
     await this.manager._refreshCachedResourcesText();
     if (this.manager.ctx.bus) {
-      this.manager.ctx.bus.emit("mcp:resources-changed", { connectorId });
+      this.manager.ctx.bus.emit({ type: "mcp:resources-changed", connectorId });
     }
   }
 
-  _onResourceUpdated(connectorId, params) {
+  async _onResourceUpdated(connectorId, params) {
     this.manager.ctx.log.debug?.(`[mcp:${connectorId}] resource updated: ${params?.uri}`);
+    // 异步刷新缓存，确保单个资源变更后 Agent prompt 能感知
+    this.manager._refreshCachedResourcesText().catch(() => {});
     if (this.manager.ctx.bus) {
-      this.manager.ctx.bus.emit("mcp:resources-changed", { connectorId, uri: params?.uri });
+      this.manager.ctx.bus.emit({ type: "mcp:resources-changed", connectorId, uri: params?.uri });
     }
   }
 
@@ -105,13 +109,14 @@ export class NotificationHandler {
       }
     }
     if (this.manager.ctx.bus) {
-      this.manager.ctx.bus.emit("mcp:prompts-changed", { connectorId });
+      this.manager.ctx.bus.emit({ type: "mcp:prompts-changed", connectorId });
     }
   }
 
   _onProgress(connectorId, params) {
     if (this.manager.ctx.bus) {
-      this.manager.ctx.bus.emit("mcp:progress", {
+      this.manager.ctx.bus.emit({
+        type: "mcp:progress",
         connectorId,
         progressToken: params?.progressToken,
         progress: params?.progress,

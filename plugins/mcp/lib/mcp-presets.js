@@ -1,3 +1,16 @@
+/**
+ * MCP Connector Presets
+ *
+ * Pre-configured MCP server templates for common services (calendar, email, etc.).
+ * Each preset includes:
+ * - transport/command configuration
+ * - envSchema: required environment variables with labels and validation hints
+ * - oauthScopes: OAuth scopes required for the service (if authType is 'oauth')
+ *
+ * These presets are exposed via GET /api/plugins/mcp/presets and used by the
+ * ConnectorForm UI to auto-fill connector configuration.
+ */
+
 const MCP_PRESETS = [
   {
     id: "google-calendar",

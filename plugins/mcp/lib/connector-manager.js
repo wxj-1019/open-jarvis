@@ -19,6 +19,7 @@ export class ConnectorManager {
     this.oauthSessions = new Map();
     this._refreshingTokens = new Map();
     this._cachedResourcesText = "";
+    this._resourceRefreshVersion = 0;
     this._serverInfoCache = new Map();
     this._handleNotification = () => {};
     this._handleServerRequest = () => {};
