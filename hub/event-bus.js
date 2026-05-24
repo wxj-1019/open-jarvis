@@ -171,6 +171,8 @@ export class EventBus {
 
   async _tryHandlers(type, handlers, payload) {
     for (const h of [...handlers]) {
+      // 检查 handler 是否仍然有效（未被 unsubscribe）
+      if (!handlers.includes(h)) continue;
       const result = await h(payload);
       if (result !== EventBus.SKIP) return result;
     }
