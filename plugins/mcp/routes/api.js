@@ -1,4 +1,5 @@
 import { searchRegistryServers, getRegistryServerDetail, getRegistryCategories } from "../lib/mcp-registry.js";
+import { getMcpPresets } from "../lib/mcp-presets.js";
 
 export default function registerMcpRoutes(app, ctx) {
   const runtime = () => ctx._mcpRuntime;
@@ -280,6 +281,13 @@ export default function registerMcpRoutes(app, ctx) {
   app.post("/servers/:id/prompts/:name", getPrompt);
 
   app.get("/context-resources", contextResources);
+
+  // ─── Presets routes ───
+
+  app.get("/presets", (c) => {
+    const presets = getMcpPresets().map(({ oauthScopes, ...preset }) => preset);
+    return c.json({ presets });
+  });
 
   // ─── Registry routes ───
 
