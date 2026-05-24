@@ -1371,6 +1371,10 @@
       "masterName": "启用连接器",
       "masterDesc": "关闭后，新会话不会暴露任何 MCP 连接器工具；已冻结的旧会话调用时会收到明确错误。",
       "connectorsTitle": "连接器",
+      "connector": {
+        "preset": "预设",
+        "presetPlaceholder": "选择预设以自动填充"
+      },
       "connectorName": "名称",
       "description": "描述",
       "descriptionPlaceholder": "可选，用来说明这个连接器的用途",

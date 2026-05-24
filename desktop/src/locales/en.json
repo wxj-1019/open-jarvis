@@ -1371,6 +1371,10 @@
       "masterName": "Enable Connectors",
       "masterDesc": "When off, new sessions receive no MCP connector tools. Frozen sessions keep their snapshot, but calls return an explicit error.",
       "connectorsTitle": "Connectors",
+      "connector": {
+        "preset": "Preset",
+        "presetPlaceholder": "Select a preset to auto-fill"
+      },
       "connectorName": "Name",
       "description": "Description",
       "descriptionPlaceholder": "Optional note for what this connector does",

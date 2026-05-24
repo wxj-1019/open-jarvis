@@ -176,3 +176,22 @@ export async function pingConnector(connectorId: string): Promise<boolean> {
   const data = await jsonOrError<{ ok: boolean }>(res);
   return data.ok === true;
 }
+
+// ─── Presets API ───
+
+export interface McpPreset {
+  id: string;
+  name: string;
+  transport: 'stdio' | 'remote' | 'streamable-http' | 'sse';
+  command?: string;
+  args?: string[];
+  url?: string;
+  authType?: 'none' | 'bearer' | 'oauth';
+  autoStart?: boolean;
+}
+
+export async function loadMcpPresets(): Promise<McpPreset[]> {
+  const res = await hanaFetch('/api/plugins/mcp/presets');
+  const data = await jsonOrError<{ presets: McpPreset[] }>(res);
+  return data.presets || [];
+}

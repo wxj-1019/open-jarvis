@@ -4,6 +4,7 @@ import styles from '../../Settings.module.css';
 import { SelectWidget } from '@/ui';
 import { parseKeyValueLines, serializeKeyValueLines } from './mcp-config';
 import type { McpAuthType, McpConnector, McpConnectorInput, McpTransport } from './types';
+import { loadMcpPresets, type McpPreset } from './mcp-api';
 
 type FormMode = 'local' | 'remote';
 
@@ -56,11 +57,49 @@ export function ConnectorForm({
 }: ConnectorFormProps) {
   const [form, setForm] = useState(INITIAL_FORM);
   const [error, setError] = useState('');
+  const [presets, setPresets] = useState<McpPreset[]>([]);
+  const [selectedPreset, setSelectedPreset] = useState('');
+  const [presetsLoading, setPresetsLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setPresetsLoading(true);
+    loadMcpPresets().then(
+      (data) => {
+        if (!cancelled) {
+          setPresets(data);
+          setPresetsLoading(false);
+        }
+      },
+      () => {
+        if (!cancelled) setPresetsLoading(false);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     setForm(editingConnector ? formFromConnector(editingConnector) : INITIAL_FORM);
     setError('');
+    setSelectedPreset('');
   }, [editingConnector]);
+
+  const applyPreset = (preset: McpPreset) => {
+    const mode = preset.transport === 'stdio' ? 'local' : 'remote';
+    setForm({
+      ...INITIAL_FORM,
+      mode,
+      name: preset.name,
+      transport: preset.transport === 'stdio' ? 'remote' : preset.transport,
+      command: preset.command || '',
+      args: (preset.args || []).join('\n'),
+      authType: preset.authType || 'none',
+      autoStart: preset.autoStart === true,
+      url: preset.url || '',
+    });
+  };
 
   const canSubmit = form.mode === 'local'
     ? form.command.trim().length > 0
@@ -120,6 +159,25 @@ export function ConnectorForm({
 
   return (
     <div className={styles['pv-add-form']}>
+      {presets.length > 0 && !editingConnector && (
+        <div className={fieldFullClass}>
+          <label className={styles['settings-form-label']}>{t('settings.mcp.connector.preset')}</label>
+          <SelectWidget
+            value={selectedPreset}
+            onChange={(v) => {
+              setSelectedPreset(v);
+              if (v) {
+                const preset = presets.find((p) => p.id === v);
+                if (preset) applyPreset(preset);
+              }
+            }}
+            options={[
+              { value: '', label: t('settings.mcp.connector.presetPlaceholder') },
+              ...presets.map((p) => ({ value: p.id, label: p.name })),
+            ]}
+          />
+        </div>
+      )}
       <div className={styles['settings-form-grid']}>
         <div className={fieldHalfClass}>
           <label className={styles['settings-form-label']}>{t('settings.mcp.connectorName')}</label>
