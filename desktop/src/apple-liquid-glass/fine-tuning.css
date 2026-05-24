@@ -1,0 +1,164 @@
+/* ============================================================
+   Apple Liquid Glass 风格 · 精细调优
+   ------------------------------------------------------------
+   性能优化、无障碍增强、主题同步、动画规范收敛。
+   ============================================================ */
+
+/* ── 性能优化：强制 GPU 加速层 ── */
+.hana-gpu-layer {
+    will-change: transform, opacity;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+}
+
+/* 毛玻璃元素自动 GPU 加速 */
+.float-card,
+.context-menu,
+.hana-toast,
+.browser-floating-card,
+.hana-warning-box,
+.sv-container,
+.bridge-tutorial-panel,
+.devtools-panel .devtools-inner {
+    will-change: transform, opacity;
+}
+
+/* 动画结束后移除 will-change（需要 JS 配合，此处仅作提示） */
+.hana-gpu-auto {
+    will-change: auto;
+}
+
+/* ── 无障碍：Reduced Motion 增强 ── */
+@media (prefers-reduced-motion: reduce) {
+    /* 所有弹簧动画降级为淡入淡出 */
+    .hana-spring-transition,
+    .hana-bounce-transition,
+    .hana-gentle-transition {
+        transition-duration: 0.01ms !important;
+    }
+
+    /* 所有 spring 动画改为 instant fade */
+    @keyframes hana-spring-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    @keyframes hana-spring-out {
+        from { opacity: 1; }
+        to { opacity: 0; }
+    }
+    @keyframes hana-elastic-bounce {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    @keyframes hana-scale-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    @keyframes hana-popout {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    @keyframes hana-jelly-bounce {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    @keyframes hana-wiggle {
+        from, to { transform: none; }
+    }
+    @keyframes hana-shimmer {
+        from, to { background-position: center; }
+    }
+
+    /* 禁用持续动画 */
+    .hana-shimmer,
+    .beta-badge::after,
+    .connection-status:not(.connected) .status-dot {
+        animation: none !important;
+    }
+
+    /* 禁用 hover transform */
+    .attach-btn:hover,
+    .plan-mode-btn:hover,
+    .tutorial-card:hover,
+    .hana-hover-shadow:hover {
+        transform: none !important;
+    }
+}
+
+/* ── 无障碍：焦点增强 ── */
+.hana-focus-enhanced :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    box-shadow: var(--shadow-glow);
+}
+
+/* ── 无障碍：高对比度模式 ── */
+@media (prefers-contrast: more) {
+    .hana-glass,
+    .hana-glass-subtle,
+    .float-card,
+    .context-menu,
+    .hana-toast,
+    .browser-floating-card {
+        border-width: 2px;
+        border-color: currentColor;
+    }
+}
+
+/* ── 主题同步：暗色主题阴影加深 ── */
+html[data-theme="midnight"] .hana-shadow-sm,
+html[data-theme="midnight-contrast"] .hana-shadow-sm {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+html[data-theme="midnight"] .hana-shadow-md,
+html[data-theme="midnight-contrast"] .hana-shadow-md {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+html[data-theme="midnight"] .hana-shadow-lg,
+html[data-theme="midnight-contrast"] .hana-shadow-lg {
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3), 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+html[data-theme="midnight"] .hana-shadow-xl,
+html[data-theme="midnight-contrast"] .hana-shadow-xl {
+    box-shadow: 0 20px 25px rgba(0, 0, 0, 0.35), 0 8px 10px rgba(0, 0, 0, 0.25);
+}
+
+html[data-theme="midnight"] .hana-shadow-2xl,
+html[data-theme="midnight-contrast"] .hana-shadow-2xl {
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 12px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* ── 主题同步：暗色主题毛玻璃边框增强 ── */
+html[data-theme="midnight"] .hana-glass,
+html[data-theme="midnight-contrast"] .hana-glass {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+html[data-theme="midnight"] .hana-glass-subtle,
+html[data-theme="midnight-contrast"] .hana-glass-subtle {
+    border-color: rgba(255, 255, 255, 0.06);
+}
+
+/* ── 动画时长规范收敛（供参考，统一使用设计 Token）── */
+/*
+   瞬态 (instant):   100ms - hover、点击、关闭
+   快速 (fast):      150ms - 按钮、面板、状态切换
+   慢速 (slow):      250ms - 模态、大块进场、强调
+
+   弹簧曲线使用指南：
+   - ease-spring:       模态、toast 进场（轻柔回弹）
+   - ease-spring-bounce: popover、dropdown（明显回弹）
+   - ease-spring-gentle:  按钮 hover、卡片微交互（微回弹）
+   - ease-spring-settle:  侧边栏、toggle 状态切换（快速稳定）
+*/
+
+/* ── 打印样式：禁用所有动画 ── */
+@media print {
+    *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+    }
+}

@@ -1,0 +1,78 @@
+/**
+ * Apple Liquid Glass Design Tokens - CSS 变量系统
+ * 用于跨组件复用、主题定制和性能优化参考
+ */
+
+:root {
+  /* === 动效系统 === */
+  /* 标准缓动：通用过渡（表单、颜色），GPU 加速友好 */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  /* 弹簧·轻柔回弹：模态框/toast 进场，overshoot 适中 */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* 弹簧·明显回弹：popover/dropdown 展开，建议配合 will-change */
+  --ease-spring-bounce: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  /* 弹簧·微回弹：按钮/卡片 hover，轻量级高频触发 */
+  --ease-spring-gentle: cubic-bezier(0.22, 1, 0.36, 1);
+  /* 弹簧·快速稳定：loading/toggle 切换，无 overshoot 渲染开销最小 */
+  --ease-spring-settle: cubic-bezier(0.33, 1, 0.68, 1);
+  /* 弹性边界·超调：拖拽/滚动回弹，负值 bezier 慎用 */
+  --ease-overshoot: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  /* 弹性边界·激进弹性：特殊交互，计算复杂度高限制使用频率 */
+  --ease-elastic: cubic-bezier(0.68, -0.3, 0.265, 1.3);
+
+  /* === 阴影系统 === */
+  /* 极小阴影：卡片默认状态，单层开销极低 */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  /* 小阴影：按钮/输入框悬浮，双层现代浏览器优化良好 */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  /* 中阴影：dropdown/tooltip，注意高频更新场景可能触发重绘 */
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.03);
+  /* 大阴影：modal/drawer，建议配合 translateZ(0) 硬件加速 */
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.06), 0 4px 6px rgba(0, 0, 0, 0.04);
+  /* 特大阴影：全屏弹窗，多层模糊可能影响低端设备 */
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.08), 0 8px 10px rgba(0, 0, 0, 0.04);
+  /* 超大阴影：critical 提示，慎用动画过渡建议直接切换 */
+  --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.12), 0 12px 20px rgba(0, 0, 0, 0.06);
+  /* 强调色阴影：hover/focus 品牌发光,CSS 变量 RGB 支持动态主题 */
+  --shadow-accent: 0 4px 14px rgba(var(--accent-rgb, 83 125 150), 0.18);
+  /* 光晕阴影：霓虹/发光 active 状态,无偏移模糊开销大限制元素数量 */
+  --shadow-glow: 0 0 20px rgba(var(--accent-rgb, 83 125 150), 0.12);
+
+  /* === 圆角系统 === */
+  /* 4px：标签/badge，无额外开销 */
+  --radius-xs: 4px;
+  /* 6px：按钮/输入框，标准值兼容性最佳 */
+  --radius-sm: 6px;
+  /* 10px：卡片/面板，注意 Safari border-radius 与 overflow 性能 */
+  --radius-md: 10px;
+  /* 16px：模态框/大容器，复杂路径可能影响合成层 */
+  --radius-lg: 16px;
+  /* 20px：特殊容器，建议测试低端设备 */
+  --radius-xl: 20px;
+  /* 24px：胶囊按钮等，接近圆形时考虑 clip-path 替代 */
+  --radius-2xl: 24px;
+  /* 9999px：圆形头像/pill，现代浏览器优化良好 */
+  --radius-full: 9999px;
+
+  /* === 毛玻璃系统 · Liquid Glass === */
+  /* 浅色半透明白：导航栏/侧边栏/面板，配合 backdrop-filter 移动端注意降级 */
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  /* 深色半透明：暗黑模式玻璃效果，与浅色开销相同 */
+  --glass-bg-dark: rgba(30, 30, 30, 0.72);
+  /* 标准模糊 20px：大多数玻璃态组件，iOS Safari 表现最佳 */
+  --glass-blur: 20px;
+  /* 轻微模糊 12px：overlay/遮罩层，低开销适合大面积 */
+  --glass-blur-subtle: 12px;
+  /* 强模糊 32px：深度磨砂完全遮挡，高开销避免在滚动容器中使用 */
+  --glass-blur-strong: 32px;
+  /* 玻璃边框：半透明白模拟边缘高光，无额外性能影响 */
+  --glass-border: rgba(255, 255, 255, 0.18);
+  /* 玻璃高光：hover/表面反光，建议 pseudo-element 实现 */
+  --glass-highlight: rgba(255, 255, 255, 0.08);
+  /* 饱和度 180%：配合 backdrop-filter saturate()，filter 链限制数量 */
+  --glass-saturate: 180%;
+
+  /* === 字体系统 === */
+  /* 系统 UI 字体栈：Apple 优先跨平台回退，系统字体零加载开销 */
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}

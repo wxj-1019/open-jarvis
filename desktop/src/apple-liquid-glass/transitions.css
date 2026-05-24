@@ -1,0 +1,221 @@
+/* ========================================
+   Apple Liquid Glass 风格 · 过渡与动画
+   ========================================
+   从 styles.css 提取的动画/过渡相关代码：
+   - 侧边栏弹簧展开/收缩
+   - 模态框进场/退出动画
+   - 浮动元素动画
+   - 内容切换动画
+   - 交错动画类 (stagger)
+   
+   @keyframes 定义在 animations.css 中，此文件仅使用。
+   ======================================== */
+
+/* ========================================
+   侧边栏弹簧展开/收缩
+   ======================================== */
+
+/* 主侧边栏 */
+.sidebar {
+    transition: width var(--duration-slow) var(--ease-spring-settle),
+                border-color var(--duration-slow) var(--ease-spring-settle);
+}
+
+.sidebar-inner {
+    transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.sidebar.collapsed .sidebar-inner {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* 右侧 Jian 侧边栏 */
+.jian-sidebar {
+    transition: width var(--duration-slow) var(--ease-spring-settle);
+}
+
+/* 拖拽中禁止动画 */
+body.resizing .sidebar,
+body.resizing .sidebar-inner,
+body.resizing .jian-sidebar,
+body.resizing .jian-sidebar-inner,
+body.resizing .channel-inspector-rail {
+    transition: none !important;
+}
+
+/* ========================================
+   模态框进场/退出动画
+   ======================================== */
+
+/* Skill Viewer 模态框 */
+.sv-overlay {
+    animation: hana-glass-fade 0.25s var(--ease-standard) both;
+}
+
+.sv-container {
+    animation: hana-spring-in 0.3s var(--ease-spring) both;
+}
+
+.sv-overlay.closing {
+    animation: hana-fade-out 0.15s var(--ease-standard) both;
+}
+
+.sv-overlay.closing .sv-container {
+    animation: hana-spring-out 0.2s var(--ease-spring-settle) both;
+}
+
+/* Warning 弹窗 */
+.hana-warning-overlay {
+    animation: hana-fade-in 0.2s var(--ease-standard) both;
+}
+
+.hana-warning-box {
+    animation: hana-spring-in 0.3s var(--ease-spring) both;
+}
+
+.hana-warning-overlay.closing {
+    animation: hana-fade-out 0.15s var(--ease-standard) both;
+}
+
+.hana-warning-overlay.closing .hana-warning-box {
+    animation: hana-spring-out 0.2s var(--ease-spring-settle) both;
+}
+
+/* Bridge 教程弹窗 */
+.bridge-tutorial-overlay {
+    animation: hana-fade-in 0.2s var(--ease-standard) both;
+}
+
+.bridge-tutorial-panel {
+    animation: hana-scale-in 0.3s var(--ease-spring) both;
+}
+
+/* DevTools 面板 */
+.devtools-panel .devtools-inner {
+    animation: hana-slide-in-left 0.2s var(--ease-spring) both;
+}
+
+.devtools-panel.closing .devtools-inner {
+    animation: hana-slide-out-left 0.15s var(--ease-spring-settle) both;
+}
+
+/* Onboarding 步骤 */
+.onboarding-step {
+    --slide-y: 10px;
+    animation: hana-fade-up 0.3s var(--ease-spring) both;
+}
+
+.onboarding-progress {
+    animation: hana-scale-in 0.25s var(--ease-spring) both;
+}
+
+/* ========================================
+   浮动元素动画
+   ======================================== */
+
+/* 浮动卡片 */
+.float-card {
+    animation: hana-elastic-bounce 0.2s var(--ease-spring-bounce) both;
+}
+
+/* Context Menu */
+.context-menu {
+    animation: hana-popout 0.15s var(--ease-spring-bounce) both;
+}
+
+.context-menu-submenu {
+    animation: hana-elastic-bounce 0.15s var(--ease-spring-bounce) both;
+}
+
+/* Toast 通知 */
+.hana-toast.show {
+    animation: hana-elastic-bounce 0.25s var(--ease-spring-bounce) both;
+}
+
+/* 浏览器浮动卡片 */
+.browser-floating-card {
+    animation: hana-card-slide-down 0.3s var(--ease-spring) both;
+}
+
+/* 拖拽 Overlay */
+.drop-overlay.visible {
+    animation: hana-glass-fade 0.2s var(--ease-standard) both;
+}
+
+.drop-overlay.visible .drop-overlay-inner {
+    animation: hana-scale-in 0.25s var(--ease-spring) both;
+}
+
+/* ========================================
+   内容切换动画
+   ======================================== */
+
+/* 页面切换 */
+.page-enter {
+    animation: hana-fade-up 0.25s var(--ease-spring) both;
+    --slide-y: 8px;
+}
+
+.page-leave {
+    animation: hana-fade-out 0.15s var(--ease-standard) both;
+}
+
+/* 频道视图切换 */
+.channel-view.active {
+    animation: hana-fade-in 0.2s var(--ease-standard) both;
+}
+
+/* 侧边栏内容切换 */
+.sidebar-chat-content:not(.hidden),
+.sidebar-channel-content:not(.hidden) {
+    animation: hana-fade-up 0.2s var(--ease-out) both;
+    --slide-y: 4px;
+}
+
+/* 笺内容切换 */
+.jian-chat-content:not(.hidden),
+.jian-channel-content:not(.hidden) {
+    animation: hana-fade-up 0.2s var(--ease-out) both;
+    --slide-y: 4px;
+}
+
+/* 消息卡片弹簧进入 */
+.message-group {
+    animation: hana-fade-up 0.2s var(--ease-out) both;
+    --slide-y: 6px;
+}
+
+/* 教程卡片弹簧进场 */
+.tutorial-card {
+    animation: hana-scale-in 0.25s var(--ease-spring) both;
+}
+
+/* ========================================
+   交错动画类 (Stagger)
+   ======================================== */
+
+/* 单个交错延迟类 */
+.hana-stagger-1 { animation-delay: 0.05s; }
+.hana-stagger-2 { animation-delay: 0.1s; }
+.hana-stagger-3 { animation-delay: 0.15s; }
+.hana-stagger-4 { animation-delay: 0.2s; }
+.hana-stagger-5 { animation-delay: 0.25s; }
+
+/* 子元素自动交错动画容器 */
+.hana-stagger-child > * {
+    opacity: 0;
+    animation: hana-fade-up 0.25s var(--ease-spring) both;
+    --slide-y: 8px;
+}
+
+.hana-stagger-child > *:nth-child(1) { animation-delay: 0.03s; }
+.hana-stagger-child > *:nth-child(2) { animation-delay: 0.06s; }
+.hana-stagger-child > *:nth-child(3) { animation-delay: 0.09s; }
+.hana-stagger-child > *:nth-child(4) { animation-delay: 0.12s; }
+.hana-stagger-child > *:nth-child(5) { animation-delay: 0.15s; }
+.hana-stagger-child > *:nth-child(6) { animation-delay: 0.18s; }
+.hana-stagger-child > *:nth-child(7) { animation-delay: 0.21s; }
+.hana-stagger-child > *:nth-child(8) { animation-delay: 0.24s; }
+.hana-stagger-child > *:nth-child(9) { animation-delay: 0.27s; }
+.hana-stagger-child > *:nth-child(10) { animation-delay: 0.3s; }

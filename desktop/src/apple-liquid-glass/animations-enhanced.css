@@ -1,0 +1,215 @@
+/* ========================================
+   Apple Liquid Glass - 增强动画集合
+   从 desktop/src/animations.css 提取的 12 个核心动画
+   ======================================== */
+
+/* ── 弹簧缩放进入 ──
+   用途：模态框、卡片进场动画
+   建议时长：400-500ms
+   性能：transform + opacity（GPU 加速，高性能） */
+@keyframes hana-spring-in {
+    from {
+        opacity: 0;
+        transform: scale(0.92) translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* ── 弹簧缩放退出 ──
+   用途：模态框、卡片退出动画
+   建议时长：300-400ms
+   性能：transform + opacity（GPU 加速，高性能） */
+@keyframes hana-spring-out {
+    from {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.96) translateY(-4px);
+    }
+}
+
+/* ── 弹出进入 ──
+   用途：popover、tooltip、dropdown 弹出动画
+   建议时长：450-550ms
+   性能：transform + opacity（GPU 加速，高性能） */
+@keyframes hana-pop-in {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* ── 平滑展开 ──
+   用途：手风琴、侧边栏展开动画
+   建议时长：350-450ms
+   性能：max-height 动画（会触发 layout，性能较低，建议用于低频场景） */
+@keyframes hana-smooth-expand {
+    from {
+        max-height: 0;
+        opacity: 0;
+        transform: scaleY(0.98);
+    }
+    to {
+        max-height: 2000px;
+        opacity: 1;
+        transform: scaleY(1);
+    }
+}
+
+/* ── 平滑收起 ──
+   用途：手风琴、侧边栏收起动画
+   建议时长：300-400ms
+   性能：max-height 动画（会触发 layout，性能较低，建议用于低频场景） */
+@keyframes hana-smooth-collapse {
+    from {
+        max-height: 2000px;
+        opacity: 1;
+        transform: scaleY(1);
+    }
+    to {
+        max-height: 0;
+        opacity: 0;
+        transform: scaleY(0.98);
+    }
+}
+
+/* ── 连续脉冲 ──
+   用途：呼吸灯、加载指示器、持续状态提示
+   建议时长：2000-3000ms（循环播放）
+   性能：transform + opacity（GPU 加速，适合长时间运行） */
+@keyframes hana-continuous-pulse {
+    0%, 100% {
+        opacity: 0.6;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.02);
+    }
+}
+
+/* ── 形状变形 ──
+   用途：按钮状态切换、图标 morph 动画
+   建议时长：300-400ms
+   性能：transform + border-radius（border-radius 变化会触发 paint，中等性能） */
+@keyframes hana-morph {
+    0% {
+        transform: scale(1) rotate(0deg);
+        border-radius: var(--radius-md);
+    }
+    50% {
+        transform: scale(0.95) rotate(2deg);
+        border-radius: var(--radius-lg);
+    }
+    100% {
+        transform: scale(1) rotate(0deg);
+        border-radius: var(--radius-md);
+    }
+}
+
+/* ── 视差位移 ──
+   用途：滚动时背景/装饰元素微动效果
+   建议时长：与滚动同步或使用 600-800ms
+   性能：transform + opacity（GPU 加速，但大面积元素可能影响合成层） */
+@keyframes hana-parallax-shift {
+    from {
+        transform: translateY(0) scale(1);
+        opacity: 0.8;
+    }
+    to {
+        transform: translateY(-20px) scale(1.05);
+        opacity: 0.4;
+    }
+}
+
+/* ── 光泽扫过 ──
+   用途：按钮 hover 高光、卡片 shimmer 效果，模拟玻璃反光
+   建议时长：800-1200ms（hover）或 2000ms（循环加载）
+   性能：background-position 动画（会触发 paint，建议使用 will-change 优化） */
+@keyframes hana-shimmer {
+    0% {
+        background-position: -200% center;
+    }
+    100% {
+        background-position: 200% center;
+    }
+}
+
+/* ── 轻微晃动 ──
+   用途：错误提示、注意力引导动画
+   建议时长：400-500ms
+   性能：transform only（GPU 加速，高性能） */
+@keyframes hana-wiggle {
+    0%, 100% { transform: rotate(0deg); }
+    20% { transform: rotate(-2deg); }
+    40% { transform: rotate(2deg); }
+    60% { transform: rotate(-1deg); }
+    80% { transform: rotate(1deg); }
+}
+
+/* ── 果冻弹跳 ──
+   用途：成功提示、庆祝动画
+   建议时长：500-600ms
+   性能：transform + opacity（GPU 加速，高性能） */
+@keyframes hana-jelly-bounce {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.15);
+        opacity: 1;
+    }
+    70% {
+        transform: scale(0.95);
+    }
+    85% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* ── 玻璃模糊渐显 ──
+   用途：毛玻璃遮罩进场动画
+   建议时长：300-400ms
+   性能：backdrop-filter（高成本，会触发滤镜计算，建议减少使用频率） */
+@keyframes hana-glass-fade {
+    from {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+        -webkit-backdrop-filter: blur(0px);
+    }
+    to {
+        opacity: 1;
+        backdrop-filter: blur(var(--glass-blur, 20px));
+        -webkit-backdrop-filter: blur(var(--glass-blur, 20px));
+    }
+}
+
+/* ── 下边缘模糊 ──
+   用途：滚动时顶部导航栏效果，动态添加毛玻璃和饱和度
+   建议时长：200-300ms（滚动触发）
+   性能：backdrop-filter + box-shadow（高成本，频繁触发时需注意性能） */
+@keyframes hana-scroll-edge-blur {
+    from {
+        backdrop-filter: blur(0px) saturate(100%);
+        -webkit-backdrop-filter: blur(0px) saturate(100%);
+        box-shadow: none;
+    }
+    to {
+        backdrop-filter: blur(var(--glass-blur-subtle, 12px)) saturate(var(--glass-saturate, 180%));
+        -webkit-backdrop-filter: blur(var(--glass-blur-subtle, 12px)) saturate(var(--glass-saturate, 180%));
+        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+    }
+}

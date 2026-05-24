@@ -1,0 +1,315 @@
+/* ========================================
+   Apple Liquid Glass · 空间层次系统
+   从 styles.css 提取的 15+ 组件玻璃态效果
+   包含：毛玻璃、多层阴影、边框发光、暗色主题覆盖
+   ======================================== */
+
+/* ── 浮动卡片 (float-card) ── */
+.float-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: var(--shadow-lg);
+    will-change: transform, opacity;
+}
+
+html[data-theme="midnight"] .float-card,
+html[data-theme="midnight-contrast"] .float-card {
+    background: var(--glass-bg-dark);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ── 右键菜单 (context-menu) ── */
+.context-menu {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: var(--shadow-xl);
+    will-change: transform, opacity;
+}
+
+html[data-theme="midnight"] .context-menu,
+html[data-theme="midnight-contrast"] .context-menu {
+    background: var(--glass-bg-dark);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.context-menu-submenu {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: var(--shadow-xl);
+}
+
+html[data-theme="midnight"] .context-menu-submenu,
+html[data-theme="midnight-contrast"] .context-menu-submenu {
+    background: var(--glass-bg-dark);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Toast 通知 (hana-toast) ── */
+.hana-toast {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: var(--shadow-xl);
+    will-change: transform, opacity;
+}
+
+html[data-theme="midnight"] .hana-toast,
+html[data-theme="midnight-contrast"] .hana-toast {
+    background: var(--glass-bg-dark);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ── 浏览器浮动卡片 (browser-floating-card) ── */
+.browser-floating-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: var(--shadow-lg);
+    will-change: transform, opacity;
+}
+
+html[data-theme="midnight"] .browser-floating-card,
+html[data-theme="midnight-contrast"] .browser-floating-card {
+    background: var(--glass-bg-dark);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ── 警告框 (hana-warning-box) ── */
+.hana-warning-overlay {
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(var(--glass-blur-subtle));
+    -webkit-backdrop-filter: blur(var(--glass-blur-subtle));
+}
+
+.hana-warning-box {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: var(--shadow-2xl);
+    will-change: transform, opacity;
+}
+
+html[data-theme="midnight"] .hana-warning-box,
+html[data-theme="midnight-contrast"] .hana-warning-box {
+    background: var(--glass-bg-dark);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* ── Skill Viewer 容器 (sv-container) ── */
+.sv-overlay {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(var(--glass-blur-subtle));
+    -webkit-backdrop-filter: blur(var(--glass-blur-subtle));
+}
+
+.sv-container {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: var(--shadow-2xl);
+    will-change: transform, opacity;
+}
+
+html[data-theme="midnight"] .sv-container,
+html[data-theme="midnight-contrast"] .sv-container {
+    background: var(--glass-bg-dark);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* ── Bridge 教程面板 (bridge-tutorial-panel) ── */
+.bridge-tutorial-overlay {
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(var(--glass-blur-subtle));
+    -webkit-backdrop-filter: blur(var(--glass-blur-subtle));
+}
+
+.bridge-tutorial-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: var(--shadow-xl);
+    will-change: transform, opacity;
+}
+
+html[data-theme="midnight"] .bridge-tutorial-panel,
+html[data-theme="midnight-contrast"] .bridge-tutorial-panel {
+    background: var(--glass-bg-dark);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* ── DevTools 面板 (devtools-panel) ── */
+.devtools-panel .devtools-inner {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: var(--shadow-xl);
+    will-change: transform, opacity;
+}
+
+html[data-theme="midnight"] .devtools-panel .devtools-inner,
+html[data-theme="midnight-contrast"] .devtools-panel .devtools-inner {
+    background: var(--glass-bg-dark);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ── 笺卡片 (jian-card) ── */
+.jian-card {
+    box-shadow: var(--shadow-md);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    transition: box-shadow var(--duration-fast) var(--ease-spring-gentle),
+                border-color var(--duration-fast) var(--ease-standard);
+}
+
+.jian-card:hover {
+    box-shadow: var(--shadow-lg);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+/* ── 侧边栏 Bridge 卡片 (sidebar-bridge-card) ── */
+.sidebar-bridge-card {
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(8px) saturate(150%);
+    -webkit-backdrop-filter: blur(8px) saturate(150%);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    box-shadow: var(--shadow-sm);
+}
+
+.sidebar-bridge-card:hover {
+    background: rgba(255, 255, 255, 0.65);
+    box-shadow: var(--shadow-md);
+}
+
+/* ── Provider 卡片 (provider-card) ── */
+.provider-card {
+    box-shadow: var(--shadow-xs);
+    transition: box-shadow var(--duration-fast) var(--ease-spring-gentle),
+                border-color var(--duration-fast) var(--ease-standard),
+                transform var(--duration-fast) var(--ease-spring-gentle);
+}
+
+.provider-card:hover {
+    box-shadow: var(--shadow-md), var(--shadow-accent);
+}
+
+/* ── 教程卡片 (tutorial-card) ── */
+.tutorial-card {
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow var(--duration-fast) var(--ease-spring-gentle),
+                transform var(--duration-fast) var(--ease-spring-gentle);
+}
+
+.tutorial-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+/* ── Onboarding 工作区卡片 (ob-workspace-card) ── */
+.ob-workspace-card {
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow var(--duration-fast) var(--ease-spring-gentle);
+}
+
+.ob-workspace-card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+/* ── 模型列表 (model-list) ── */
+.model-list {
+    box-shadow: var(--shadow-lg);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* ── 输入包装器 (input-wrapper) ── */
+.input-wrapper {
+    box-shadow: var(--shadow-sm);
+    transition: border-color var(--duration-slow) var(--ease-spring-settle),
+                box-shadow var(--duration-slow) var(--ease-spring-gentle),
+                transform var(--duration-fast) var(--ease-spring-gentle);
+}
+
+.input-wrapper:focus-within {
+    box-shadow: var(--shadow-md), var(--shadow-accent);
+}
+
+/* ── 边框发光系统 (hana-border-glow) ── */
+.hana-border-glow {
+    position: relative;
+}
+
+.hana-border-glow::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+        135deg,
+        rgba(var(--accent-rgb, 83, 125, 150), 0.3),
+        transparent 50%,
+        rgba(var(--accent-rgb, 83, 125, 150), 0.15)
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease-standard);
+    pointer-events: none;
+}
+
+.hana-border-glow:hover::before,
+.hana-border-glow:focus-within::before {
+    opacity: 1;
+}
+
+/* ========================================
+   暗色主题覆盖 · 阴影加深
+   ======================================== */
+
+html[data-theme="midnight"] .hana-shadow-sm,
+html[data-theme="midnight-contrast"] .hana-shadow-sm {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+html[data-theme="midnight"] .hana-shadow-md,
+html[data-theme="midnight-contrast"] .hana-shadow-md {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+html[data-theme="midnight"] .hana-shadow-lg,
+html[data-theme="midnight-contrast"] .hana-shadow-lg {
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3), 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+html[data-theme="midnight"] .hana-shadow-xl,
+html[data-theme="midnight-contrast"] .hana-shadow-xl {
+    box-shadow: 0 20px 25px rgba(0, 0, 0, 0.35), 0 8px 10px rgba(0, 0, 0, 0.25);
+}
+
+html[data-theme="midnight"] .hana-shadow-2xl,
+html[data-theme="midnight-contrast"] .hana-shadow-2xl {
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 12px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* ── 暗色主题毛玻璃边框增强 ── */
+html[data-theme="midnight"] .hana-glass,
+html[data-theme="midnight-contrast"] .hana-glass {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+html[data-theme="midnight"] .hana-glass-subtle,
+html[data-theme="midnight-contrast"] .hana-glass-subtle {
+    border-color: rgba(255, 255, 255, 0.06);
+}

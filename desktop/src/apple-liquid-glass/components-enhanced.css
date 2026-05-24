@@ -1,0 +1,212 @@
+/* ========================================
+   组件动画增强样式
+   提取自 styles.css · Apple Liquid Glass 风格
+   ======================================== */
+
+/* 按钮弹簧交互 */
+.sidebar-action-btn,
+.float-card-bar-btn,
+.devtools-btn,
+.sv-btn,
+.bridge-test-btn,
+.ob-btn,
+.ob-test-btn {
+    transition: transform var(--duration-instant) var(--ease-spring-settle),
+                background var(--duration-fast) var(--ease-standard),
+                color var(--duration-fast) var(--ease-standard),
+                border-color var(--duration-fast) var(--ease-standard),
+                box-shadow var(--duration-fast) var(--ease-spring-gentle);
+}
+.sidebar-action-btn:active,
+.float-card-bar-btn:active,
+.devtools-btn:active,
+.sv-btn:active,
+.bridge-test-btn:active,
+.ob-btn:active,
+.ob-test-btn:active {
+    transform: scale(0.94);
+}
+
+/* 发送按钮弹性 */
+.send-btn {
+    transition: transform var(--duration-instant) var(--ease-spring-settle),
+                background var(--duration-fast) var(--ease-standard),
+                box-shadow var(--duration-fast) var(--ease-spring-gentle);
+}
+.send-btn:active {
+    transform: scale(0.92);
+}
+
+/* 附件按钮微弹 */
+.attach-btn {
+    transition: transform var(--duration-fast) var(--ease-spring-gentle),
+                color var(--duration-fast) var(--ease-standard),
+                border-color var(--duration-fast) var(--ease-standard),
+                background var(--duration-fast) var(--ease-standard);
+}
+.attach-btn:hover {
+    transform: scale(1.06);
+}
+.attach-btn:active {
+    transform: scale(0.94);
+}
+
+/* Plan Mode 按钮 */
+.plan-mode-btn {
+    transition: transform var(--duration-fast) var(--ease-spring-gentle),
+                color var(--duration-fast) var(--ease-standard),
+                background var(--duration-fast) var(--ease-standard),
+                border-color var(--duration-fast) var(--ease-standard);
+}
+.plan-mode-btn:hover {
+    transform: scale(1.04);
+}
+
+/* Session 列表项弹簧 */
+.session-item {
+    transition: background var(--duration-fast) var(--ease-standard),
+                color var(--duration-fast) var(--ease-standard),
+                transform var(--duration-fast) var(--ease-spring-gentle);
+}
+.session-item:active {
+    transform: scale(0.98);
+}
+
+/* 浮动卡片项微交互 */
+.float-card-item {
+    transition: background var(--duration-instant) var(--ease-standard),
+                transform var(--duration-fast) var(--ease-spring-gentle);
+}
+.float-card-item:active {
+    transform: scale(0.98);
+}
+
+/* Context Menu 项弹簧 */
+.context-menu-item {
+    transition: background var(--duration-instant) var(--ease-standard),
+                transform var(--duration-fast) var(--ease-spring-gentle);
+}
+.context-menu-item:active {
+    transform: scale(0.98);
+}
+
+/* 消息卡片弹簧进入 */
+.message-group {
+    animation: hana-fade-up 0.2s var(--ease-out) both;
+    --slide-y: 6px;
+}
+
+/* 消息 footer 按钮微交互 */
+.messageFooterBtn {
+    transition: transform var(--duration-instant) var(--ease-spring-settle),
+                color var(--duration-instant) var(--ease-standard),
+                background var(--duration-instant) var(--ease-standard);
+}
+.messageFooterBtn:active {
+    transform: scale(0.88);
+}
+
+/* Toggle 开关弹簧增强 */
+.hana-toggle {
+    transition: background var(--duration-slow) var(--ease-spring-settle);
+}
+.hana-toggle::after {
+    transition: transform var(--duration-slow) var(--ease-spring-bounce);
+}
+
+/* Provider Card 弹簧选择 */
+.provider-card,
+.ob-provider-option,
+.model-item,
+.ob-locale-btn {
+    transition: transform var(--duration-fast) var(--ease-spring-gentle),
+                border-color var(--duration-fast) var(--ease-standard),
+                background var(--duration-fast) var(--ease-standard),
+                color var(--duration-fast) var(--ease-standard);
+}
+.provider-card:active,
+.ob-provider-option:active,
+.model-item:active,
+.ob-locale-btn:active {
+    transform: scale(0.97);
+}
+
+/* Yuan Chip 弹簧选择 */
+.yuan-chip {
+    transition: transform var(--duration-fast) var(--ease-spring-gentle),
+                border-color var(--duration-fast) var(--ease-standard),
+                background var(--duration-fast) var(--ease-standard),
+                color var(--duration-fast) var(--ease-standard);
+}
+.yuan-chip:active {
+    transform: scale(0.96);
+}
+
+/* 输入区 wrapper 弹簧边界 */
+.input-wrapper {
+    transition: border-color var(--duration-slow) var(--ease-spring-settle),
+                box-shadow var(--duration-slow) var(--ease-spring-gentle),
+                transform var(--duration-fast) var(--ease-spring-gentle);
+}
+
+/* 教程卡片弹簧进场 */
+.tutorial-card {
+    animation: hana-scale-in 0.25s var(--ease-spring) both;
+}
+
+/* Onboarding 步骤点弹簧 */
+.onboarding-dot {
+    transition: background var(--duration-slow) var(--ease-spring-settle),
+                transform var(--duration-slow) var(--ease-spring-bounce);
+}
+.onboarding-dot.active {
+    transform: scale(1.35);
+}
+
+/* Bridge Agent 头像弹簧 */
+.bridge-agent-row-avatar-wrap {
+    transition: transform var(--duration-fast) var(--ease-spring-bounce),
+                border-color var(--duration-fast) var(--ease-standard),
+                box-shadow var(--duration-fast) var(--ease-spring-gentle);
+}
+
+/* 滚动条弹簧显示 */
+.scrollable::-webkit-scrollbar {
+    transition: width var(--duration-fast) var(--ease-spring-settle),
+                height var(--duration-fast) var(--ease-spring-settle);
+}
+
+/* Resize Handle 弹簧反馈 */
+.resize-handle-right {
+    transition: background var(--duration-fast) var(--ease-spring-settle),
+                opacity var(--duration-fast) var(--ease-spring-settle);
+}
+
+/* 连接状态点脉冲 */
+.status-dot {
+    transition: background var(--duration-slow) var(--ease-spring-settle);
+}
+.connection-status:not(.connected) .status-dot {
+    animation: hana-continuous-pulse 2s ease-in-out infinite;
+}
+
+/* Beta Badge 微光 */
+.beta-badge {
+    position: relative;
+    overflow: hidden;
+}
+.beta-badge::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+    animation: hana-shimmer 3s ease-in-out infinite;
+}
