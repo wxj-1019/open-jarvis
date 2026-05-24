@@ -6,6 +6,7 @@ import { ContextRing } from './ContextRing';
 import { ThinkingLevelButton } from './ThinkingLevelButton';
 import { ModelSelector } from './ModelSelector';
 import { SendButton } from './SendButton';
+import { VoiceButton } from './VoiceButton';
 import type { ThinkingLevel } from '../../stores/model-slice';
 import type { Model } from '../../types';
 import type { SessionModel } from '../../stores/chat-types';
@@ -33,6 +34,8 @@ interface Props {
   onSend: () => void;
   onSteer: () => void;
   onStop: () => void;
+  /** 语音识别文本回调 */
+  onVoiceRecognized?: (text: string) => void;
 }
 
 /** 编辑器下方的工具按钮行 + 发送控制 */
@@ -42,6 +45,7 @@ export const InputControlBar = memo(function InputControlBar(props: Props) {
     permissionMode, onPermissionModeChange, planModeLocked,
     showThinking, thinkingLevel, onThinkingChange, modelXhigh,
     models, sessionModel, isStreaming, hasInput, canSend, onSend, onSteer, onStop,
+    onVoiceRecognized,
   } = props;
 
   return (
@@ -64,6 +68,9 @@ export const InputControlBar = memo(function InputControlBar(props: Props) {
         </button>
         <PlanModeButton mode={permissionMode} onChange={onPermissionModeChange} locked={planModeLocked} />
         <ContextRing />
+        {onVoiceRecognized && (
+          <VoiceButton onRecognized={onVoiceRecognized} isStreaming={isStreaming} />
+        )}
       </div>
       <div className={styles['input-controls']}>
         {showThinking && (

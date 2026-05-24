@@ -1,6 +1,6 @@
-# 2026-05-23 项目排查报告
+# 2026-05-24 项目排查报告
 
-**排查日期**: 2026-05-23  
+**排查日期**: 2026-05-24  
 **排查方式**: CodeReview 子代理 + 差距分析文档对照  
 **范围**: 全部未提交变更 + 差距分析进度
 
@@ -97,29 +97,38 @@
 | ~~包管理器统一~~ | ✅ 完成 | 移除 npm，统一 pnpm |
 | 系统健康检查 + 校验基础设施 | ✅ 完成 | 30 Schema + validateBody 全项目迁移 + 118 测试 |
 
-### 3.2 Phase 2：从被动到主动（P1）—— 🔄 进行中
+### 3.2 Phase 2：从被动到主动（P1）—— ✅ 完成
 
 | 任务 | 状态 | 说明 |
 |------|------|------|
 | 事件驱动架构 | ✅ 完成 | OSEventSource + get-windows/chokidar + EventBus capability + Scheduler 订阅, 15 测试通过 |
 | 上下文感知 | ✅ 完成 | UserContextTracker 聚合 OS 事件 → 用户状态模型 → Agent.buildSystemPrompt 注入, 18 测试通过 |
 | MCP 原生支持扩展（Resources/Prompts/通知） | ✅ 完成 | Resources 注入 Agent prompt（Hub 槽位 + server 接线 + `getResourcesText()` + `mcp:resources-cached` 事件）, 工具命名优化（去掉 `prompt_` 前缀）, 13 测试通过 |
-| 多步自主规划 | ⏳ |
-| 系统级快速唤起 | ⏳ |
+| 多步自主规划 | ✅ 完成 | Plan Schema + PlanExecutor 编排循环 + plan_execute 工具（分解→DAG 执行→失败重规划→DeferredResultStore 回注）, Agent System Prompt 引导注入, 38 测试通过 |
+| 系统级快速唤起 | ✅ 完成 | 全局快捷键（Ctrl+Shift+J / Ctrl+Shift+Space）+ Spotlight 浮动输入窗口 + 托盘 New Session 菜单 + React spotlight-input 事件监听, 代码审查 5 项问题全部修复 |
 
-### 3.3 Phase 3：生态扩展（P2）—— ⏳ 待启动
+### 3.3 Phase 3：生态扩展（P2）—— ✅ 全部完成
 
 | 任务 | 状态 |
 |------|------|
-| 日历/邮件集成 | ⏳ 依赖 MCP 原生支持 |
-| RAG 文档摄入 | ⏳ 依赖记忆向量化 |
-| 意图预测与主动介入 | ⏳ 依赖事件+上下文 |
-| 子 Agent 调度增强 | ⏳ |
-| 反馈学习 | ⏳ |
+| 日历/邮件集成 | ✅ 完成 | Google Calendar/Gmail + Outlook Calendar/Mail 4 预设, API + UI 选择器 + System Prompt 注入, 26 测试通过 |
+| RAG 文档摄入 | ✅ 完成 | DocStore (doc_chunks FTS5 + chunk_embeddings 向量) + DocumentIngestor (递归分块+overwrite) + RAGRetriever (FTS5+向量+RRF融合) + ingest_document/search_documents Agent 工具 + agent.js 集成, 52 测试通过 |
+| 意图预测与主动介入 | ✅ 完成 | ProactiveRuleEngine 规则引擎（5 种条件类型 + 冷却机制 + 3 条内置规则）, Scheduler 集成, PreferencesManager 持久化, RESTful API（5 个端点）, 44 测试通过 |
+| 子 Agent 调度增强 | ✅ 完成 | DAG 并行执行（parallel-executor.js）+ maxParallel 参数, 16 测试通过 |
+| 反馈学习 | ✅ 完成 | fact-store type 列 (fact/feedback/preference) + getByType/getActiveFeedback + deep-memory classifyFact 传播 + agent.js _getLearnedFeedbackSection 注入系统提示词, 19 测试通过 |
 
 ### Phase 4-5：自然交互 + 长期演进（P2-P3）—— ⏳ 待启动
 
-语音交互、多模态、IoT、行为学习等
+| 优先级 | 任务 | 预估工作量 |
+|--------|------|-----------|
+| **P2** | 🎤 语音交互（STT/TTS/唤醒词） | 大（4周） |
+| **P2** | 📱 通讯协作增强（Bridge主动推送） | 中（2周） |
+| **P3** | 🔔 通知智能分级 | 小（1周） |
+| **P3** | 🖼️ 多模态理解增强（屏幕/音频/视频） | 中 |
+| **P3** | 🏠 IoT/智能家居 | 小（依赖MCP Server） |
+| **P3** | 🧠 行为模式学习 | 中 |
+| **P3** | 💝 情感理解 | 中 |
+| **P3** | 📲 移动端完善 | 视方案 |
 
 ---
 
@@ -153,7 +162,9 @@ P0 问题：    ✅ 全部解决
              ✅ 事件驱动架构（已完成）
              ✅ 上下文感知（已完成）
              ✅ MCP 原生扩展（已完成）
-下一步：     🔄 Phase 2 主动性架构升级 → 多步自主规划 / 日历集成
+             ✅ RAG 文档摄入（已完成：DocStore + DocumentIngestor + RAGRetriever + 工具 + 52 测试）
+             ✅ 反馈学习（已完成：type 列 + classifyFact + 系统提示词注入 + 19 测试）
+下一步：     🔄 Phase 4 自然交互 → 语音交互 / 通讯协作增强
 ```
 
 ### 核心结论
@@ -164,7 +175,13 @@ P0 问题：    ✅ 全部解决
 4. **事件驱动架构已落地**：OSEventSource 统一抽象窗口焦点 + 文件系统事件, 通过 EventBus 驱动 Scheduler 按需巡检, 15 个单元测试全部通过
 5. **上下文感知已落地**：UserContextTracker 聚合 OS 事件 → 维护用户状态模型（当前窗口/最近切换/文件活动）→ 注入 Agent.buildSystemPrompt, 18 个单元测试全部通过
 6. **MCP 原生扩展已落地**：Resources 实时注入 Agent prompt（`_mcpResourcesText` + `getMcpResourcesText` 双回调降级 + `mcp:resources-cached` 事件零竞态同步）, 工具命名优化（移除 `prompt_` 前缀）, 13 个测试通过
-7. **下一步建议**：✅ Phase 1 收工 → 🔄 Phase 2 进行中 → **多步自主规划** 或 **日历集成**（无前置依赖, 改动范围清晰可控）
+7. **多步自主规划已落地**：Plan Schema + PlanExecutor 编排循环（分解→DAG 拓扑执行→失败重规划→DeferredResultStore 回注）, plan_execute 工具已注册到 Agent 并注入 System Prompt 引导, 38 个测试通过
+8. **系统级快速唤起已完成**：全局快捷键（Ctrl+Shift+J 切换主窗口 / Ctrl+Shift+Space Spotlight）+ Spotlight 浮动输入 + 托盘 New Session + React 事件桥接, 代码审查修复 5 项问题（空指针崩溃/双重提交竞态/静默消息丢失/转发重试/安全建议）
+9. **Phase 2 全部完成** → 下一步进入 **Phase 3 生态扩展**
+10. **意图预测与主动介入已完成**：ProactiveRuleEngine 规则引擎（app_pattern/time_guard/file_pattern/idle_duration/context_keyword 5 种条件 + 冷却机制 + 3 条内置规则）, 集成到 Scheduler 生命周期, PreferencesManager 持久化, RESTful API（GET/POST/PATCH/DELETE/test 5 个端点）, 44 个测试通过
+11. **RAG 文档摄入已完成**：DocStore (doc_chunks FTS5 + chunk_embeddings 向量 + cosine_similarity SQL 函数) + DocumentIngestor (递归字符分割器 512/64 + overwrite 支持) + RAGRetriever (FTS5+向量+RRF k=60 融合) + ingest_document/search_documents 两个 Agent 工具 + agent.js dispose 生命周期泄漏修复 + 52 个测试全部通过
+12. **反馈学习已完成**：fact-store Schema v4→v5 迁移 (type 列 + 索引) + deep-memory classifyFact 返回 {type, extraTags} + agent.js _getLearnedFeedbackSection 注入系统提示词 + 19 个测试全部通过
+13. **Phase 3 全部完成** → 下一步进入 **Phase 4 自然交互**
 
 ---
 

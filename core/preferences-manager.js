@@ -565,6 +565,30 @@ export class PreferencesManager {
     } catch {}
     return null;
   }
+
+  // ── 主动介入规则 ──
+
+  /**
+   * 读取用户自定义主动介入规则
+   * @returns {object[]}
+   */
+  getProactiveRules() {
+    const raw = this._cache.proactive_rules;
+    if (!Array.isArray(raw)) return [];
+    return raw.filter((r) => r && typeof r === "object" && typeof r.id === "string");
+  }
+
+  /**
+   * 写入用户自定义主动介入规则
+   * @param {object[]} rules
+   */
+  setProactiveRules(rules) {
+    const prefs = this.getPreferences();
+    prefs.proactive_rules = Array.isArray(rules)
+      ? rules.filter((r) => r && typeof r === "object" && typeof r.id === "string")
+      : [];
+    this.savePreferences(prefs);
+  }
 }
 
 function normalizeBridgeMediaPublicBaseUrl(value) {

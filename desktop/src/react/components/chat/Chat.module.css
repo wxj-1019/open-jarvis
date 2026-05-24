@@ -80,14 +80,17 @@
     margin-top: var(--space-xs);
 }
 
-/* 用户消息 */
+/* 用户消息 — 棉花糖气泡风格 */
 .messageUser {
     background: rgba(0, 0, 0, 0.045);
     padding: var(--space-sm) var(--space-md);
-    border-radius: var(--radius-chat-card) var(--radius-chat-card) var(--radius-chat-card-inner) var(--radius-chat-card);
+    /* iMessage 风格：大部分圆角 + 右下小圆角指向自己 */
+    border-radius: 18px 18px 4px 18px;
     color: var(--text);
     font-size: 0.95rem;
     word-break: break-word;
+    /* 棉花糖蓬松阴影 */
+    box-shadow: var(--shadow-marshmallow-sm);
 }
 
 .messageUser .userText p:last-child {
@@ -219,8 +222,10 @@
     max-width: 200px;
     max-height: 150px;
     background: var(--attach-bg, rgba(0, 0, 0, 0.04));
-    border-radius: var(--radius-chat-card);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    /* 棉花糖圆角 */
+    border-radius: 14px;
+    /* 蓬松阴影 */
+    box-shadow: var(--shadow-marshmallow-sm);
     object-fit: contain;
 }
 
@@ -245,13 +250,19 @@
 }
 
 
-/* 助手消息 */
+/* 助手消息 — 棉花糖气泡风格 */
 .messageAssistant {
     color: var(--hana-text);
     font-size: 0.95rem;
     line-height: 1.75;
     word-break: break-word;
     position: relative;
+    /* 助手消息容器增加圆角和微妙背景 */
+    background: rgba(var(--accent-rgb, 83 125 150), 0.03);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: 18px 18px 18px 4px;
+    /* 棉花糖蓬松阴影 */
+    box-shadow: var(--shadow-marshmallow-sm);
 }
 
 /* 助手回答正文用宋体 */
@@ -349,19 +360,12 @@
 }
 
 .streamTailChar {
-    animation: stream-tail-fade 180ms var(--ease-out) both;
+    animation: hana-fade-in 180ms var(--ease-out) both;
     animation-delay: calc(var(--stream-tail-index, 0) * 14ms);
     will-change: opacity;
 }
 
-@keyframes stream-tail-fade {
-    from {
-        opacity: 0.15;
-    }
-    to {
-        opacity: 1;
-    }
-}
+/* stream-tail-fade 已迁移至 animations.css，使用 hana-fade-in */
 
 @media (prefers-reduced-motion: reduce) {
     .streamTailChar {

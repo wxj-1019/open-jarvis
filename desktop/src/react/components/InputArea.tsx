@@ -270,6 +270,14 @@ function InputAreaInner({ surface }: Required<InputAreaProps>) {
     editor.view.dispatch(editor.state.tr.setMeta('input-placeholder-refresh', placeholder));
   }, [editor, placeholder]);
 
+  // ── Voice recognition handler ──
+  const handleVoiceRecognized = useCallback((text: string) => {
+    if (!editor || editor.isDestroyed || !text) return;
+    // 在光标位置插入文本
+    editor.commands.insertContent(text);
+    editor.commands.focus();
+  }, [editor]);
+
   // ── Focus trigger ──
   const inputFocusTrigger = useStore(s => s.inputFocusTrigger);
   useEffect(() => {
@@ -370,6 +378,7 @@ function InputAreaInner({ surface }: Required<InputAreaProps>) {
             onSend={handleSend}
             onSteer={handleSteer}
             onStop={handleStop}
+            onVoiceRecognized={handleVoiceRecognized}
           />
         </div>
       </div>

@@ -277,6 +277,7 @@ app.on("gpu-info-update", () => {
 
 let splashWindow = null;
 let mainWindow = null;
+let spotlightWindow = null;
 let onboardingWindow = null;
 
 let settingsWindow = null;
@@ -979,6 +980,104 @@ function monitorServer() {
 /**
  * 显示主窗口（优先 onboardingWindow，其次 mainWindow）
  */
+// ── 全局快捷键注册 ──
+function registerGlobalShortcuts() {
+  // CommandOrControl+Shift+J: 切换主窗口显示/隐藏
+  globalShortcut.register('CommandOrControl+Shift+J', () => {
+    if (mainWindow?.isVisible()) {
+      mainWindow.hide();
+    } else {
+      showPrimaryWindow();
+    }
+  });
+
+  // CommandOrControl+Shift+Space: 显示 Spotlight 浮动输入窗口
+  globalShortcut.register('CommandOrControl+Shift+Space', () => {
+    try {
+      if (!spotlightWindow || spotlightWindow.isDestroyed()) {
+        createSpotlightWindow();
+      }
+      if (spotlightWindow && !spotlightWindow.isDestroyed()) {
+        spotlightWindow.show();
+        spotlightWindow.focus();
+      }
+    } catch (err) {
+      console.warn('[desktop] spotlight shortcut error:', err.message);
+    }
+  });
+}
+
+// ── Spotlight 浮动输入窗口 ──
+function createSpotlightWindow() {
+  const { width: screenW } = screen.getPrimaryDisplay().workAreaSize;
+
+  spotlightWindow = new BrowserWindow({
+    width: 620,
+    height: 80,
+    x: Math.round((screenW - 620) / 2),
+    y: Math.round(screen.getPrimaryDisplay().workAreaSize.height * 0.3),
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    hasShadow: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.bundle.cjs'),
+      sandbox: false,
+      contextIsolation: true,
+    },
+  });
+
+  loadWindowURL(spotlightWindow, 'spotlight');
+
+  spotlightWindow.on('blur', () => {
+    if (spotlightWindow && !spotlightWindow.isDestroyed()) {
+      spotlightWindow.hide();
+    }
+  });
+
+  spotlightWindow.on('closed', () => {
+    spotlightWindow = null;
+  });
+}
+
+// ── 转发 Spotlight 输入到渲染进程 ──
+function _forwardSpotlightInput(text) {
+  if (!text || !text.trim()) return;
+  showPrimaryWindow();
+
+  let attempts = 0;
+  const maxAttempts = 10;
+  const trySend = () => {
+    const win = mainWindow || onboardingWindow;
+    if (win && !win.isDestroyed() && win.webContents) {
+      try {
+        win.webContents.executeJavaScript(`
+          window.dispatchEvent(new CustomEvent('spotlight-input', { detail: ${JSON.stringify(text)} }));
+        `);
+        return;
+      } catch (err) {
+        console.warn('[desktop] spotlight forward error:', err.message);
+      }
+    }
+    if (++attempts < maxAttempts) {
+      setTimeout(trySend, Math.min(500 * attempts, 3000));
+    } else {
+      console.warn('[desktop] spotlight forward failed after', maxAttempts, 'attempts');
+    }
+  };
+  trySend();
+}
+
+// ── Spotlight IPC 处理 ──
+ipcMain.on('spotlight-submit', (_event, text) => {
+  _forwardSpotlightInput(text);
+  if (spotlightWindow && !spotlightWindow.isDestroyed()) {
+    spotlightWindow.hide();
+  }
+});
+
 function showPrimaryWindow() {
   if (process.platform === "darwin") app.dock.show();
   const win = mainWindow || onboardingWindow;
@@ -1020,6 +1119,17 @@ function createTray() {
 
   const buildMenu = () => Menu.buildFromTemplate([
     { label: mt("tray.show", null, "Show Hanako"), click: () => showPrimaryWindow() },
+    { label: mt("tray.newSession", null, "New Session"), click: () => {
+      showPrimaryWindow();
+      const win = mainWindow || onboardingWindow;
+      if (win && !win.isDestroyed()) {
+        try {
+          win.webContents.executeJavaScript(`
+            window.dispatchEvent(new CustomEvent('new-session'));
+          `);
+        } catch (err) { /* ignore */ }
+      }
+    } },
     { label: mt("tray.settings", null, "Settings"), click: () => createSettingsWindow() },
     { type: "separator" },
     { label: mt("tray.quit", null, "Quit"), click: () => { isExitingServer = true; isQuitting = true; app.quit(); } },
@@ -3358,6 +3468,17 @@ wrapIpcHandler("onboarding-complete", async () => {
   });
 });
 
+
+// ── 语音交互 IPC ──
+// speak-text: 渲染进程触发 TTS 播放，广播给所有渲染窗口
+wrapIpcBestEffortHandler("speak-text", (_event, text, opts) => {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) {
+      win.webContents.send("speak-request", text, opts);
+    }
+  }
+});
+
 // ── 窗口控制 IPC（Windows/Linux 自绘标题栏用）──
 wrapIpcHandler("get-platform", () => process.platform);
 wrapIpcBestEffortHandler("window-minimize", (event) => {
@@ -3446,6 +3567,7 @@ app.whenReady().then(async () => {
     monitorServer();
     setupBrowserCommands();
     createTray();
+    registerGlobalShortcuts();
     if (_startHiddenAtLogin && process.platform === "darwin") {
       app.dock.hide();
     }

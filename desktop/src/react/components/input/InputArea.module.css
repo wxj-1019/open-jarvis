@@ -81,6 +81,24 @@
     border-color: rgba(var(--accent-rgb), 0.25);
 }
 
+/* 语音按钮 */
+.voice-btn {
+    position: relative;
+}
+
+.voice-btn-active {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: rgba(var(--accent-rgb), 0.12);
+}
+
+.voice-btn-listening {
+    animation: hana-pulse-ring 1.5s ease-in-out infinite;
+}
+
+/* voice-pulse 动画已迁移至 animations.css，使用 hana-pulse-ring */
+/* 保留此处引用以兼容现有组件，后续统一迁移至 hana-pulse-ring */
+
 /* Plan Mode 按钮 */
 .plan-mode-btn {
     display: inline-flex;
@@ -1228,7 +1246,7 @@
     gap: var(--space-sm);
     background: var(--bg-card);
     border: 1px solid var(--overlay-light);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-card);
     padding: var(--space-md) var(--space-md) var(--space-sm);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     transition: border-color 0.3s var(--ease-out),
@@ -1247,7 +1265,7 @@
 .input-surface-mobile .input-wrapper {
     gap: 0.45rem;
     padding: 0.65rem 0.75rem 0.55rem;
-    border-radius: min(var(--radius-lg), 14px);
+    border-radius: min(var(--radius-card), 18px);
 }
 
 .input-box {

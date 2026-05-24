@@ -365,6 +365,16 @@
     }
 }
 
+/* ── 强调色呼吸发光（输入框焦点/悬浮）── */
+@keyframes hana-glow-breathe {
+    0%, 100% {
+        box-shadow: var(--shadow-md), 0 0 8px rgba(var(--accent-rgb, 83 125 150), 0.12);
+    }
+    50% {
+        box-shadow: var(--shadow-md), 0 0 20px rgba(var(--accent-rgb, 83 125 150), 0.22);
+    }
+}
+
 /* ── 下边缘模糊（滚动时顶部导航栏效果）── */
 @keyframes hana-scroll-edge-blur {
     from {

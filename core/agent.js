@@ -38,6 +38,11 @@ import { createWaitTool } from "../lib/tools/wait-tool.js";
 import { createStopTaskTool } from "../lib/tools/stop-task-tool.js";
 import { createCurrentStatusTool } from "../lib/tools/current-status-tool.js";
 import { createTerminalTool } from "../lib/tools/terminal-tool.js";
+import { DocStore } from "../lib/rag/doc-store.js";
+import { createIngestDocumentTool } from "../lib/tools/ingest-document-tool.js";
+import { createSearchDocumentsTool } from "../lib/tools/search-documents-tool.js";
+import { createSpeakTool } from "../lib/tools/speak-tool.js";
+import { createVoiceInputTool } from "../lib/tools/voice-input-tool.js";
 import { runCompatChecks } from "../lib/compat/index.js";
 import { getPlatformPromptNote } from "./platform-prompt.js";
 import { assertAgentConfigPatchYuan, getAgentConfigRepairState } from "./yuan-registry.js";
@@ -135,6 +140,7 @@ export class Agent {
     // 路径（全部从 this.agentDir 派生）
     this.configPath = path.join(this.agentDir, "config.yaml");
     this.factsDbPath = path.join(this.agentDir, "memory", "facts.db");
+    this.ragDocsDbPath = path.join(this.agentDir, "memory", "rag_docs.db");
     this.memoryMdPath = path.join(this.agentDir, "memory", "memory.md");
     this.todayMdPath    = path.join(this.agentDir, "memory", "today.md");
     this.weekMdPath     = path.join(this.agentDir, "memory", "week.md");
@@ -184,6 +190,11 @@ export class Agent {
     this._currentStatusTool = null;
     this._terminalTool = null;
     this._planExecuteTool = null;
+    this._docStore = null;
+    this._ingestDocumentTool = null;
+    this._searchDocumentsTool = null;
+    this._speakTool = null;
+    this._voiceInputTool = null;
 
     /**
      * 外部回调注入（由 AgentManager._createAgentInstance 填充）。
@@ -572,7 +583,6 @@ export class Agent {
       persistSubagentSessionMeta: (sessionPath, meta) => writeSubagentSessionMeta(sessionPath, meta),
     });
 
-    // 11.5 plan_execute 工具（多步自主规划）
     this._planExecuteTool = createPlanExecuteTool({
       executeIsolated: (prompt, opts) => {
         if (!this._cb?.executeIsolated) throw new Error("plan_execute 调用失败：engine 未初始化");
@@ -584,6 +594,33 @@ export class Agent {
       currentAgentId: this.channelsDir && this.agentsDir ? this.id : undefined,
       agentDir: this.agentDir,
       emitEvent: (event, sp) => this._cb?.emitEvent?.(event, sp),
+    });
+
+    // 11.6 DocStore + RAG 工具（文档摄入和语义搜索）
+    const embeddingModel = this._factStore?.getEmbeddingModel() || null;
+    this._docStore = new DocStore(this.ragDocsDbPath, {
+      embeddingModel,
+    });
+    this._ingestDocumentTool = createIngestDocumentTool({
+      docStore: this._docStore,
+      embeddingModel,
+    });
+    this._searchDocumentsTool = createSearchDocumentsTool({
+      docStore: this._docStore,
+      embeddingModel,
+    });
+
+    // 11.7 语音工具（TTS 播放 + 语音输入）
+    this._speakTool = createSpeakTool({
+      onSpeak: async (opts) => {
+        this._cb?.emitEvent?.({ type: "speak", ...opts }, null);
+      },
+    });
+    this._voiceInputTool = createVoiceInputTool({
+      onListen: async (opts) => {
+        this._cb?.emitEvent?.({ type: "voice_input_request", ...opts }, null);
+        return "Listening started. Please speak into the microphone.";
+      },
     });
 
     // 12. 组装 system prompt（按 master 构建，与 per-session 开关解耦）
@@ -602,6 +639,7 @@ export class Agent {
   async dispose() {
     await this._memoryTicker?.stop();
     this._factStore?.close();
+    this._docStore?.close();
     this._runtimeInitialized = false;
   }
 
@@ -614,12 +652,15 @@ export class Agent {
     const ticker = this._memoryTicker;
     const factStore = this._factStore;
 
+    const docStore = this._docStore;
     const cleanup = () => {
       this._memoryTicker = null;
       this._factStore = null;
+      this._docStore = null;
       this._runtimeInitialized = false;
       this._disposing = false;
       factStore?.close();
+      docStore?.close();
     };
 
     if (ticker) {
@@ -741,6 +782,10 @@ export class Agent {
       this._updateSettingsTool,
       this._subagentTool,
       this._planExecuteTool,
+      this._ingestDocumentTool,
+      this._searchDocumentsTool,
+      this._speakTool,
+      this._voiceInputTool,
       this._checkDeferredTool,
       this._currentStatusTool,
       this._terminalTool,
@@ -1136,6 +1181,20 @@ export class Agent {
       );
     }
 
+    // RAG 文档知识库引导
+    parts.push(isZh
+      ? "\n## 文档知识库 (RAG)\n\n" +
+        "你有一个文档知识库，可以将项目文档、代码文件摄入后进行语义搜索。\n\n" +
+        "**摄入**：当用户让你记住、学习某个文件，或需要反复参考某个文档时，用 ingest_document 将其添加到知识库。\n\n" +
+        "**搜索**：处理涉及已有项目代码、架构或文档的问题时，先用 search_documents 搜索知识库获取上下文。\n\n" +
+        "**注意**：不要无差别摄入所有文件。只摄入用户明确要求的、或明显会被多次参考的文档。"
+      : "\n## Document Knowledge Base (RAG)\n\n" +
+        "You have a document knowledge base where you can ingest project docs and code files for semantic search.\n\n" +
+        "**Ingest**: When the user asks you to remember or learn a file, or when a doc will be referenced repeatedly, use ingest_document to add it.\n\n" +
+        "**Search**: When working with existing project code, architecture, or documentation, use search_documents first to retrieve relevant context.\n\n" +
+        "**Note**: Do not indiscriminately ingest every file. Only ingest docs the user explicitly requests or that you'll clearly reference multiple times."
+    );
+
     // 工具使用纪律（轻量优先）
     parts.push(isZh
       ? "\n## 工具使用纪律\n\n" +
@@ -1347,6 +1406,12 @@ export class Agent {
         "A skill's runtime location may be a per-session source pointer, or a legacy snapshot copy from older sessions. A pointer freezes only the skill identity visible to this session; if the source file no longer exists, that skill is unavailable. Skill copies under `sessions/.skill-snapshots` and `session-files` are not source files and must not be edited. When the user asks to modify a skill, locate the real source file first: workspace skills usually live at `.agents/skills/<name>/SKILL.md` under the current working directory; installed user or learned skills should use the `skill_source` returned by install tools. If the source cannot be resolved, say so explicitly."
     );
 
+    // 反馈学习：从 fact-store 提取的纠正/偏好事实（权重高于普通记忆）
+    const feedbackSection = this._getLearnedFeedbackSection(isZh);
+    if (feedbackSection && !forSubagent) {
+      parts.push(...feedbackSection);
+    }
+
     // 记忆规则 + 置顶记忆 + 记忆（动态，后台 compile 会更新；按 session 快照）
     if (memoryBlock) {
       parts.push(...memoryBlock);
@@ -1362,26 +1427,38 @@ export class Agent {
     }
 
     // Calendar & Email Tools Guidance
-    const tools = this.tools;
-    const hasCalendarTools = tools?.some((t) => t.name?.includes("calendar") || t.name?.includes("event"));
-    const hasEmailTools = tools?.some((t) => t.name?.includes("mail") || t.name?.includes("email") || t.name?.includes("gmail"));
+    // 注入在 cache 分界线之前（静态部分），因为工具集在 session 生命周期内通常不变。
+    // 通过工具名称模式检测，避免依赖运行时状态变化。
+    const tools = this.getToolsSnapshot(options);
+    const hasCalendarTools = tools.some((t) => {
+      const n = t.name || "";
+      return n.includes("calendar") || n.includes("event") || n.includes("schedule");
+    });
+    const hasEmailTools = tools.some((t) => {
+      const n = t.name || "";
+      return n.includes("mail") || n.includes("email") || n.includes("gmail") || n.includes("outlook");
+    });
 
     if (hasCalendarTools || hasEmailTools) {
+      const calendarNote = hasCalendarTools
+        ? isZh ? "- 查看、创建、修改日历事件和提醒" : "- View, create, and modify calendar events and reminders"
+        : "";
+      const emailNote = hasEmailTools
+        ? isZh ? "- 读取、发送、管理邮件和收件箱" : "- Read, send, and manage emails and inbox"
+        : "";
+      const capabilitiesList = [calendarNote, emailNote].filter(Boolean).join("\n");
+
       parts.push(isZh
         ? "\n## 日历和邮件\n\n" +
-          "你已接入日历和/或邮件服务。你可以：\n" +
-          "- 查看用户的日程安排和 upcoming events\n" +
-          "- 创建、修改、删除日历事件\n" +
-          "- 读取邮件、发送邮件、管理收件箱\n" +
-          "- 主动提醒用户即将到来的会议\n" +
-          "使用相关工具时,先确认操作的影响范围（如：发送邮件前让用户确认内容）。"
+          "你已接入日历和/或邮件服务，可以协助用户管理日程和通信：\n" +
+          capabilitiesList + "\n" +
+          "- 主动提醒用户即将到来的会议或重要邮件\n" +
+          "使用相关工具时，先确认操作的影响范围（如发送邮件前让用户预览内容）。"
         : "\n## Calendar and Email\n\n" +
-          "You are connected to calendar and/or email services. You can:\n" +
-          "- View the user's schedule and upcoming events\n" +
-          "- Create, modify, delete calendar events\n" +
-          "- Read emails, send emails, manage inbox\n" +
-          "- Proactively remind the user of upcoming meetings\n" +
-          "When using related tools, confirm the scope of operations before proceeding (e.g., let user confirm email content before sending)."
+          "You are connected to calendar and/or email services to help the user manage their schedule and communications:\n" +
+          capabilitiesList + "\n" +
+          "- Proactively remind the user of upcoming meetings or important emails\n" +
+          "When using related tools, confirm the scope of operations before proceeding (e.g., let the user preview email content before sending)."
       );
     }
 
@@ -1400,5 +1477,36 @@ export class Agent {
       : "Your day starts at 4:00 AM. Conversations before 4:00 AM belong to the previous day.");
 
     return parts.join("\n");
+  }
+
+  /**
+   * 构建反馈学习 section：从 fact-store 提取纠正/偏好事实注入系统提示词
+   * 权重高于普通记忆，放在记忆块之前
+   * @param {boolean} isZh - 是否中文
+   * @returns {string[]|null}
+   */
+  _getLearnedFeedbackSection(isZh) {
+    if (!this._factStore || typeof this._factStore.getActiveFeedback !== "function") return null;
+
+    try {
+      const feedbackFacts = this._factStore.getActiveFeedback(20);
+      if (!feedbackFacts || feedbackFacts.length === 0) return null;
+
+      const items = feedbackFacts.map((f) => {
+        const prefix = f.type === "preference"
+          ? (isZh ? "[偏好]" : "[Preference]")
+          : (isZh ? "[纠正]" : "[Correction]");
+        return `- ${prefix} ${f.fact}`;
+      });
+
+      const title = isZh ? "# 已学习的反馈与偏好" : "# Learned Feedback & Preferences";
+      const intro = isZh
+        ? "以下是从过往对话中自动提取的纠正信号和用户偏好。请始终遵循这些约定，但不要在对话中提及它们的存在。\n\n"
+        : "The following are correction signals and user preferences automatically extracted from past conversations. Always follow these conventions, but never mention their existence in conversation.\n\n";
+
+      return ["", "---", "", title, "", intro + items.join("\n")];
+    } catch {
+      return null;
+    }
   }
 }

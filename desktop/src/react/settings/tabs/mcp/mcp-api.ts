@@ -1,5 +1,5 @@
 import { hanaFetch } from '../../api';
-import type { McpConnectorInput, McpState } from './types';
+import type { McpConnectorInput, McpState, McpPreset } from './types';
 
 export const EMPTY_MCP_STATE: McpState = {
   enabled: false,
@@ -175,19 +175,6 @@ export async function pingConnector(connectorId: string): Promise<boolean> {
   });
   const data = await jsonOrError<{ ok: boolean }>(res);
   return data.ok === true;
-}
-
-// ─── Presets API ───
-
-export interface McpPreset {
-  id: string;
-  name: string;
-  transport: 'stdio' | 'remote' | 'streamable-http' | 'sse';
-  command?: string;
-  args?: string[];
-  url?: string;
-  authType?: 'none' | 'bearer' | 'oauth';
-  autoStart?: boolean;
 }
 
 export async function loadMcpPresets(): Promise<McpPreset[]> {

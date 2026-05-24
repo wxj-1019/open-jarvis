@@ -62,13 +62,10 @@
 }
 
 .spinner {
-  animation: spin 1s linear infinite;
+  animation: hana-spin 1s linear infinite;
 }
 
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
+/* spin 动画已迁移至 animations.css，使用 hana-spin */
 
 .unsupported {
   display: flex;

@@ -421,7 +421,7 @@
 }
 
 .agent-card.dragging {
-    z-index: 200 !important;
+    z-index: 200;
     opacity: 0.85;
     transition: none;
 }
@@ -523,7 +523,7 @@
 /* 单卡 hover：上浮 + 阴影 */
 .agent-card:hover {
     --lift: -6px;
-    z-index: 100 !important;
+    z-index: 100;
 }
 
 .agent-card:hover .agent-card-inner {
@@ -2596,7 +2596,7 @@
 
 .settings-folder-input {
     flex: 1;
-    font-size: 0.78rem !important;
+    font-size: 0.78rem;
     cursor: pointer;
     text-overflow: ellipsis;
     overflow: hidden;
@@ -3629,7 +3629,7 @@ a.about-link:hover {
 
 .oauth-code-input {
     flex: 1;
-    font-size: 0.82rem !important;
+    font-size: 0.82rem;
 }
 
 .oauth-code-submit {
@@ -4606,8 +4606,8 @@ a.about-link:hover {
 
 .pv-model-add-input {
     flex: 1;
-    font-size: 0.78rem !important;
-    padding: 4px 8px !important;
+    font-size: 0.78rem;
+    padding: 4px 8px;
 }
 
 .pv-model-add-btn {

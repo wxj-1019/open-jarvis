@@ -14,6 +14,7 @@ import { createCronScheduler } from "../lib/desk/cron-scheduler.js";
 import { getLocale } from "../server/i18n.js";
 import { createFreshCompactDailyScheduler } from "../lib/fresh-compact/daily-scheduler.js";
 import { FreshCompactMaintainer } from "./fresh-compact-maintainer.js";
+import { ProactiveRuleEngine } from "../lib/proactive/proactive-rule-engine.js";
 import { createModuleLogger } from "../lib/debug-log.js";
 import { WORKSPACE_OUTPUT_ROOT_DIRNAME } from "../shared/workspace-output.js";
 
@@ -56,6 +57,7 @@ export class Scheduler {
       runDaily: (opts) => this._freshCompactMaintainer.runDaily(opts),
       warn: (msg) => freshCompactLog.warn(msg),
     });
+    this._ruleEngine = null; // 在 start() 中初始化（依赖 userContextTracker）
   }
 
   /** @returns {import('../core/engine.js').HanaEngine} */
@@ -79,9 +81,11 @@ export class Scheduler {
     this._startStudioCron();
     this._freshCompactScheduler.start();
     this._subscribeOsEvents();
+    this._startRuleEngine();
   }
 
   async stop() {
+    this._stopRuleEngine();
     this._unsubscribeOsEvents();
     this._freshCompactScheduler.stop();
     await this.stopHeartbeat();
@@ -90,6 +94,9 @@ export class Scheduler {
       this._cronScheduler = null;
     }
   }
+
+  /** 获取 ProactiveRuleEngine 实例 */
+  get ruleEngine() { return this._ruleEngine; }
 
   /** 兼容旧 agent 生命周期调用：Studio cron 只有一个 scheduler */
   startAgentCron(agentId) { this._startStudioCron(); }
@@ -414,11 +421,13 @@ export class Scheduler {
   }
 
   /**
-   * 用户上下文变化处理（基础阶段：仅记录日志）
-   * 为 3.2.4 意图预测与主动介入做铺垫
+   * 用户上下文变化处理
+   * 现已由 ProactiveRuleEngine 接管，此处仅保留日志
    * @param {object} event { type, ... }
    */
   _onUserContextChanged(event) {
+    // 规则引擎已在 _startRuleEngine 中独立订阅 EventBus
+    // 此处仅做日志（保持向后兼容）
     switch (event.type) {
       case "window_focus_changed":
         log.log(`[context] 窗口切换: ${event.app} - ${event.title}`);
@@ -427,6 +436,72 @@ export class Scheduler {
         log.log(`[context] 文件变化: ${event.path} (${event.event})`);
         break;
     }
+  }
+
+  // ──────────── ProactiveRuleEngine 集成 ────────────
+
+  /**
+   * 启动规则引擎（Scheduler.start 中调用）
+   */
+  _startRuleEngine() {
+    const hub = this._hub;
+    const engine = this._engine;
+    if (!hub?.eventBus) return;
+
+    // 从 preferences 加载自定义规则
+    let customRules = [];
+    let builtinOverrides = {};
+    try {
+      const prefs = engine.preferences;
+      if (prefs && typeof prefs.getProactiveRules === "function") {
+        customRules = prefs.getProactiveRules();
+      }
+      // 加载内置规则 enabled 覆盖
+      const allPrefs = prefs ? prefs.getPreferences() : {};
+      builtinOverrides = allPrefs.proactive_builtin_overrides || {};
+    } catch { /* ignore */ }
+
+    this._ruleEngine = new ProactiveRuleEngine({
+      eventBus: hub.eventBus,
+      userContextTracker: hub.userContextTracker || null,
+      executeAction: (prompt, meta) => this._executeProactiveAction(prompt, meta),
+      customRules,
+      builtinOverrides,
+    });
+    this._ruleEngine.start();
+  }
+
+  /**
+   * 停止规则引擎
+   */
+  _stopRuleEngine() {
+    if (this._ruleEngine) {
+      this._ruleEngine.stop();
+      this._ruleEngine = null;
+    }
+  }
+
+  /**
+   * 执行主动动作：触发 Agent 会话
+   * @param {string} prompt
+   * @param {object} meta  { ruleId, ruleName, event }
+   */
+  _executeProactiveAction(prompt, meta) {
+    const engine = this._engine;
+    if (!engine) return;
+
+    const agentId = engine.currentAgentId;
+    const cwd = agentId ? engine.getHomeCwd?.(agentId) : null;
+
+    log.log(`[proactive] 规则 ${meta?.ruleId} 触发 Agent 动作`);
+
+    // 使用 executeIsolated（ephemeral 模式，不阻塞用户当前会话）
+    // persist 参数需要是字符串路径（目录），传 falsy 则使用 .ephemeral 默认目录
+    engine.executeIsolated(prompt, {
+      cwd: cwd || undefined,
+    }).catch((err) => {
+      log.warn(`[proactive] 动作执行失败: ${err.message}`);
+    });
   }
 
   /**

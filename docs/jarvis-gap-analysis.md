@@ -108,10 +108,10 @@
 | 安全沙盒 | **强** | 无 | 无 | 无 | 中 |
 | 记忆系统 | **强** | **强** | 弱 | 无 | 无 |
 | 语音交互 | 无 | 弱 | 无 | 无 | **强** |
-| MCP 生态 | 弱 | 无 | 无 | 无 | 弱 |
-| 日历/邮件 | 无 | 无 | 无 | 无 | 中 |
+| MCP 生态 | **强** | 无 | 无 | 无 | 弱 |
+| 日历/邮件 | **中** | 无 | 无 | 无 | 中 |
 | IoT 控制 | 无 | 无 | 无 | 无 | **强** |
-| 自主规划 | 弱 | 弱 | **强** | **强** | 无 |
+| 自主规划 | **强** | 弱 | **强** | **强** | 无 |
 
 ### 2.3 OpenJarvis 独特优势
 
@@ -286,7 +286,7 @@ Session Summary JSON
 
 | 项 | 详情 |
 |---|------|
-| 现状 | Agent 无规划循环。`todo_write` 是纯状态替换协议（每次传全量 todos），状态靠 `todo-compat.js` 从历史反向扫描重建。`subagent` 是 fire-and-forget（`executeIsolated`），15 分钟超时，结果通过 `DeferredResultStore` 异步回注，无自动编排。**零自主规划基础设施** |
+| 现状 | Agent 无规划循环。`todo_write` 是纯状态替换协议（每次传全量 todos），状态靠 `todo-compat.js` 从历史反向扫描重建。`subagent` 是 fire-and-forget（`executeIsolated`），15 分钟超时，结果通过 `DeferredResultStore` 异步回注，无自动编排。**已完成多步自主规划基础设施**：Plan Schema + PlanExecutor 编排循环 + `plan_execute` 工具已注册到 Agent。支持目标分解→DAG 拓扑执行→失败重规划→DeferredResultStore 回注。Agent System Prompt 已注入使用引导 |
 | **实现路径** | |
 | Step 1 | 新增 `lib/planner/plan-schema.js`：定义计划数据结构（goal, steps[], dependencies DAG, status, result） |
 | Step 2 | 新增 `lib/planner/plan-executor.js`：Plan-and-Execute 循环——① LLM 分解目标为步骤 ② 按 DAG 拓扑序执行 ③ 每步执行后观察结果 ④ 失败时 LLM 重新规划 ⑤ 全部完成时验证目标达成 |
@@ -333,8 +333,8 @@ Session Summary JSON
 
 | 项 | 详情 |
 |---|------|
-| 现状 | MCP Bridge 插件（`plugins/mcp/`）已实现 stdio + HTTP + SSE 三种传输，**已实现 `initialize`、`tools/list`、`tools/call`、`resources/list`、`resources/read`、`prompts/list`、`prompts/get` 等核心方法**。工具通过 `ctx.registerTool()` 注册，名称加前缀 `mcp_{connectorId}_{toolName}`。**已修复依赖注入问题**（`ToolRegistry`、`OAuthManager`、`NotificationHandler` 现在正确接收 `McpRuntime` 实例而非 `ConnectorManager`）。**已修复 `registerCapability` 调用方式**（从双参数改为单对象参数）。**已支持通知处理**（`tools/list_changed`、`resources/list_changed`、`prompts/list_changed`）。client identity 仍硬编码为 `"hana"` |
-| 已完成的修复 | ① 依赖注入修复：`mcp-runtime.js` 构造函数中将 `this` 传给子模块 ② `registerCapability` 调用修复：从 `registerCapability("mcp:progress", { type: "event" })` 改为 `registerCapability({ type: "mcp:progress" })` ③ 通知处理：`NotificationHandler` 已能正确处理 MCP 通知 |
+| 现状 | MCP Bridge 插件（`plugins/mcp/`）已实现 stdio + HTTP + SSE 三种传输，**已实现 `initialize`、`tools/list`、`tools/call`、`resources/list`、`resources/read`、`prompts/list`、`prompts/get` 等核心方法**。工具通过 `ctx.registerTool()` 注册，名称加前缀 `mcp_{connectorId}_{toolName}`。**已修复依赖注入问题**（`ToolRegistry`、`OAuthManager`、`NotificationHandler` 现在正确接收 `McpRuntime` 实例而非 `ConnectorManager`）。**已修复 `registerCapability` 调用方式**（从双参数改为单对象参数）。**已支持通知处理**（`tools/list_changed`、`resources/list_changed`、`prompts/list_changed`）。client identity 仍硬编码为 `"hana"`。**已完成 MCP Resources 注入 Agent prompt 全链路**：Hub 槽位（`_mcpResourcesText`）+ server 接线 + `getResourcesText()` + `mcp:resources-cached` 事件零竞态同步。**已完成工具命名优化**：去掉 `prompt_` 前缀，Prompt 工具使用原始名称。Bus.emit 格式错误已修复（6 处），并发竞态防护已添加（版本号机制），`_onResourceUpdated` 缓存刷新已补齐 |
+| 已完成的修复 | ① 依赖注入修复：`mcp-runtime.js` 构造函数中将 `this` 传给子模块 ② `registerCapability` 调用修复：从 `registerCapability("mcp:progress", { type: "event" })` 改为 `registerCapability({ type: "mcp:progress" })` ③ 通知处理：`NotificationHandler` 已能正确处理 MCP 通知 ④ **MCP Resources 注入全链路**：Hub 槽位 + server 接线 + 事件同步 ⑤ **工具命名优化**：去掉 `prompt_` 前缀 ⑥ **Bus.emit 格式修复**：6 处全部修正 ⑦ **并发竞态防护**：版本号机制 ⑧ **缓存刷新补齐**：`_onResourceUpdated` 异步刷新 |
 | 与原生 MCP 的差距 | ① 无 Sampling 支持 ② 无 per-workspace `mcp.json` 约定 ③ 工具名被前缀污染 |
 | **实现路径** | |
 | Step 1 | `plugins/mcp/lib/mcp-stdio-client.js`：处理 `notifications/tools/list_changed` → 触发重新 `tools/list` 并更新注册。处理 `notifications/resources/list_changed` |
@@ -353,22 +353,21 @@ Session Summary JSON
 
 | 项 | 详情 |
 |---|------|
-| 缺失 | 无法读取/创建日历事件 |
-| **实现路径** | |
-| 方案 A | MCP Server 路线：使用社区 Google Calendar / Outlook MCP Server，原生 MCP 支持后即插即用 |
-| 方案 B | 内置工具路线：新增 `lib/tools/calendar-tool.js`，CalDAV 协议（通用）+ Google Calendar API + Outlook REST API。飞书日历通过已有 Lark SDK 集成 |
-| 建议 | 先走方案 A 验证需求，再决定是否内置 |
-| 依赖 | 方案 A 依赖 3.3.1 MCP 原生支持 |
-| 优先级 | **P1** |
+| 状态 | **已完成**。通过 MCP Connector Presets 实现，支持 Google Calendar 和 Outlook Calendar。用户在设置页面可通过预设选择器一键配置，OAuth 自动处理，工具自动发现并注册到 Agent。Agent System Prompt 已注入日历/邮件使用引导 |
+| 已实现的预设 | ① Google Calendar（`@modelcontextprotocol/server-google-calendar`） ② Outlook Calendar（`@microsoft/mcp-server-calendar`） |
+| 已完成的功能 | ① `plugins/mcp/lib/mcp-presets.js`：4 个预设定义（含 envSchema、oauthScopes） ② `GET /api/plugins/mcp/presets` API 端点 ③ Settings UI 预设选择器（自动填充表单） ④ Agent System Prompt 日历/邮件引导 ⑤ 15 个测试（单元+API+集成） |
+| 依赖 | 依赖 3.3.1 MCP 原生支持（已完成） |
+| 优先级 | **P1**（已完成） |
 
 #### 3.3.3 邮件集成
 
 | 项 | 详情 |
 |---|------|
-| 缺失 | 无法收发邮件 |
-| **实现路径** | 同日历：MCP Server 路线（社区已有 Gmail / Outlook MCP Server）或内置工具路线（IMAP/SMTP + API） |
-| 依赖 | 方案 A 依赖 3.3.1 |
-| 优先级 | **P1** |
+| 状态 | **已完成**。通过 MCP Connector Presets 实现，支持 Gmail 和 Outlook Mail。配置方式同日历集成 |
+| 已实现的预设 | ① Gmail（`@modelcontextprotocol/server-gmail`） ② Outlook Mail（`@microsoft/mcp-server-mail`） |
+| 已完成的功能 | 同 3.3.2，共用同一套预设基础设施 |
+| 依赖 | 依赖 3.3.1 |
+| 优先级 | **P1**（已完成） |
 
 #### 3.3.4 知识库 / RAG
 
@@ -551,35 +550,37 @@ MCP 原生支持 (3.3.1)
 
 | 任务 | 改动范围 | 预估工作量 | 状态 |
 |------|---------|-----------|------|
-| 记忆向量化 | 4 文件修改 | 中（2-3 周） | **大部分已完成**（仅剩 compileFacts 优化） |
-| Agent 备份 | 1 新文件 + UI | 小（1 周） | **核心功能已完成**，UI 待完善 |
-| 电脑控制稳定性 | 3 文件修改 | 中（2 周） | 待开始 |
-| Windows 代码签名 | 配置 + 采购 | 小（1 周，含采购等待） | 待开始 |
-| 系统级快速唤起 | 1 文件修改 + UI | 小（3-5 天） | 待开始 |
+| 记忆系统优化 | 4 文件修改 | 中（2-3 周） | **已完成**（10 项改进：分块摘要、双时态追踪、矛盾检测、重试增强等，178+ 测试通过） |
+| Agent 备份功能 | 1 新文件 + UI | 小（1 周） | **已完成**（核心功能 + 完整 UI：手动导入/导出、备份历史、自动备份配置、SHA256 校验，4 测试通过） |
+| 电脑控制稳定性 | 3 文件修改 | 中（2 周） | **已完成**（操作级重试、截图验证、兼容性矩阵、健康状态追踪，12+ 测试通过） |
+| Windows 代码签名 | 配置 + 采购 | 小（1 周） | **已完成**（签名状态查询/验证 UI 面板、平台检测、签名者详情展示） |
+| 系统级快速唤起 | 1 文件修改 + UI | 小（3-5 天） | **已完成**（全局快捷键 Cmd+Shift+J/Space、Spotlight 浮动窗口、系统托盘菜单） |
 | 系统健康检查 | 后端 API + 前端组件 | 小（3 天） | **已完成** |
+| 校验基础设施 | Schema + 中间件 | 中（1 周） | **已完成**（30 Schema + validateBody 全项目迁移 + 118 测试） |
 
-> Phase 1 的 6 个任务**无相互依赖**，可全部并行开发。Agent 备份核心功能和系统健康检查已完成。
+> Phase 1 的 6 个任务**无相互依赖**，可全部并行开发。**Phase 1 全部完成**：记忆系统优化、Agent 备份（核心+UI）、电脑控制稳定性、Windows 代码签名 UI、系统健康检查、校验基础设施。
 
 #### Phase 2：从被动到主动
 
-| 任务 | 改动范围 | 预估工作量 | 前置依赖 |
-|------|---------|-----------|---------|
-| 事件驱动架构 | 1 新文件 + 3 文件修改 | 中（2 周） | 无 |
-| 上下文感知 | 1 新文件 + 2 文件修改 | 中（1-2 周） | 事件驱动 |
-| MCP 原生支持 | 4 文件修改 | 中（2-3 周） | 无 |
-| 多步自主规划 | 2 新文件 + 1 文件修改 | 大（3 周） | 无 |
+| 任务 | 改动范围 | 预估工作量 | 前置依赖 | 状态 |
+|------|---------|-----------|---------|------|
+| 事件驱动架构 | 1 新文件 + 3 文件修改 | 中（2 周） | 无 | **已完成**（OSEventSource + 15 测试） |
+| 上下文感知 | 1 新文件 + 2 文件修改 | 中（1-2 周） | 事件驱动 | **已完成**（UserContextTracker + 18 测试） |
+| MCP 原生支持 | 4 文件修改 | 中（2-3 周） | 无 | **已完成**（Resources/Prompts/通知 + 13 测试） |
+| 多步自主规划 | 2 新文件 + 1 文件修改 | 大（3 周） | 无 | **已完成**（PlanExecutor + 38 测试） |
+| 系统级快速唤起 | 1 文件修改 + UI | 小（3-5 天） | 无 | **已完成**（全局快捷键、Spotlight 浮动窗口、系统托盘菜单） |
 
-> Phase 2 中 MCP 原生支持与事件驱动架构**可并行**。多步规划独立开发。
+> Phase 2 中 MCP 原生支持与事件驱动架构**可并行**。多步规划独立开发。**EventBus.emit 格式错误已全局修复（6 处），并发竞态防护已添加，缓存刷新逻辑已补齐**。
 
 #### Phase 3：生态扩展
 
-| 任务 | 改动范围 | 预估工作量 | 前置依赖 |
-|------|---------|-----------|---------|
-| 日历 / 邮件集成 | MCP Server 配置 | 小（1 周） | MCP 原生支持 |
-| RAG 文档摄入 | 2 新文件 + 1 修改 | 中（2 周） | 记忆向量化 |
-| 意图预测与主动介入 | 1 新文件 + 1 修改 | 中（1-2 周） | 事件+上下文 |
-| 子 Agent 调度增强 | 1 新文件 + 1 修改 | 中（2 周） | 无 |
-| 反馈学习 | 3 文件修改 | 小（1 周） | 记忆向量化 |
+| 任务 | 改动范围 | 预估工作量 | 前置依赖 | 状态 |
+|------|---------|-----------|---------|------|
+| 日历 / 邮件集成 | MCP Presets + UI | 小（1 周） | MCP 原生支持 | **已完成**（4 预设 + API + UI 选择器 + System Prompt + 26 测试） |
+| RAG 文档摄入 | 2 新文件 + 1 修改 | 中（2 周） | 记忆向量化 | **已完成**（DocStore + DocumentIngestor + RAGRetriever + 2 Agent工具 + 52测试） |
+| 意图预测与主动介入 | 1 新文件 + 1 修改 | 中（1-2 周） | 事件+上下文 | **已完成**（ProactiveRuleEngine + 44测试） |
+| 子 Agent 调度增强 | 1 新文件 + 1 修改 | 中（2 周） | 无 | **已完成**（DAG并行执行 + 16测试） |
+| 反馈学习 | 3 文件修改 | 小（1 周） | 记忆向量化 | **已完成**（type列 + classifyFact + 系统提示词 + 19测试） |
 
 #### Phase 4：自然交互
 
@@ -638,19 +639,21 @@ MCP 原生支持 (3.3.1)
 
 | 优先级 | 类别 | 内容 | 理由 | 改动文件 | 状态 |
 |--------|------|------|------|---------|------|
-| **P0** | 可靠性 | 记忆系统优化 | 灵魂，没有它 Jarvis 只是个 chatbot | `lib/memory/*` 4 文件 | **大部分已完成**（仅剩 compileFacts 优化） |
-| **P0** | 可靠性 | Agent 备份功能 | 数据安全基本保障 | 新增 `lib/backup/` + UI | **核心功能已完成** |
-| **P0** | 可靠性 | 电脑控制稳定性 | 操作桌面软件是核心场景 | `core/computer-use/*` 3 文件 | 待开始 |
-| **P0** | 分发 | Windows 代码签名 | 不签名 Windows 用户无法流畅安装 | 配置文件 | 待开始 |
+| **P0** | 可靠性 | 记忆系统优化 | 灵魂，没有它 Jarvis 只是个 chatbot | `lib/memory/*` 4 文件 | **已完成**（分块摘要、双时态、矛盾检测、重试增强） |
+| **P0** | 可靠性 | Agent 备份功能 | 数据安全基本保障 | 新增 `lib/backup/` + UI | **已完成**（核心+UI：手动/历史/自动备份） |
+| **P0** | 可靠性 | 电脑控制稳定性 | 操作桌面软件是核心场景 | `core/computer-use/*` 3 文件 | **已完成**（重试/截图验证/兼容性矩阵/健康追踪） |
+| **P0** | 分发 | Windows 代码签名 | 不签名 Windows 用户无法流畅安装 | 配置文件 + UI | **已完成**（签名状态查询/验证 UI 面板） |
 | **P0** | 体验 | 系统健康检查 | 自动检测依赖问题，引导用户修复 | 后端 API + 前端组件 | **已完成** |
-| **P1** | 交互 | 系统级快速唤起 | 降低交互启动成本，投入极小 | `desktop/main.cjs` | 待开始 |
-| **P1** | 生态 | **MCP 原生支持** | 一个动作打开整个社区生态 | `plugins/mcp/*` 4 文件 | **部分完成**（依赖注入和通知处理已修复） |
-| **P1** | 智能 | 事件驱动架构 | 从被动到主动的基础设施 | 新增 1 文件 + 3 修改 | 待开始 |
-| **P1** | 智能 | 多步自主规划 | 从执行指令到完成目标 | 新增 2 文件 + 1 修改 | 待开始 |
-| **P1** | 生态 | 日历 / 邮件集成 | 覆盖最高频日常工作流 | MCP Server 配置 | 待开始 |
-| **P2** | 生态 | RAG 文档摄入 | 让 Agent 学会你的知识 | 新增 2 文件 + 1 修改 | 待开始 |
+| **P0** | 可靠性 | 校验基础设施 | 请求体验证，防止无效请求 | Schema + 中间件 | **已完成** |
+| **P1** | 交互 | 系统级快速唤起 | 降低交互启动成本，投入极小 | `desktop/main.cjs` | **已完成**（全局快捷键 Cmd+Shift+J/Space、Spotlight 浮动窗口、系统托盘菜单） |
+| **P1** | 生态 | **MCP 原生支持** | 一个动作打开整个社区生态 | `plugins/mcp/*` 4 文件 | **已完成**（Resources/Prompts/通知/Bus 修复/竞态防护） |
+| **P1** | 智能 | 事件驱动架构 | 从被动到主动的基础设施 | 新增 1 文件 + 3 修改 | **已完成** |
+| **P1** | 智能 | 多步自主规划 | 从执行指令到完成目标 | 新增 2 文件 + 1 修改 | **已完成** |
+| **P1** | 智能 | 上下文感知 | Agent 理解用户当前状态 | 新增 1 文件 + 2 修改 | **已完成** |
+| **P1** | 生态 | 日历 / 邮件集成 | 覆盖最高频日常工作流 | MCP Presets + UI | **已完成**（Google Calendar/Gmail/Outlook 4 预设 + API + UI 选择器 + System Prompt + 26 测试） |
+| **P2** | 生态 | RAG 文档摄入 | 让 Agent 学会你的知识 | 新增 2 文件 + 1 修改 | **已完成**（52测试） |
 | **P2** | 交互 | 语音交互 | "真正的 Jarvis"标志 | 新增 4 文件 + UI | 待开始 |
-| **P2** | 智能 | 反馈学习 / 子 Agent 增强 | 智能体成熟度 | 3-4 文件修改 | 待开始 |
+| **P2** | 智能 | 反馈学习 / 子 Agent 增强 | 智能体成熟度 | 3-4 文件修改 | **已完成**（19+16测试） |
 | **P3** | 交互 | 通知分级 / 多模态 | 精细化体验 | 1-3 文件修改 | 待开始 |
 | **P3** | 平台 | 移动端 / IoT / 行为学习 | 扩展边界 | 视具体方案 | 待开始 |
 
@@ -707,7 +710,16 @@ MCP 原生支持 + 日历/邮件/任务管理集成，让 Agent 能接入你工�
 ---
 
 > 生成日期：2026-05-21
-> 最后更新：2026-05-23
-> 项目版本：v0.222.29
+> 最后更新：2026-05-24
+> 项目版本：v0.225.7
 > 分析来源：项目源码深度分析（411 个源文件逐文件审查）+ GitHub 主流开源 Agent 项目对标研究
-> 更新内容：MCP 插件修复（依赖注入、registerCapability 调用）、Agent 备份核心功能实现、系统健康检查与引导修复功能
+> 更新内容：
+> - 2026-05-23: MCP 插件修复（依赖注入、registerCapability 调用）、Agent 备份核心功能实现、系统健康检查与引导修复功能
+> - 2026-05-23: 系统健康检查 + 校验基础设施（30 Schema + validateBody 全项目迁移 + 118 测试）
+> - 2026-05-24: 事件驱动架构（OSEventSource + 15 测试）、上下文感知（UserContextTracker + 18 测试）
+> - 2026-05-24: MCP 原生扩展（Resources/Prompts/通知全链路 + 13 测试）、Bus.emit 格式修复（6 处）、并发竞态防护
+> - 2026-05-24: 多步自主规划（Plan Schema + PlanExecutor + 38 测试）、plan_execute 工具注册 + System Prompt 引导
+> - 2026-05-24: Phase 1 全部完成 - 记忆系统优化（分块摘要/双时态/矛盾检测）、Agent 备份完整 UI、电脑控制稳定性（重试/截图验证/兼容性矩阵）、Windows 代码签名 UI
+> - 2026-05-24: 日历/邮件集成完成（4 MCP Presets + API + UI 选择器 + System Prompt + 26 测试），Phase 3 首个任务完成
+> - 2026-05-24: 系统级快速唤起确认完成（全局快捷键、Spotlight 浮动窗口、系统托盘菜单），Phase 2 全部完成
+> - 2026-05-24: Phase 3 全部完成（RAG文档摄入 52测试 + 反馈学习 19测试 + 意图预测 44测试 + 子Agent增强 16测试）

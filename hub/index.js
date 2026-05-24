@@ -88,6 +88,14 @@ export class Hub {
     this._setupDmHandler();
   }
 
+  /**
+   * 设置 MCP Resources 上下文文本（由 server/index.js 在 McpRuntime 就绪后调用）。
+   * @param {string} text
+   */
+  setMcpResourcesText(text) {
+    this._mcpResourcesText = text || "";
+  }
+
   /** @returns {import('../core/engine.js').HanaEngine} */
   get engine() { return this._engine; }
 
@@ -102,6 +110,9 @@ export class Hub {
   
     /** @returns {UserContextTracker} */
     get userContextTracker() { return this._userContextTracker; }
+
+  /** @returns {import('../lib/proactive/proactive-rule-engine.js').ProactiveRuleEngine|null} */
+  get ruleEngine() { return this._scheduler?.ruleEngine || null; }
 
   /** @returns {import('../lib/bridge/bridge-manager.js').BridgeManager|null} */
   get bridgeManager() { return this._bridgeManager || null; }
@@ -608,8 +619,5 @@ function extensionForVideoMime(mimeType) {
   const normalized = String(mimeType || "").toLowerCase();
   if (normalized === "video/webm") return ".webm";
   if (normalized === "video/quicktime") return ".mov";
-  return ".mp4";
-}
-}
   return ".mp4";
 }

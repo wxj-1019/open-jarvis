@@ -6,6 +6,13 @@ import { parseKeyValueLines, serializeKeyValueLines } from './mcp-config';
 import type { McpAuthType, McpConnector, McpConnectorInput, McpTransport } from './types';
 import { loadMcpPresets, type McpPreset } from './mcp-api';
 
+/**
+ * ConnectorForm — 添加/编辑 MCP 连接器的表单组件。
+ * 
+ * 支持从预设（preset）自动填充表单，预设包含 Google Calendar、Gmail、
+ * Outlook Mail、Outlook Calendar 等常见服务的预配置。
+ */
+
 type FormMode = 'local' | 'remote';
 
 interface ConnectorFormProps {
@@ -57,6 +64,7 @@ export function ConnectorForm({
 }: ConnectorFormProps) {
   const [form, setForm] = useState(INITIAL_FORM);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [presets, setPresets] = useState<McpPreset[]>([]);
   const [selectedPreset, setSelectedPreset] = useState('');
   const [presetsLoading, setPresetsLoading] = useState(false);
@@ -71,8 +79,11 @@ export function ConnectorForm({
           setPresetsLoading(false);
         }
       },
-      () => {
-        if (!cancelled) setPresetsLoading(false);
+      (err) => {
+        if (!cancelled) {
+          console.warn('Failed to load MCP presets:', err?.message || err);
+          setPresetsLoading(false);
+        }
       },
     );
     return () => {
@@ -83,6 +94,7 @@ export function ConnectorForm({
   useEffect(() => {
     setForm(editingConnector ? formFromConnector(editingConnector) : INITIAL_FORM);
     setError('');
+    setSuccess('');
     setSelectedPreset('');
   }, [editingConnector]);
 
@@ -93,12 +105,14 @@ export function ConnectorForm({
       mode,
       name: preset.name,
       transport: preset.transport === 'stdio' ? 'remote' : preset.transport,
-      command: preset.command || '',
-      args: (preset.args || []).join('\n'),
-      authType: preset.authType || 'none',
+      command: preset.command ?? '',
+      args: (preset.args ?? []).join('\n'),
+      authType: preset.authType ?? 'none',
       autoStart: preset.autoStart === true,
-      url: preset.url || '',
+      url: preset.url ?? '',
     });
+    setSuccess(`Preset "${preset.name}" applied. Fill in the required fields below.`);
+    setTimeout(() => setSuccess(''), 3000);
   };
 
   const canSubmit = form.mode === 'local'
@@ -162,20 +176,24 @@ export function ConnectorForm({
       {presets.length > 0 && !editingConnector && (
         <div className={fieldFullClass}>
           <label className={styles['settings-form-label']}>{t('settings.mcp.connector.preset')}</label>
-          <SelectWidget
-            value={selectedPreset}
-            onChange={(v) => {
-              setSelectedPreset(v);
-              if (v) {
-                const preset = presets.find((p) => p.id === v);
-                if (preset) applyPreset(preset);
-              }
-            }}
-            options={[
-              { value: '', label: t('settings.mcp.connector.presetPlaceholder') },
-              ...presets.map((p) => ({ value: p.id, label: p.name })),
-            ]}
-          />
+          {presetsLoading ? (
+            <div className={styles['settings-muted-note']}>{t('common.loading')}</div>
+          ) : (
+            <SelectWidget
+              value={selectedPreset}
+              onChange={(v) => {
+                setSelectedPreset(v);
+                if (v) {
+                  const preset = presets.find((p) => p.id === v);
+                  if (preset) applyPreset(preset);
+                }
+              }}
+              options={[
+                { value: '', label: t('settings.mcp.connector.presetPlaceholder') },
+                ...presets.map((p) => ({ value: p.id, label: p.name })),
+              ]}
+            />
+          )}
         </div>
       )}
       <div className={styles['settings-form-grid']}>
@@ -373,6 +391,7 @@ export function ConnectorForm({
       </div>
 
       {error && <p className={styles['settings-muted-note']}>{error}</p>}
+      {success && <p className={styles['settings-muted-note']} style={{ color: '#16a34a' }}>{success}</p>}
 
       <div className={styles['pv-add-form-actions']}>
         {editingConnector && (

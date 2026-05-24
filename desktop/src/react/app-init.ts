@@ -10,8 +10,9 @@
 import { useStore } from './stores';
 import { hanaFetch } from './hooks/use-hana-fetch';
 import { applyAgentIdentity, loadAgents, loadAvatars } from './stores/agent-actions';
-import { loadSessions } from './stores/session-actions';
+import { createNewSession, loadSessions } from './stores/session-actions';
 import { connectWebSocket, getWebSocket } from './services/websocket';
+import { sendAsUser } from './hooks/useMessageSend';
 import { setStatus, loadModels } from './utils/ui-helpers';
 import { initJian } from './stores/desk-actions';
 import { initViewerEvents } from './stores/preview-actions';
@@ -247,7 +248,28 @@ export async function initApp(): Promise<void> {
     useStore.setState({ skillViewerData: data });
   });
 
-  // 22. 通知 app ready
+  // 22. 注册 Spotlight 快速输入事件（快捷键/托盘触发）
+  window.addEventListener('spotlight-input', ((e: CustomEvent<string>) => {
+    const text = e.detail || '';
+    if (!text.trim()) return;
+    createNewSession().then(async () => {
+      const ok = await sendAsUser(text);
+      if (!ok) {
+        console.warn('[spotlight] sendAsUser failed (WS not connected or streaming)');
+      }
+    }).catch(err => {
+      console.warn('[spotlight] createNewSession failed:', err);
+    });
+  }) as EventListener);
+
+  // 22b. 注册 New Session 事件（托盘菜单触发）
+  window.addEventListener('new-session', () => {
+    createNewSession().catch(err => {
+      console.warn('[new-session] createNewSession failed:', err);
+    });
+  });
+
+  // 23. 通知 app ready
   platform.appReady();
 }
 

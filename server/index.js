@@ -70,6 +70,7 @@ import { createSystemRoute } from "./routes/system.js";
 import { createCheckpointsRoute } from "./routes/checkpoints.js";
 import { createCommandsRoute } from "./routes/commands.js";
 import { createServerIdentityRoute } from "./routes/server-identity.js";
+import { createProactiveRulesRoute } from "./routes/proactive-rules.js";
 import { createResourcesRoute } from "./routes/resources.js";
 import { createWebAuthRoute } from "./routes/web-auth.js";
 import { createMobileWorkbenchRoute } from "./routes/mobile-workbench.js";
@@ -279,15 +280,17 @@ const mcpPlugin = engine.pluginManager.getPlugin("mcp");
 if (mcpPlugin?.ctx?._mcpRuntime) {
   const rt = mcpPlugin.ctx._mcpRuntime;
   // 初始化 Hub 槽位（首次刷新异步，后续 mcp:resources-cached 事件驱动同步）
-  hub._mcpResourcesText = rt._cachedResourcesText || "";
+  hub.setMcpResourcesText(rt._cachedResourcesText);
   // 订阅 mcp:resources-cached：携带文本直接更新，零竞态
-  hub.eventBus.subscribe(({ text }) => {
-    if (typeof text === "string") hub._mcpResourcesText = text;
+  hub.eventBus.subscribe((event) => {
+    if (typeof event?.text === "string") hub.setMcpResourcesText(event.text);
   }, { types: ["mcp:resources-cached"] });
   // 异步触发一次资源刷新，完成后自动更新缓存
   rt._refreshCachedResourcesText?.().then(() => {
-    hub._mcpResourcesText = rt._cachedResourcesText || "";
-  }).catch(() => {});
+    hub.setMcpResourcesText(rt._cachedResourcesText);
+  }).catch((err) => {
+    rt.ctx.log.warn(`MCP resources initial refresh failed: ${err.message}`);
+  });
 }
 
 // 启动 Hub 调度器（Scheduler + ChannelRouter）
@@ -643,6 +646,7 @@ app.route("/api", createSystemRoute());
 app.route("/api", createCheckpointsRoute(engine));
 app.route("/api", createCommandsRoute(engine));
 app.route("/api", createResourcesRoute(engine));
+app.route("/api/proactive", createProactiveRulesRoute(engine, hub));
 app.route("/api", createServerIdentityRoute({
   hanakoHome: engine.hanakoHome,
   appVersion,

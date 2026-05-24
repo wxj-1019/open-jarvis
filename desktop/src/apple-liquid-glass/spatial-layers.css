@@ -451,6 +451,7 @@ html[data-theme="midnight-contrast"] .devtools-panel .devtools-inner {
 
 .input-wrapper:focus-within {
     box-shadow: var(--shadow-md), var(--shadow-accent);
+    animation: hana-glow-breathe 3s ease-in-out infinite;
 }
 
 /* ── 边框发光系统 (hana-border-glow) ── */
