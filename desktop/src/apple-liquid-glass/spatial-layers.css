@@ -7,9 +7,24 @@
 /* ── 浮动卡片 (float-card) ── */
 .float-card {
     background: rgba(255, 255, 255, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid transparent;
     box-shadow: var(--shadow-lg);
     will-change: transform, opacity;
+    position: relative;
+}
+
+.float-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
 }
 
 @supports (backdrop-filter: blur(12px)) {
@@ -29,9 +44,24 @@ html[data-theme="midnight-contrast"] .float-card {
 /* ── 右键菜单 (context-menu) ── */
 .context-menu {
     background: rgba(255, 255, 255, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid transparent;
     box-shadow: var(--shadow-xl);
     will-change: transform, opacity;
+    position: relative;
+}
+
+.context-menu::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
 }
 
 @supports (backdrop-filter: blur(12px)) {
@@ -50,8 +80,23 @@ html[data-theme="midnight-contrast"] .context-menu {
 
 .context-menu-submenu {
     background: rgba(255, 255, 255, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid transparent;
     box-shadow: var(--shadow-xl);
+    position: relative;
+}
+
+.context-menu-submenu::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
 }
 
 @supports (backdrop-filter: blur(12px)) {
@@ -71,9 +116,24 @@ html[data-theme="midnight-contrast"] .context-menu-submenu {
 /* ── Toast 通知 (hana-toast) ── */
 .hana-toast {
     background: rgba(255, 255, 255, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid transparent;
     box-shadow: var(--shadow-xl);
     will-change: transform, opacity;
+    position: relative;
+}
+
+.hana-toast::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
 }
 
 @supports (backdrop-filter: blur(12px)) {
@@ -93,9 +153,24 @@ html[data-theme="midnight-contrast"] .hana-toast {
 /* ── 浏览器浮动卡片 (browser-floating-card) ── */
 .browser-floating-card {
     background: rgba(255, 255, 255, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid transparent;
     box-shadow: var(--shadow-lg);
     will-change: transform, opacity;
+    position: relative;
+}
+
+.browser-floating-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
 }
 
 @supports (backdrop-filter: blur(12px)) {
@@ -121,9 +196,24 @@ html[data-theme="midnight-contrast"] .browser-floating-card {
 
 .hana-warning-box {
     background: rgba(255, 255, 255, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    border: 1px solid transparent;
     box-shadow: var(--shadow-2xl);
     will-change: transform, opacity;
+    position: relative;
+}
+
+.hana-warning-box::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
 }
 
 @supports (backdrop-filter: blur(12px)) {
@@ -149,9 +239,24 @@ html[data-theme="midnight-contrast"] .hana-warning-box {
 
 .sv-container {
     background: rgba(255, 255, 255, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    border: 1px solid transparent;
     box-shadow: var(--shadow-2xl);
     will-change: transform, opacity;
+    position: relative;
+}
+
+.sv-container::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
 }
 
 @supports (backdrop-filter: blur(12px)) {
@@ -177,9 +282,24 @@ html[data-theme="midnight-contrast"] .sv-container {
 
 .bridge-tutorial-panel {
     background: rgba(255, 255, 255, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    border: 1px solid transparent;
     box-shadow: var(--shadow-xl);
     will-change: transform, opacity;
+    position: relative;
+}
+
+.bridge-tutorial-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
 }
 
 @supports (backdrop-filter: blur(12px)) {
@@ -199,9 +319,24 @@ html[data-theme="midnight-contrast"] .bridge-tutorial-panel {
 /* ── DevTools 面板 (devtools-panel) ── */
 .devtools-panel .devtools-inner {
     background: rgba(255, 255, 255, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid transparent;
     box-shadow: var(--shadow-xl);
     will-change: transform, opacity;
+    position: relative;
+}
+
+.devtools-panel .devtools-inner::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
 }
 
 @supports (backdrop-filter: blur(12px)) {
@@ -234,8 +369,23 @@ html[data-theme="midnight-contrast"] .devtools-panel .devtools-inner {
 /* ── 侧边栏 Bridge 卡片 (sidebar-bridge-card) ── */
 .sidebar-bridge-card {
     background: rgba(255, 255, 255, 0.5);
-    border: 1px solid rgba(0, 0, 0, 0.04);
+    border: 1px solid transparent;
     box-shadow: var(--shadow-sm);
+    position: relative;
+}
+
+.sidebar-bridge-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
 }
 
 @supports (backdrop-filter: blur(12px)) {

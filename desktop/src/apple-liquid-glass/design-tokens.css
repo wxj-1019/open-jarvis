@@ -15,6 +15,17 @@
   --ease-spring-gentle: cubic-bezier(0.22, 1, 0.36, 1);
   /* 弹簧·快速稳定：loading/toggle 切换，无 overshoot 渲染开销最小 */
   --ease-spring-settle: cubic-bezier(0.33, 1, 0.68, 1);
+  
+  /* 专属弹簧曲线（针对特定组件优化） */
+  /* 模态框专用：更柔和的回弹，避免突兀感 */
+  --ease-spring-modal: cubic-bezier(0.32, 1.4, 0.6, 1);
+  /* 按钮专用：更干脆的反馈，增强点击感 */
+  --ease-spring-button: cubic-bezier(0.36, 1.2, 0.64, 1);
+  /* 卡片专用：平衡回弹，适用于大部分卡片场景 */
+  --ease-spring-card: cubic-bezier(0.34, 1.5, 0.64, 1);
+  /* Popover 专用：更弹的展开效果 */
+  --ease-spring-popover: cubic-bezier(0.28, 1.6, 0.58, 1);
+  
   /* 弹性边界·超调：拖拽/滚动回弹，负值 bezier 慎用 */
   --ease-overshoot: cubic-bezier(0.68, -0.55, 0.265, 1.55);
   /* 弹性边界·激进弹性：特殊交互，计算复杂度高限制使用频率 */
@@ -24,15 +35,15 @@
   /* 极小阴影：卡片默认状态，单层开销极低 */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
   /* 小阴影：按钮/输入框悬浮，双层现代浏览器优化良好 */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 3px -1px rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
   /* 中阴影：dropdown/tooltip，注意高频更新场景可能触发重绘 */
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 4px 6px -2px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
   /* 大阴影：modal/drawer，建议配合 translateZ(0) 硬件加速 */
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.06), 0 4px 6px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -3px rgba(0, 0, 0, 0.04);
   /* 特大阴影：全屏弹窗，多层模糊可能影响低端设备 */
-  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.08), 0 8px 10px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -5px rgba(0, 0, 0, 0.04);
   /* 超大阴影：critical 提示，慎用动画过渡建议直接切换 */
-  --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.12), 0 12px 20px rgba(0, 0, 0, 0.06);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.14), 0 12px 20px -8px rgba(0, 0, 0, 0.06);
   /* 强调色阴影：hover/focus 品牌发光,CSS 变量 RGB 支持动态主题 */
   --shadow-accent: 0 4px 14px rgba(var(--accent-rgb, 83 125 150), 0.18);
   /* 光晕阴影：霓虹/发光 active 状态,无偏移模糊开销大限制元素数量 */

@@ -140,30 +140,35 @@
     }
 }
 
-/* ── 主题同步：暗色主题阴影加深 ── */
+/* ── 主题同步：暗色主题阴影加深（优化负边距和透明度）── */
 html[data-theme="midnight"] .hana-shadow-sm,
 html[data-theme="midnight-contrast"] .hana-shadow-sm {
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 1px 3px -1px rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.2),
+                0 0 0 1px rgba(255, 255, 255, 0.03);
 }
 
 html[data-theme="midnight"] .hana-shadow-md,
 html[data-theme="midnight-contrast"] .hana-shadow-md {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 6px -2px rgba(0, 0, 0, 0.35), 0 2px 4px -2px rgba(0, 0, 0, 0.2),
+                0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 html[data-theme="midnight"] .hana-shadow-lg,
 html[data-theme="midnight-contrast"] .hana-shadow-lg {
-    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3), 0 4px 6px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -3px rgba(0, 0, 0, 0.25),
+                0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 html[data-theme="midnight"] .hana-shadow-xl,
 html[data-theme="midnight-contrast"] .hana-shadow-xl {
-    box-shadow: 0 20px 25px rgba(0, 0, 0, 0.35), 0 8px 10px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.45), 0 8px 10px -5px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 html[data-theme="midnight"] .hana-shadow-2xl,
 html[data-theme="midnight-contrast"] .hana-shadow-2xl {
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 12px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 12px 20px -8px rgba(0, 0, 0, 0.35),
+                0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 /* ── 主题同步：暗色主题毛玻璃边框增强 ── */
