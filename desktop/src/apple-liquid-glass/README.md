@@ -81,11 +81,68 @@ apple-liquid-glass/
 
 ## 性能最佳实践
 
-1. **所有动画仅使用 `transform` 和 `opacity`**，确保 GPU 加速
-2. **避免在动画中使用 `width/height/top/left`** 等触发重排的属性
-3. **`will-change` 仅在动画进行时启用**，动画结束后移除
-4. **`backdrop-filter` 仅在可见元素上启用**，避免在滚动容器中使用
-5. **持续动画（如 shimmer）使用较低的频率**（2-3s）
+### will-change 生命周期
+
+**错误用法**（持续占用 GPU 内存）：
+```css
+.float-card {
+  will-change: transform, opacity; /* ❌ 始终占用 */
+}
+```
+
+**正确用法**（JS 动态控制）：
+```jsx
+<div className={`float-card ${isAnimating ? 'hana-animating' : ''}`}>
+  {/* 内容 */}
+</div>
+```
+
+### backdrop-filter 降级
+
+所有毛玻璃组件已自动降级：
+- 支持 `backdrop-filter` 的设备：使用模糊 + 饱和度增强
+- 不支持的设备：使用半透明背景（85% 不透明度）
+
+### Grid 展开动画
+
+**旧方案**（触发 layout 重排）：
+```css
+@keyframes expand {
+  from { max-height: 0; }
+  to { max-height: 2000px; }
+}
+```
+
+**新方案**（仅触发 composite）：
+```html
+<div class="hana-accordion">
+  <div class="hana-accordion-content">...</div>
+</div>
+```
+
+```js
+accordion.classList.toggle('hana-accordion-open');
+```
+
+### Shimmer 动画优化
+
+已优化为 `transform` 动画（GPU 加速），避免 `background-position` 导致的重绘。
+
+### 移动端性能
+
+在移动设备（<768px）上，持续动画频率自动降低：
+- shimmer: 2.5s → 4s
+- beta-badge: 3s → 5s
+- status-dot pulse: 2s → 3s
+
+### 性能工具类
+
+| 类名 | 用途 |
+|------|------|
+| `.hana-animating` | 动态启用 GPU 加速（JS 控制） |
+| `.hana-respect-motion` | 防止动画堆积（点击时触发） |
+| `.hana-no-child-animation` | 禁用所有子元素动画 |
+| `.hana-high-performance` | 高性能模式（禁用非必需动画） |
 
 ## 无障碍指南
 

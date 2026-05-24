@@ -11,21 +11,56 @@
     -webkit-transform: translateZ(0);
 }
 
-/* 毛玻璃元素自动 GPU 加速 */
-.float-card,
-.context-menu,
-.hana-toast,
-.browser-floating-card,
-.hana-warning-box,
-.sv-container,
-.bridge-tutorial-panel,
-.devtools-panel .devtools-inner {
+/* 毛玻璃元素 GPU 加速说明：
+   will-change 应在动画进行时动态添加（通过 JS 添加 .hana-animating 类），
+   动画结束后移除。静态声明会持续占用 GPU 内存，低端设备可能卡顿。
+   
+   使用示例（React 组件）：
+   <div className={`float-card ${isAnimating ? 'hana-animating' : ''}`}>
+   
+   旧代码保留作为参考（已注释）：
+   .float-card,
+   .context-menu,
+   .hana-toast,
+   .browser-floating-card,
+   .hana-warning-box,
+   .sv-container,
+   .bridge-tutorial-panel,
+   .devtools-panel .devtools-inner {
+       will-change: transform, opacity;
+   }
+*/
+
+/* 动态 GPU 加速类（JS 控制） */
+.hana-animating {
     will-change: transform, opacity;
 }
 
 /* 动画结束后移除 will-change（需要 JS 配合，此处仅作提示） */
 .hana-gpu-auto {
     will-change: auto;
+}
+
+/* Shimmer 光泽效果（GPU 加速版本） */
+.hana-shimmer {
+    position: relative;
+    overflow: hidden;
+}
+.hana-shimmer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+    animation: hana-shimmer 2.5s ease-in-out infinite;
+    pointer-events: none;
 }
 
 /* ── 无障碍：Reduced Motion 增强 ── */

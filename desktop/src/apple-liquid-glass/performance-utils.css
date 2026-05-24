@@ -1,0 +1,47 @@
+/* ========================================
+   Apple Liquid Glass 性能工具类
+   ========================================
+   用于优化动画性能、防止动画堆积、节流持续动画。
+   ======================================== */
+
+/* ── 动画节流：防止快速点击导致动画堆积 ── */
+.hana-respect-motion {
+    animation: none;
+}
+.hana-respect-motion:active {
+    animation: inherit;
+}
+
+/* ── 禁用子元素动画（用于性能敏感场景）── */
+.hana-no-child-animation *,
+.hana-no-child-animation *::before,
+.hana-no-child-animation *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+}
+
+/* ── 降低持续动画频率（用于低端设备/移动端）── */
+@media (max-width: 768px) {
+    .hana-shimmer::after {
+        animation-duration: 4s; /* 从 2.5s 降低到 4s */
+    }
+    .beta-badge::after {
+        animation-duration: 5s; /* 从 3s 降低到 5s */
+    }
+    .connection-status:not(.connected) .status-dot {
+        animation-duration: 3s; /* 从 2s 降低到 3s */
+    }
+}
+
+/* ── 高性能模式：禁用所有非必需动画 ──
+   用于低端设备或用户手动开启高性能模式 */
+.hana-high-performance .float-card,
+.hana-high-performance .context-menu,
+.hana-high-performance .hana-toast {
+    animation: none;
+    transition: opacity 0.15s ease;
+}
+.hana-high-performance .float-card:hover,
+.hana-high-performance .context-menu:hover {
+    transform: none;
+}

@@ -209,4 +209,5 @@
         transparent
     );
     animation: hana-shimmer 3s ease-in-out infinite;
+    pointer-events: none;
 }

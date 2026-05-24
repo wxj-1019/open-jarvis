@@ -6,12 +6,18 @@
 
 /* ── 浮动卡片 (float-card) ── */
 .float-card {
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
-    -webkit-backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+    background: rgba(255, 255, 255, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.15);
     box-shadow: var(--shadow-lg);
     will-change: transform, opacity;
+}
+
+@supports (backdrop-filter: blur(12px)) {
+    .float-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+        -webkit-backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+    }
 }
 
 html[data-theme="midnight"] .float-card,
@@ -22,12 +28,18 @@ html[data-theme="midnight-contrast"] .float-card {
 
 /* ── 右键菜单 (context-menu) ── */
 .context-menu {
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
-    -webkit-backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+    background: rgba(255, 255, 255, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.15);
     box-shadow: var(--shadow-xl);
     will-change: transform, opacity;
+}
+
+@supports (backdrop-filter: blur(12px)) {
+    .context-menu {
+        background: var(--glass-bg);
+        backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+        -webkit-backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+    }
 }
 
 html[data-theme="midnight"] .context-menu,
@@ -37,11 +49,17 @@ html[data-theme="midnight-contrast"] .context-menu {
 }
 
 .context-menu-submenu {
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
-    -webkit-backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+    background: rgba(255, 255, 255, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.15);
     box-shadow: var(--shadow-xl);
+}
+
+@supports (backdrop-filter: blur(12px)) {
+    .context-menu-submenu {
+        background: var(--glass-bg);
+        backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+        -webkit-backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+    }
 }
 
 html[data-theme="midnight"] .context-menu-submenu,
@@ -52,12 +70,18 @@ html[data-theme="midnight-contrast"] .context-menu-submenu {
 
 /* ── Toast 通知 (hana-toast) ── */
 .hana-toast {
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
-    -webkit-backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+    background: rgba(255, 255, 255, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.15);
     box-shadow: var(--shadow-xl);
     will-change: transform, opacity;
+}
+
+@supports (backdrop-filter: blur(12px)) {
+    .hana-toast {
+        background: var(--glass-bg);
+        backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+        -webkit-backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+    }
 }
 
 html[data-theme="midnight"] .hana-toast,
@@ -68,12 +92,18 @@ html[data-theme="midnight-contrast"] .hana-toast {
 
 /* ── 浏览器浮动卡片 (browser-floating-card) ── */
 .browser-floating-card {
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
-    -webkit-backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+    background: rgba(255, 255, 255, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.15);
     box-shadow: var(--shadow-lg);
     will-change: transform, opacity;
+}
+
+@supports (backdrop-filter: blur(12px)) {
+    .browser-floating-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+        -webkit-backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturate));
+    }
 }
 
 html[data-theme="midnight"] .browser-floating-card,
@@ -90,12 +120,18 @@ html[data-theme="midnight-contrast"] .browser-floating-card {
 }
 
 .hana-warning-box {
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    background: rgba(255, 255, 255, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.18);
     box-shadow: var(--shadow-2xl);
     will-change: transform, opacity;
+}
+
+@supports (backdrop-filter: blur(12px)) {
+    .hana-warning-box {
+        background: var(--glass-bg);
+        backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+        -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    }
 }
 
 html[data-theme="midnight"] .hana-warning-box,
@@ -112,12 +148,18 @@ html[data-theme="midnight-contrast"] .hana-warning-box {
 }
 
 .sv-container {
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    background: rgba(255, 255, 255, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.18);
     box-shadow: var(--shadow-2xl);
     will-change: transform, opacity;
+}
+
+@supports (backdrop-filter: blur(12px)) {
+    .sv-container {
+        background: var(--glass-bg);
+        backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+        -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    }
 }
 
 html[data-theme="midnight"] .sv-container,
@@ -134,12 +176,18 @@ html[data-theme="midnight-contrast"] .sv-container {
 }
 
 .bridge-tutorial-panel {
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    background: rgba(255, 255, 255, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.18);
     box-shadow: var(--shadow-xl);
     will-change: transform, opacity;
+}
+
+@supports (backdrop-filter: blur(12px)) {
+    .bridge-tutorial-panel {
+        background: var(--glass-bg);
+        backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+        -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    }
 }
 
 html[data-theme="midnight"] .bridge-tutorial-panel,
@@ -150,12 +198,18 @@ html[data-theme="midnight-contrast"] .bridge-tutorial-panel {
 
 /* ── DevTools 面板 (devtools-panel) ── */
 .devtools-panel .devtools-inner {
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    background: rgba(255, 255, 255, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.15);
     box-shadow: var(--shadow-xl);
     will-change: transform, opacity;
+}
+
+@supports (backdrop-filter: blur(12px)) {
+    .devtools-panel .devtools-inner {
+        background: var(--glass-bg);
+        backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+        -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    }
 }
 
 html[data-theme="midnight"] .devtools-panel .devtools-inner,
@@ -180,10 +234,16 @@ html[data-theme="midnight-contrast"] .devtools-panel .devtools-inner {
 /* ── 侧边栏 Bridge 卡片 (sidebar-bridge-card) ── */
 .sidebar-bridge-card {
     background: rgba(255, 255, 255, 0.5);
-    backdrop-filter: blur(8px) saturate(150%);
-    -webkit-backdrop-filter: blur(8px) saturate(150%);
     border: 1px solid rgba(0, 0, 0, 0.04);
     box-shadow: var(--shadow-sm);
+}
+
+@supports (backdrop-filter: blur(12px)) {
+    .sidebar-bridge-card {
+        background: rgba(255, 255, 255, 0.5);
+        backdrop-filter: blur(8px) saturate(150%);
+        -webkit-backdrop-filter: blur(8px) saturate(150%);
+    }
 }
 
 .sidebar-bridge-card:hover {

@@ -9,6 +9,7 @@
    4. spatial-layers:      毛玻璃、阴影、边框
    5. transitions:         过渡与模态
    6. fine-tuning:         性能、无障碍、主题
+   7. performance-utils:   性能工具类（节流、降级）
    
    注意：不要修改此文件的导入顺序，
    否则可能导致样式覆盖错误。
@@ -20,3 +21,4 @@
 @import url('./spatial-layers.css');
 @import url('./transitions.css');
 @import url('./fine-tuning.css');
+@import url('./performance-utils.css');

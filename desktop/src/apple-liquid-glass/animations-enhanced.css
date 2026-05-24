@@ -134,14 +134,11 @@
 /* ── 光泽扫过 ──
    用途：按钮 hover 高光、卡片 shimmer 效果，模拟玻璃反光
    建议时长：800-1200ms（hover）或 2000ms（循环加载）
-   性能：background-position 动画（会触发 paint，建议使用 will-change 优化） */
+   性能：transform 动画（仅触发 composite，GPU 加速，高性能）
+   注意：需配合 ::after 伪元素使用，见 .hana-shimmer 工具类 */
 @keyframes hana-shimmer {
-    0% {
-        background-position: -200% center;
-    }
-    100% {
-        background-position: 200% center;
-    }
+    from { transform: translateX(0); }
+    to { transform: translateX(400%); }
 }
 
 /* ── 轻微晃动 ──

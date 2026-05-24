@@ -180,6 +180,29 @@ body.resizing .channel-inspector-rail {
     --slide-y: 4px;
 }
 
+/* ── Grid 展开/收起动画（替代 max-height，性能更优）──
+   使用方式：
+   <div class="hana-accordion">
+     <div class="hana-accordion-content">...</div>
+   </div>
+   
+   JS 控制：
+   accordion.classList.toggle('hana-accordion-open')
+   
+   性能：仅触发 composite（GPU 加速），推荐用于所有展开/收起场景
+*/
+.hana-accordion {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows var(--duration-slow) var(--ease-spring);
+}
+.hana-accordion.hana-accordion-open {
+    grid-template-rows: 1fr;
+}
+.hana-accordion-content {
+    overflow: hidden;
+}
+
 /* 消息卡片弹簧进入 */
 .message-group {
     animation: hana-fade-up 0.2s var(--ease-out) both;
