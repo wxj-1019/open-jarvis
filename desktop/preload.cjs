@@ -122,6 +122,8 @@ contextBridge.exposeInMainWorld("hana", {
   startDrag: (filePaths) => ipcRenderer.send("start-drag", filePaths),
   // 系统通知
   showNotification: (title, body) => ipcRenderer.invoke("show-notification", title, body),
+  // Spotlight 快速输入
+  submitSpotlight: (text) => ipcRenderer.send("spotlight-submit", text),
   // 窗口控制（Windows/Linux 自绘标题栏）
   getPlatform: () => ipcRenderer.invoke("get-platform"),
   windowMinimize: () => ipcRenderer.invoke("window-minimize"),
@@ -131,5 +133,12 @@ contextBridge.exposeInMainWorld("hana", {
   onMaximizeChange: (cb) => {
     ipcRenderer.on("window-maximized", () => cb(true));
     ipcRenderer.on("window-unmaximized", () => cb(false));
+  },
+  // 语音交互（TTS 播放 + speak 请求监听）
+  speakText: (text, opts) => ipcRenderer.invoke("speak-text", text, opts),
+  onSpeakRequest: (cb) => {
+    const handler = (_, text, opts) => cb(text, opts);
+    ipcRenderer.on("speak-request", handler);
+    return () => ipcRenderer.removeListener("speak-request", handler);
   },
 });
