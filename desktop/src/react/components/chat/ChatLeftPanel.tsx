@@ -20,6 +20,9 @@ const EMPTY_MCP_STATE: McpState = {
   agentConfig: { connectors: {} },
 };
 
+const HOVER_EXPAND_DELAY = 120;
+const HOVER_COLLAPSE_DELAY = 250;
+
 /* ── 加载 MCP 状态 ── */
 async function loadMcpState(agentId: string): Promise<McpState> {
   try {
@@ -97,7 +100,7 @@ function McpPanelContent({ state, onOpenSettings }: { state: McpState; onOpenSet
         <div key={conn.id} className={styles.connectorItem}>
           <ConnectorStatus connector={conn} />
           <span className={styles.connectorName} title={conn.description}>{conn.name}</span>
-          <span className={styles.connectorTools}>{conn.toolCount ?? conn.tools.length} tools</span>
+          <span className={styles.connectorTools}>{conn.toolCount ?? conn.tools?.length ?? 0} tools</span>
         </div>
       ))}
     </div>
@@ -190,13 +193,20 @@ export function ChatLeftPanel() {
     if (expanded) void loadData(true);
   }, [currentAgentId, deskBasePath, expanded, loadData]);
 
+  // 组件卸载时清理 timer
+  useEffect(() => {
+    return () => {
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    };
+  }, []);
+
   const handleMouseEnter = useCallback(() => {
     if (!shouldShow || pinned) return;
     if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
     hoverTimerRef.current = setTimeout(() => {
       setExpanded(true);
       void loadData();
-    }, 120);
+    }, HOVER_EXPAND_DELAY);
   }, [shouldShow, pinned, loadData]);
 
   const handleMouseLeave = useCallback(() => {
@@ -204,7 +214,7 @@ export function ChatLeftPanel() {
     if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
     hoverTimerRef.current = setTimeout(() => {
       setExpanded(false);
-    }, 250);
+    }, HOVER_COLLAPSE_DELAY);
   }, [pinned]);
 
   const togglePin = useCallback(() => {
@@ -278,7 +288,8 @@ export function ChatLeftPanel() {
             <button
               className={`${styles.headerActionBtn} ${loading ? styles.spinning : ''}`}
               onClick={handleRefresh}
-              title={t('chatLeftPanel.refresh')}
+              title={loading ? t('chatLeftPanel.loading') : t('chatLeftPanel.refresh')}
+              disabled={loading}
             >
               <PhosphorIcon icon={ArrowsClockwise} size={11} />
             </button>

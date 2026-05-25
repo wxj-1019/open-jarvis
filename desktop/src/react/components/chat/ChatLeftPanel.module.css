@@ -85,19 +85,22 @@
 
 /* ── 面板内容（展开时显示）── */
 .panelContent {
-  display: none;
+  display: flex;
   flex-direction: column;
   width: 200px;
   height: 100%;
   padding: 10px 10px 10px 12px;
   overflow-y: auto;
+  visibility: hidden;
   opacity: 0;
   transform: translateX(-8px);
-  transition: opacity 0.2s ease 0.05s, transform 0.2s ease 0.05s;
+  transition: opacity 0.2s ease 0.05s, 
+              transform 0.2s ease 0.05s,
+              visibility 0.2s ease 0.05s;
 }
 
 .leftPanel.expanded .panelContent {
-  display: flex;
+  visibility: visible;
   opacity: 1;
   transform: translateX(0);
 }
