@@ -267,21 +267,34 @@ function InputAreaInner({ surface }: Required<InputAreaProps>) {
   // ── Editor placeholder refresh ──
   useEffect(() => {
     if (!editor || editor.isDestroyed) return;
-    editor.view.dispatch(editor.state.tr.setMeta('input-placeholder-refresh', placeholder));
+    try {
+      editor.view.dispatch(editor.state.tr.setMeta('input-placeholder-refresh', placeholder));
+    } catch {
+      // Editor may be destroyed during dispatch
+    }
   }, [editor, placeholder]);
 
   // ── Voice recognition handler ──
   const handleVoiceRecognized = useCallback((text: string) => {
     if (!editor || editor.isDestroyed || !text) return;
-    // 在光标位置插入文本
-    editor.commands.insertContent(text);
-    editor.commands.focus();
+    try {
+      editor.commands.insertContent(text);
+      editor.commands.focus();
+    } catch {
+      // Editor may be destroyed during command execution
+    }
   }, [editor]);
 
   // ── Focus trigger ──
   const inputFocusTrigger = useStore(s => s.inputFocusTrigger);
   useEffect(() => {
-    if (inputFocusTrigger > 0) editor?.commands.focus();
+    if (inputFocusTrigger > 0 && editor && !editor.isDestroyed) {
+      try {
+        editor.commands.focus();
+      } catch {
+        // Editor may be destroyed during command execution
+      }
+    }
   }, [inputFocusTrigger, editor]);
 
   // ── JSX ──

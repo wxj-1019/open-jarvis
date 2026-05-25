@@ -600,14 +600,14 @@ export async function toggleChannelsEnabled(): Promise<boolean> {
 
 export async function createChannel(name: string, members: string[], intro?: string): Promise<string | null> {
   try {
+    const body: { name: string; members: string[]; intro?: string } = { name, members };
+    if (typeof intro === 'string' && intro) {
+      body.intro = intro;
+    }
     const res = await hanaFetch('/api/channels', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name,
-        members,
-        intro: intro || undefined,
-      }),
+      body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();

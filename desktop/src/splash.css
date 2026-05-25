@@ -86,7 +86,7 @@ body::after {
   z-index: 0;
   transition: filter 0.5s ease, opacity 0.5s ease;
   animation: glowPulse 3s ease-in-out infinite;
-  /* will-change 由 JS 在动画时动态添加，避免静态声明占用 GPU 内存 */
+  will-change: transform, opacity;
 }
 
 @keyframes glowPulse {
@@ -109,6 +109,7 @@ body::after {
   opacity: 0.25;
   z-index: 1;
   animation: ringRotate 4s linear infinite;
+  will-change: transform;
 }
 
 /* z-index: 1 双环层 - 外环 */
@@ -126,6 +127,7 @@ body::after {
   opacity: 0.15;
   z-index: 1;
   animation: ringRotateReverse 6s linear infinite;
+  will-change: transform;
 }
 
 @keyframes ringRotate {
@@ -227,6 +229,7 @@ body::after {
   opacity: 1;
   /* 使用更平滑的呼吸动画，避免 step-end 造成的跳变感 */
   animation: cursorBreath 1.2s ease-in-out infinite;
+  will-change: opacity;
 }
 
 @keyframes cursorBreath {
@@ -244,6 +247,7 @@ body::after {
   line-height: 1;
   animation: spin 6s linear infinite;
   transition: animation-duration 0.5s ease;
+  will-change: transform;
 }
 
 @keyframes spin {

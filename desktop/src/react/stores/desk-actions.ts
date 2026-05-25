@@ -15,7 +15,6 @@ import {
   schedulePersistCurrentWorkspaceUiState,
 } from './workspace-ui-state-actions';
 import { hasServerConnection } from '../services/server-connection';
-// @ts-expect-error — shared JS module
 import { mergeWorkspaceHistory, normalizeWorkspacePath } from '../../../../shared/workspace-history.js';
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- store setState 回调及 IPC callback data */
@@ -318,8 +317,28 @@ export async function loadDeskTreeFiles(subdir = '', options: { force?: boolean;
     if (dir) params.set('dir', dir);
     if (normalizedSubdir) params.set('subdir', normalizedSubdir);
     const qs = params.toString() ? `?${params}` : '';
+    
+    // #region debug-point desk-tree-request
+    console.log('[desk-tree] Loading files:', {
+      dir,
+      subdir: normalizedSubdir,
+      originalSubdir: subdir,
+      url: `/api/desk/files${qs}`,
+    });
+    // #endregion
+    
     const res = await hanaFetch(`/api/desk/files${qs}`);
     const data = await res.json();
+    
+    // #region debug-point desk-tree-response
+    console.log('[desk-tree] Response:', {
+      status: res.status,
+      error: data.error,
+      filesCount: data.files?.length,
+      basePath: data.basePath,
+    });
+    // #endregion
+    
     if (_deskTreeLoadVersion.get(key) !== myVersion) return;
     if (data.error) throw new Error(String(data.error));
     const st = useStore.getState();
@@ -396,7 +415,7 @@ export async function saveJianContent(content?: string): Promise<void> {
     await hanaFetch('/api/desk/jian', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ dir: s.deskBasePath || undefined, subdir: s.deskCurrentPath || '', content: text }),
+      body: JSON.stringify({ ...(s.deskBasePath ? { dir: s.deskBasePath } : {}), subdir: s.deskCurrentPath || '', content: text }),
     });
     useStore.getState().setDeskJianContent(text || null);
     const st2 = useStore.getState();
@@ -420,7 +439,7 @@ export async function deskUploadFiles(paths: string[]): Promise<void> {
     const res = await hanaFetch('/api/desk/files', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'upload', dir: s.deskBasePath || undefined, subdir: s.deskCurrentPath || '', paths }),
+      body: JSON.stringify({ action: 'upload', ...(s.deskBasePath ? { dir: s.deskBasePath } : {}), subdir: s.deskCurrentPath || '', paths }),
     });
     const data = await res.json();
     if (data.files) {
@@ -440,7 +459,7 @@ export async function deskUploadFilesToSubdir(paths: string[], subdir: string): 
     const res = await hanaFetch('/api/desk/files', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'upload', dir: s.deskBasePath || undefined, subdir: normalizedSubdir, paths }),
+      body: JSON.stringify({ action: 'upload', ...(s.deskBasePath ? { dir: s.deskBasePath } : {}), subdir: normalizedSubdir, paths }),
     });
     const data = await res.json();
     if (data.files) {
@@ -471,7 +490,7 @@ export async function deskCreateFileInSubdir(subdir: string, name: string, text:
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'create',
-        dir: s.deskBasePath || undefined,
+        ...(s.deskBasePath ? { dir: s.deskBasePath } : {}),
         subdir: normalizedSubdir,
         name: trimmed,
         content: text,
@@ -503,7 +522,7 @@ export async function deskMoveFiles(names: string[], destFolder: string): Promis
     const res = await hanaFetch('/api/desk/files', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'move', dir: s.deskBasePath || undefined, subdir: s.deskCurrentPath || '', names, destFolder }),
+      body: JSON.stringify({ action: 'move', ...(s.deskBasePath ? { dir: s.deskBasePath } : {}), subdir: s.deskCurrentPath || '', names, destFolder }),
     });
     const data = await res.json();
     if (data.files) {
@@ -566,7 +585,7 @@ export async function deskMoveTreeFiles(items: DeskTreeMoveItem[], destSubdir: s
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'movePaths',
-        dir: s.deskBasePath || undefined,
+        ...(s.deskBasePath ? { dir: s.deskBasePath } : {}),
         items: items.map(item => ({
           sourceSubdir: item.sourceSubdir.replace(/^\/+|\/+$/g, ''),
           name: item.name,
@@ -605,7 +624,7 @@ export async function deskRenameTreeItem(sourceSubdir: string, oldName: string, 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'rename',
-        dir: s.deskBasePath || undefined,
+        ...(s.deskBasePath ? { dir: s.deskBasePath } : {}),
         subdir: normalizedSource,
         oldName,
         newName: trimmed,
@@ -672,7 +691,7 @@ export async function deskRemoveFile(name: string): Promise<void> {
     const res = await hanaFetch('/api/desk/files', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'remove', dir: s.deskBasePath || undefined, subdir: s.deskCurrentPath || '', name }),
+      body: JSON.stringify({ action: 'remove', ...(s.deskBasePath ? { dir: s.deskBasePath } : {}), subdir: s.deskCurrentPath || '', name }),
     });
     const data = await res.json();
     if (data.files) {
@@ -705,7 +724,7 @@ export async function deskMkdirInSubdir(subdir: string, name: string): Promise<b
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'mkdir',
-        dir: s.deskBasePath || undefined,
+        ...(s.deskBasePath ? { dir: s.deskBasePath } : {}),
         subdir: normalizedSubdir,
         name: trimmed,
       }),
@@ -725,7 +744,7 @@ export async function deskRenameFile(oldName: string, newName: string): Promise<
     const res = await hanaFetch('/api/desk/files', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'rename', dir: useStore.getState().deskBasePath || undefined, subdir: useStore.getState().deskCurrentPath || '', oldName, newName }),
+      body: JSON.stringify({ action: 'rename', ...(useStore.getState().deskBasePath ? { dir: useStore.getState().deskBasePath } : {}), subdir: useStore.getState().deskCurrentPath || '', oldName, newName }),
     });
     const data = await res.json();
     if (data.error) { console.error('[desk] rename error:', data.error); return false; }

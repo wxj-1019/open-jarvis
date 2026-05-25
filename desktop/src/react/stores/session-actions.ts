@@ -264,10 +264,14 @@ export async function switchSession(path: string): Promise<void> {
   _switchAbortController = abortController;
 
   try {
+    const body: { path: string; currentSessionPath?: string } = { path };
+    if (typeof s.currentSessionPath === 'string' && s.currentSessionPath) {
+      body.currentSessionPath = s.currentSessionPath;
+    }
     const res = await hanaFetch('/api/sessions/switch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path, currentSessionPath: s.currentSessionPath }),
+      body: JSON.stringify(body),
       signal: abortController.signal,
     });
     const data = await res.json();
@@ -479,7 +483,9 @@ export async function ensureSession(): Promise<boolean> {
     if (s.selectedAgentId && s.selectedAgentId !== s.currentAgentId) {
       body.agentId = s.selectedAgentId;
     }
-    body.currentSessionPath = s.currentSessionPath;
+    if (typeof s.currentSessionPath === 'string' && s.currentSessionPath) {
+      body.currentSessionPath = s.currentSessionPath;
+    }
 
     const res = await hanaFetch('/api/sessions/new', {
       method: 'POST',

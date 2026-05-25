@@ -26,14 +26,43 @@ const log = createModuleLogger("desk");
 /** 安全路径校验：target 必须在 baseDir 内部（解析 symlink 后比较） */
 function isInsidePath(target, baseDir) {
   const base = realPath(baseDir);
-  if (!base) return false;
+  if (!base) {
+    console.error('[isInsidePath] realPath(baseDir) failed:', { baseDir, base });
+    return false;
+  }
   const resolved = realPath(target);
-  if (resolved) return resolved === base || resolved.startsWith(base + path.sep);
+  if (resolved) {
+    // 统一使用正斜杠比较，兼容 Windows 和 Unix
+    // 关键：确保 base 路径末尾没有斜杠，避免 D:// 问题
+    const normalizedBase = base.replace(/\\/g, '/').replace(/\/+$/, '');
+    const normalizedResolved = resolved.replace(/\\/g, '/');
+    const result = normalizedResolved === normalizedBase || normalizedResolved.startsWith(normalizedBase + '/');
+    console.log('[isInsidePath] resolved path check:', {
+      base,
+      target,
+      resolved,
+      normalizedBase,
+      normalizedResolved,
+      result,
+      startsWithCheck: normalizedBase + '/',
+      startsWith: normalizedResolved.startsWith(normalizedBase + '/'),
+    });
+    return result;
+  }
   // 路径不存在（mkdir / rename 目标）：解析父目录 + 保留 basename
   const parentResolved = realPath(path.dirname(target));
-  if (!parentResolved) return false;
+  if (!parentResolved) {
+    console.error('[isInsidePath] realPath(parent) failed:', {
+      target,
+      parentDir: path.dirname(target),
+      parentResolved,
+    });
+    return false;
+  }
   const full = path.join(parentResolved, path.basename(target));
-  return full === base || full.startsWith(base + path.sep);
+  const normalizedBase = base.replace(/\\/g, '/').replace(/\/+$/, '');
+  const normalizedFull = full.replace(/\\/g, '/');
+  return normalizedFull === normalizedBase || normalizedFull.startsWith(normalizedBase + '/');
 }
 
 /** 校验 dir 覆盖：仅允许 engine 已知的根目录（解析 symlink 后比较） */
@@ -51,10 +80,13 @@ function isApprovedDir(dir, engine) {
   if (typeof engine.isApprovedWorkspaceDir === "function" && engine.isApprovedWorkspaceDir(dir)) {
     return true;
   }
+  const normalizedResolved = resolved.replace(/\\/g, '/');
   return approved.some(root => {
     const r = realPath(root);
     if (!r) return false;
-    return resolved === r || resolved.startsWith(r + path.sep);
+    // 确保 base 路径末尾没有斜杠，避免 D:// 问题
+    const normalizedR = r.replace(/\\/g, '/').replace(/\/+$/, '');
+    return normalizedResolved === normalizedR || normalizedResolved.startsWith(normalizedR + '/');
   });
 }
 

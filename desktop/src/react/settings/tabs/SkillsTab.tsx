@@ -192,7 +192,7 @@ export function SkillsTab() {
       const res = await hanaFetch(`/api/skills/bundles/${encodeURIComponent(bundle.id)}?agentId=${encodeURIComponent(agentId)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name, skillNames: bundle.skillNames || [] }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -247,7 +247,7 @@ export function SkillsTab() {
     const res = await hanaFetch(`/api/skills/bundles/${encodeURIComponent(bundle.id)}?agentId=${encodeURIComponent(agentId)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ skillNames }),
+      body: JSON.stringify({ name: bundle.name, skillNames }),
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error);

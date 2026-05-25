@@ -118,6 +118,17 @@ export const SessionPathBody = Type.Object({
   sessionPath: Type.Optional(Type.String()),
 });
 
+// ── 重播最新消息 ──
+export const SessionReplayBody = Type.Object({
+  path: Type.Optional(Type.String()),
+  sessionPath: Type.Optional(Type.String()),
+  sourceEntryId: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+  clientMessageId: Type.Optional(Type.String()),
+  text: Type.Optional(Type.String()),
+  uiContext: Type.Optional(Type.Any()),
+  displayMessage: Type.Optional(Type.Any()),
+});
+
 // ── 会话清理 ──
 export const SessionCleanupBody = Type.Object({
   maxAgeDays: Type.Optional(Type.Number()),

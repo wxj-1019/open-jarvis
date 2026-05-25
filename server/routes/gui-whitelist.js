@@ -4,51 +4,56 @@
  * 处理前端发送的 GUI 白名单批准/拒绝请求
  */
 
-import { Router } from 'express';
-import { Type } from '../utils/schemas.js';
-import { validateBody } from '../utils/validation.js';
+import { Hono } from 'hono';
 
 /**
  * 创建 GUI 白名单路由
  * @param {object} engine - HanaEngine 实例
- * @returns {Router}
+ * @param {object} hub - Hub 实例（用于事件总线）
+ * @returns {Hono}
  */
-export function createGuiWhitelistRoute(engine) {
-  const router = Router();
-
-  const GuiWhitelistBody = Type.Object({
-    executable: Type.String(),
-    approved: Type.Boolean(),
-  });
+export function createGuiWhitelistRoute(engine, hub = null) {
+  const route = new Hono();
 
   /**
    * POST /api/sandbox/gui-whitelist
    * 
    * 处理用户对 GUI 白名单请求的响应
    */
-  router.post('/sandbox/gui-whitelist', validateBody(GuiWhitelistBody), async (req, res) => {
-    const { executable, approved } = req.body;
-    
+  route.post('/sandbox/gui-whitelist', async (c) => {
     try {
-      if (!engine) {
-        return res.status(503).json({ error: 'engine not available' });
+      const { executable, approved } = await c.req.json();
+
+      if (!executable || typeof approved !== 'boolean') {
+        return c.json({ error: 'executable and approved are required' }, 400);
       }
-      
+
       if (approved) {
-        // 用户同意，添加到白名单
-        engine._addExecutableToGuiWhitelist(executable);
-        res.json({ success: true, approved: true });
+        // 用户批准，添加到白名单
+        engine._addExecutableToGuiWhitelist?.(executable);
+        
+        // 通知沙盒执行层继续
+        hub?.eventBus?.emit?.({
+          type: 'gui-whitelist-response',
+          executable,
+          approved: true,
+        });
+
+        return c.json({ ok: true, approved: true });
       } else {
-        // 用户拒绝
-        res.json({ success: true, approved: false });
+        // 用户拒绝，通知沙盒执行层中止
+        hub?.eventBus?.emit?.({
+          type: 'gui-whitelist-response',
+          executable,
+          approved: false,
+        });
+
+        return c.json({ ok: true, approved: false });
       }
-    } catch (error) {
-      console.error('[gui-whitelist] Error:', error);
-      res.status(500).json({ error: error.message });
+    } catch (err) {
+      return c.json({ error: err.message }, 500);
     }
   });
 
-  return router;
+  return route;
 }
-
-export default createGuiWhitelistRoute;

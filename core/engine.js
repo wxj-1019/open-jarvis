@@ -397,19 +397,18 @@ export class HanaEngine {
    * @param {string} [params.sessionPath] - 当前会话路径
    */
   async handleGuiWhitelistRequest({ executable, currentWhitelist, sessionPath }) {
-    // 通知前端显示确认对话框
     this._emitEvent({
       type: 'gui-whitelist-request',
       executable,
       currentWhitelist,
     }, sessionPath);
     
-    // 等待用户响应（通过 eventBus 回调）
     return new Promise((resolve) => {
       const handler = (response) => {
         if (response.type === 'gui-whitelist-response') {
+          this._hubCallbacks?.eventBus?.off('gui-whitelist-response', handler);
+          
           if (response.approved) {
-            // 用户同意，添加到白名单
             this._addExecutableToGuiWhitelist(executable);
             resolve({ approved: true });
           } else {
@@ -426,11 +425,16 @@ export class HanaEngine {
    * @param {string} executable - 可执行文件名称
    */
   _addExecutableToGuiWhitelist(executable) {
-    // 这里需要持久化到配置文件
-    // 目前仅添加到运行时白名单
-    const policy = this._sandboxCoordinator?.getCurrentPolicy?.();
-    if (policy?.guiWhitelist && !policy.guiWhitelist.includes(executable)) {
-      policy.guiWhitelist.push(executable);
+    const prefs = this._readPreferences();
+    const sandboxConfig = prefs.sandbox || {};
+    const guiWhitelist = sandboxConfig.guiWhitelist || [];
+    
+    if (!guiWhitelist.includes(executable)) {
+      guiWhitelist.push(executable);
+      this._writePreferences({
+        ...prefs,
+        sandbox: { ...sandboxConfig, guiWhitelist },
+      });
     }
   }
 
@@ -1562,6 +1566,7 @@ export class HanaEngine {
       recordFileOperation: (entry) => this.registerSessionFile(entry),
       getVisionBridge: () => this.getVisionBridge(),
       isVisionAuxiliaryEnabled: () => this.isVisionAuxiliaryEnabled(),
+      engine: this,
     });
 
     // Checkpoint wrapper (outside sandbox layer)

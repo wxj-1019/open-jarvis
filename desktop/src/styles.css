@@ -3982,6 +3982,183 @@ html[data-platform="linux"] .onboarding {
 .hana-toast,
 .float-card,
 .browser-floating-card,
-.drop-overlay {
+.drop-overlay,
+.gui-whitelist-dialog-overlay {
     -webkit-app-region: no-drag;
+}
+
+/* ============================================================
+   GUI 白名单对话框
+   ============================================================ */
+.gui-whitelist-dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(4px);
+}
+
+.gui-whitelist-dialog {
+    background: var(--bg-card, #fff);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.dialog-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-muted, #6b7280);
+    padding: 0 4px;
+    line-height: 1;
+}
+
+.close-btn:hover {
+    color: var(--text-primary, #111827);
+}
+
+.dialog-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.dialog-message {
+    margin: 0 0 12px;
+    color: var(--text-primary, #111827);
+}
+
+.executable-name code {
+    display: block;
+    background: var(--bg-code, #f3f4f6);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 0.95rem;
+    margin: 8px 0;
+    border-left: 3px solid var(--accent, #3b82f6);
+}
+
+.dialog-question {
+    margin: 16px 0 12px;
+    color: var(--text-primary, #111827);
+    font-weight: 500;
+}
+
+.toggle-details {
+    background: none;
+    border: none;
+    color: var(--accent, #3b82f6);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 4px 0;
+    margin-bottom: 12px;
+}
+
+.toggle-details:hover {
+    text-decoration: underline;
+}
+
+.whitelist-details {
+    background: var(--bg-secondary, #f9fafb);
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+}
+
+.whitelist-details h4 {
+    margin: 0 0 8px;
+    font-size: 0.85rem;
+    color: var(--text-muted, #6b7280);
+}
+
+.whitelist-details ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.whitelist-details li {
+    margin: 4px 0;
+}
+
+.whitelist-details li code {
+    background: var(--bg-code, #f3f4f6);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.8rem;
+}
+
+.dialog-actions {
+    display: flex;
+    gap: 12px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border-color, #e5e7eb);
+    justify-content: flex-end;
+}
+
+.btn {
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+}
+
+.btn-deny {
+    background: var(--bg-secondary, #f3f4f6);
+    color: var(--text-primary, #111827);
+}
+
+.btn-deny:hover {
+    background: var(--bg-tertiary, #e5e7eb);
+}
+
+.btn-approve {
+    background: var(--accent, #3b82f6);
+    color: white;
+}
+
+.btn-approve:hover {
+    background: var(--accent-hover, #2563eb);
+}
+
+.dialog-footer {
+    padding: 12px 20px;
+    background: var(--bg-secondary, #f9fafb);
+    border-top: 1px solid var(--border-color, #e5e7eb);
+}
+
+.dialog-footer p {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--text-muted, #6b7280);
 }

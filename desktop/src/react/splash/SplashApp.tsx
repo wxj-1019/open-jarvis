@@ -26,6 +26,7 @@ const YUAN_COLORS: Record<string, string> = {
 
 const TYPING_SPEED = 65;
 const TYPING_PAUSE = 1800;
+const TYPING_BATCH_SIZE = 3; // 每批显示的字符数，减少重渲染次数
 
 const MAX_PARTICLES = 3;
 const PARTICLE_MIN_DELAY = 1500;
@@ -34,18 +35,15 @@ const PARTICLE_MAX_DELAY = 3000;
 export function SplashApp() {
   const [avatarSrc, setAvatarSrc] = useState('assets/jarvis.png');
   const [displayText, setDisplayText] = useState('');
-  const [cursorVisible, setCursorVisible] = useState(true);
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
-  const [isTyping, setIsTyping] = useState(true);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [lines, setLines] = useState<string[]>([]);
-  const [symbol, setSymbol] = useState(YUAN_SYMBOLS.hanako);
   const [animationPhase, setAnimationPhase] = useState<'entering' | 'awake' | 'breathing'>('entering');
 
   const linesRef = useRef<string[]>([]);
   const charIndexRef = useRef(0);
+  const isTypingRef = useRef(true);
+  const isDeletingRef = useRef(false);
+  const currentLineIndexRef = useRef(0);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const cursorTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const particleContainerRef = useRef<HTMLDivElement>(null);
   const particleCountRef = useRef(0);
   const particleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -98,50 +96,75 @@ export function SplashApp() {
     particleTimerRef.current = setTimeout(spawnParticle, nextDelay);
   }, []);
 
-  // 打字机核心逻辑
+  // 打字机核心逻辑 — 使用 ref 避免闭包陷阱，纯 setTimeout 方案
   const runTypewriter = useCallback(() => {
-    if (linesRef.current.length === 0) return;
-
+    clearTypingTimer();
+    
+    const currentLineIndex = currentLineIndexRef.current;
     const currentLine = linesRef.current[currentLineIndex];
+    if (!currentLine) return;
 
-    if (isDeleting) {
-      setIsTyping(false);
-      if (charIndexRef.current > 0) {
-        charIndexRef.current -= 1;
-        setDisplayText(currentLine.slice(0, charIndexRef.current));
-        typingTimerRef.current = setTimeout(runTypewriter, TYPING_SPEED / 2.5);
-      } else {
-        setIsDeleting(false);
-        setIsTyping(true);
-        const nextIndex = (currentLineIndex + 1) % linesRef.current.length;
-        setCurrentLineIndex(nextIndex);
-        typingTimerRef.current = setTimeout(runTypewriter, 300);
-      }
-    } else {
-      setIsTyping(true);
-      if (charIndexRef.current < currentLine.length) {
-        charIndexRef.current += 1;
-        setDisplayText(currentLine.slice(0, charIndexRef.current));
-        const speed = TYPING_SPEED + (Math.random() * 30 - 15);
-        typingTimerRef.current = setTimeout(runTypewriter, speed);
-      } else {
-        setIsTyping(false);
-        typingTimerRef.current = setTimeout(() => {
-          setIsDeleting(true);
-          typingTimerRef.current = setTimeout(runTypewriter, TYPING_SPEED);
-        }, TYPING_PAUSE);
-      }
-    }
-  }, [currentLineIndex, isDeleting]);
+    const type = () => {
+      clearTypingTimer();
+      
+      const isDeleting = isDeletingRef.current;
 
-  // 同步 isTyping 到 body class
-  useEffect(() => {
-    if (isTyping) {
+      if (isDeleting) {
+        setTypingState(false);
+        if (charIndexRef.current > 0) {
+          const deleteCount = Math.min(TYPING_BATCH_SIZE, charIndexRef.current);
+          charIndexRef.current -= deleteCount;
+          setDisplayText(currentLine.slice(0, charIndexRef.current));
+          typingTimerRef.current = setTimeout(type, (TYPING_SPEED / 2.5) * deleteCount);
+        } else {
+          isDeletingRef.current = false;
+          const nextIndex = (currentLineIndex + 1) % linesRef.current.length;
+          currentLineIndexRef.current = nextIndex;
+          setCurrentLineIndex(nextIndex);
+          charIndexRef.current = 0;
+          setDisplayText('');
+          setTypingState(true);
+          typingTimerRef.current = setTimeout(type, 300);
+        }
+      } else {
+        setTypingState(true);
+        const remaining = currentLine.length - charIndexRef.current;
+        if (remaining > 0) {
+          const typeCount = Math.min(TYPING_BATCH_SIZE, remaining);
+          charIndexRef.current += typeCount;
+          setDisplayText(currentLine.slice(0, charIndexRef.current));
+          const speed = (TYPING_SPEED + (Math.random() * 30 - 15)) * typeCount;
+          typingTimerRef.current = setTimeout(type, speed);
+        } else {
+          setTypingState(false);
+          typingTimerRef.current = setTimeout(() => {
+            isDeletingRef.current = true;
+            runTypewriter();
+          }, TYPING_PAUSE);
+        }
+      }
+    };
+
+    typingTimerRef.current = setTimeout(type, 50);
+  }, [clearTypingTimer]);
+
+  const [symbol, setSymbol] = useState(YUAN_SYMBOLS.hanako);
+  const [lines, setLines] = useState<string[]>([]);
+
+  // 光标状态管理 - 打字时常亮，停顿时呼吸闪烁
+  const [isTypingState, setIsTypingState] = useState(true);
+  const [cursorBreathing, setCursorBreathing] = useState(false);
+
+  // 同步 isTyping 状态 - 移除轮询，改为在打字机逻辑中直接触发
+  const setTypingState = useCallback((typing: boolean) => {
+    setIsTypingState(typing);
+    setCursorBreathing(!typing);
+    if (typing) {
       document.body.classList.add('splash-typing');
     } else {
       document.body.classList.remove('splash-typing');
     }
-  }, [isTyping]);
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -186,7 +209,7 @@ export function SplashApp() {
             ? '{name} is updating to v{version}, please wait…'
             : '{name} 正在更新到 v{version}，请稍候…');
         setDisplayText(tpl.replaceAll('{name}', name).replaceAll('{version}', installVersion || ''));
-        setIsTyping(false);
+        setTypingState(false);
         return;
       }
 
@@ -237,14 +260,11 @@ export function SplashApp() {
       return () => clearTimeout(enterTimer);
     })();
 
-    // 光标闪烁 — 与打字状态同步，打字时保持常亮，停顿时呼吸闪烁
-    cursorTimerRef.current = setInterval(() => {
-      setCursorVisible(v => !v);
-    }, 600);
+    // 光标闪烁 - 仅在停顿时使用 CSS 呼吸动画，打字时保持常亮
+    // 移除了原有的 setInterval，改为通过 cursorBreathing 状态控制
 
     return () => {
       clearTypingTimer();
-      if (cursorTimerRef.current) clearInterval(cursorTimerRef.current);
       if (particleTimerRef.current) clearTimeout(particleTimerRef.current);
       if (particleContainerRef.current) {
         particleContainerRef.current.innerHTML = '';
@@ -253,20 +273,10 @@ export function SplashApp() {
       document.body.classList.remove('splash-typing');
       document.body.classList.remove('splash-phase-entering');
     };
-  }, [mode, installVersion, runTypewriter, clearTypingTimer, spawnParticle]);
-
-  // 当行索引变化时重置字符索引并启动打字
-  useEffect(() => {
-    if (mode === 'installing') return;
-    if (linesRef.current.length === 0) return;
-    charIndexRef.current = 0;
-    clearTypingTimer();
-    typingTimerRef.current = setTimeout(runTypewriter, 300);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentLineIndex]);
+  }, [mode, installVersion, runTypewriter, clearTypingTimer, spawnParticle, setTypingState]);
 
   // 打字时光标常亮，停顿时呼吸闪烁
-  const showCursor = mode !== 'installing' && (isTyping || cursorVisible);
+  const showCursor = mode !== 'installing' && (isTypingState || !cursorBreathing);
 
   return (
     <div className="splash-container">
@@ -287,7 +297,7 @@ export function SplashApp() {
           {displayText}
           <span
             className={`splash-cursor${showCursor ? ' visible' : ''}`}
-            style={isTyping ? { animation: 'none', opacity: 1 } : undefined}
+            style={isTypingState || !cursorBreathing ? { animation: 'none', opacity: 1 } : undefined}
           />
         </p>
         <span className="splash-sakura">{symbol}</span>

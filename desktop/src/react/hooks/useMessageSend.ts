@@ -174,9 +174,13 @@ export function useMessageSend({
     }
 
     const plainUrlPaste = extractPlainUrlPaste(e.clipboardData);
-    if (plainUrlPaste && editor) {
+    if (plainUrlPaste && editor && !editor.isDestroyed) {
       e.preventDefault();
-      editor.commands.insertContent(plainUrlPaste);
+      try {
+        editor.commands.insertContent(plainUrlPaste);
+      } catch {
+        // Editor may be destroyed during command execution
+      }
       return true;
     }
     return false;
@@ -203,10 +207,13 @@ export function useMessageSend({
 
   // ── Send message ──
   const handleSend = useCallback(async () => {
-    if (!editor) return;
+    if (!editor || editor.isDestroyed) return;
     const editorJson = editor.getJSON();
     const { text: rawText, skills, fileRefs } = serializeEditor(editorJson);
     const text = rawText.trim();
+
+    // Defensive: editor may be destroyed during async operations
+    const isEditorValid = () => editor && !editor.isDestroyed;
 
     const slashSelection = resolveSlashSubmitSelection({
       text,
@@ -234,6 +241,8 @@ export function useMessageSend({
         const ok = await ensureSession();
         if (!ok) return;
         loadSessions();
+        // Re-check editor after async operation
+        if (!isEditorValid()) return;
       }
 
       // Separate native media from regular attachments; backend decides image vision bridge, video native capability, or explicit error.
@@ -343,7 +352,9 @@ export function useMessageSend({
       const allFiles = [...(hasFiles ? inputFiles : [])];
       if (docForRender) allFiles.push({ path: docForRender.path, name: docForRender.name });
 
-      editor?.commands?.clearContent();
+      if (isEditorValid()) {
+        editor.commands.clearContent();
+      }
       if (currentSessionPath) clearDraft(currentSessionPath);
       clearAttachedFiles();
       const qs2 = useStore.getState().quotedSelection;

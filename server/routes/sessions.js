@@ -12,6 +12,7 @@ import {
   SessionPinBody,
   SessionSwitchBody,
   SessionPathBody,
+    SessionReplayBody,
   SessionCleanupBody,
   SessionBrowserCloseBody,
 } from "../utils/schemas.js";
@@ -364,6 +365,7 @@ export function createSessionsRoute(engine, hub = null) {
         });
       }));
     } catch (err) {
+      log.error(`session create failed: ${err.message}`, err.stack);
       return c.json({ error: err.message }, 500);
     }
   });
@@ -609,7 +611,7 @@ export function createSessionsRoute(engine, hub = null) {
     }
   });
 
-  route.post("/sessions/latest-user-message/replay", validateBody(SessionPathBody), async (c) => {
+  route.post("/sessions/latest-user-message/replay", validateBody(SessionReplayBody), async (c) => {
     try {
       const requestContext = createRequestContext(c, engine);
       const body = c.get("validatedBody");
@@ -725,7 +727,8 @@ export function createSessionsRoute(engine, hub = null) {
       }
 
       let newSessionPath, newAgentId;
-      if (agentId && agentId !== (body.currentAgentId || engine.currentAgentId)) {
+      const validatedBody = c.get("validatedBody");
+      if (agentId && agentId !== (validatedBody.currentAgentId || engine.currentAgentId)) {
         ({ sessionPath: newSessionPath, agentId: newAgentId } = await engine.createSessionForAgent(
           agentId,
           cwd || undefined,
@@ -770,6 +773,7 @@ export function createSessionsRoute(engine, hub = null) {
       }, newSessionPath);
       return c.json(response);
     } catch (err) {
+      log.error(`session create failed: ${err.message}`, err.stack);
       return c.json({ error: err.message }, 500);
     }
   });

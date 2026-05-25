@@ -63,7 +63,11 @@ export function useEditorSync({
         setDraft(currentSessionPath, text);
       }
       // Auto-scroll when content exceeds visible area
-      requestAnimationFrame(() => editor?.commands?.scrollIntoView());
+      requestAnimationFrame(() => {
+        if (editor && !editor.isDestroyed) {
+          editor.commands.scrollIntoView();
+        }
+      });
     };
     editor.on('update', handler);
     return () => { editor.off('update', handler); };
@@ -71,12 +75,12 @@ export function useEditorSync({
 
   // Restore draft when switching sessions
   useEffect(() => {
-    if (!editor || !currentSessionPath) return;
+    if (!editor || editor.isDestroyed || !currentSessionPath) return;
     const draft = useStore.getState().drafts[currentSessionPath] || '';
     const current = editor.getText();
     if (draft !== current) {
       if (!draft) {
-        editor.commands.setContent('', { emitUpdate: false });
+        if (!editor.isDestroyed) editor.commands.setContent('', { emitUpdate: false });
       } else {
         const doc = {
           type: 'doc' as const,
@@ -85,7 +89,7 @@ export function useEditorSync({
             content: line ? [{ type: 'text' as const, text: line }] : [],
           })),
         };
-        editor.commands.setContent(doc, { emitUpdate: false });
+        if (!editor.isDestroyed) editor.commands.setContent(doc, { emitUpdate: false });
       }
     }
   }, [editor, currentSessionPath]);

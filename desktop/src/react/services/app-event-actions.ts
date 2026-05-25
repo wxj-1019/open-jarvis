@@ -95,7 +95,8 @@ export function handleAppEvent(type: string, data: any = {}, options: AppEventOp
       break;
     }
     case 'gui-whitelist-response': {
-      // 处理用户响应（这个应该从前端发回，不是从后端）
+      // 这个事件从前端发回后端，不应该在这里处理
+      // 用户响应通过 GuiWhitelistDialog 组件直接调用 API
       break;
     }
     case 'agent-switched': {

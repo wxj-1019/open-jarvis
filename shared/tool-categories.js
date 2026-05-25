@@ -38,6 +38,9 @@ export const STANDARD_TOOL_NAMES = [
   "wait",
   "stop_task",
   "terminal",
+  "plan_execute",
+  "ingest_document",
+  "search_documents",
 ];
 
 export const GLOBAL_TOOL_NAMES = [
@@ -50,6 +53,8 @@ export const OPTIONAL_TOOL_NAMES = [
   "dm",
   "install_skill",
   "update_settings",
+  "speak",
+  "voice_input",
 ];
 
 const OPTIONAL_TOOL_NAMES_SET = new Set(OPTIONAL_TOOL_NAMES);

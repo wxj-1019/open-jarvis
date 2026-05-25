@@ -647,7 +647,7 @@ app.route("/api", createSystemRoute());
 app.route("/api", createCheckpointsRoute(engine));
 app.route("/api", createCommandsRoute(engine));
 app.route("/api", createResourcesRoute(engine));
-app.route("/api", createGuiWhitelistRoute(engine));
+app.route("/api", createGuiWhitelistRoute(engine, hub));
 app.route("/api/proactive", createProactiveRulesRoute(engine, hub));
 app.route("/api", createServerIdentityRoute({
   hanakoHome: engine.hanakoHome,
