@@ -389,6 +389,51 @@ export class HanaEngine {
     }
   }
 
+  /**
+   * 处理 GUI 白名单请求
+   * @param {object} params
+   * @param {string} params.executable - 请求添加的可执行文件名称
+   * @param {string[]} params.currentWhitelist - 当前白名单列表
+   * @param {string} [params.sessionPath] - 当前会话路径
+   */
+  async handleGuiWhitelistRequest({ executable, currentWhitelist, sessionPath }) {
+    // 通知前端显示确认对话框
+    this._emitEvent({
+      type: 'gui-whitelist-request',
+      executable,
+      currentWhitelist,
+    }, sessionPath);
+    
+    // 等待用户响应（通过 eventBus 回调）
+    return new Promise((resolve) => {
+      const handler = (response) => {
+        if (response.type === 'gui-whitelist-response') {
+          if (response.approved) {
+            // 用户同意，添加到白名单
+            this._addExecutableToGuiWhitelist(executable);
+            resolve({ approved: true });
+          } else {
+            resolve({ approved: false });
+          }
+        }
+      };
+      this._hubCallbacks?.eventBus?.on('gui-whitelist-response', handler);
+    });
+  }
+
+  /**
+   * 添加可执行文件到 GUI 白名单
+   * @param {string} executable - 可执行文件名称
+   */
+  _addExecutableToGuiWhitelist(executable) {
+    // 这里需要持久化到配置文件
+    // 目前仅添加到运行时白名单
+    const policy = this._sandboxCoordinator?.getCurrentPolicy?.();
+    if (policy?.guiWhitelist && !policy.guiWhitelist.includes(executable)) {
+      policy.guiWhitelist.push(executable);
+    }
+  }
+
   setDeferredResultStore(store) {
     this._deferredResultCoordinator?.dispose?.();
     this._deferredResultStore = store;
@@ -1242,9 +1287,9 @@ export class HanaEngine {
     // 7. Bridge 孤儿清理
     try { this._bridge.reconcile(); } catch (err) { moduleLog.warn(`[init] bridge reconcile failed: ${err?.message}`); }
 
-    // 8. 沙盒日志
-    const sandboxEnabled = this._readPreferences().sandbox !== false;
-    log(`✿ 沙盒${sandboxEnabled ? "已启用" : "已关闭"}`);
+    // 8. 沙盒状态
+    const sandboxEnabled = this.getSandbox();
+    log(`✿ 沙盒状态: ${sandboxEnabled ? "已启用" : "已关闭"}`);
 
     // 9. 清理过期的 .ephemeral session 文件（>7 天）
     this._cleanEphemeralSessions();
@@ -1508,7 +1553,7 @@ export class HanaEngine {
       workspaceFolders,
       hanakoHome: this.hanakoHome,
       executionBoundary,
-      getSandboxEnabled: () => this._readPreferences().sandbox !== false,
+      getSandboxEnabled: () => this.getSandbox(),
       getSandboxNetworkEnabled: () => process.platform === "win32"
         ? true
         : this._readPreferences().sandbox_network !== false,

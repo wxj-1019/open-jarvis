@@ -84,6 +84,20 @@ function handleAgentWorkspaceChanged(data: any): void {
 
 export function handleAppEvent(type: string, data: any = {}, options: AppEventOptions = {}): void {
   switch (type) {
+    case 'gui-whitelist-request': {
+      // 触发 GUI 白名单请求对话框
+      useStore.setState({
+        guiWhitelistRequest: {
+          executable: data.executable,
+          currentWhitelist: data.currentWhitelist || [],
+        },
+      });
+      break;
+    }
+    case 'gui-whitelist-response': {
+      // 处理用户响应（这个应该从前端发回，不是从后端）
+      break;
+    }
     case 'agent-switched': {
       const myVersion = ++_agentSwitchVersion;
 

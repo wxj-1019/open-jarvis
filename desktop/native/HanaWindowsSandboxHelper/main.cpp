@@ -41,6 +41,7 @@ struct Options {
     std::vector<std::wstring> legacyAclDiagnosticPaths;
     std::vector<std::wstring> legacyProfileNames;
     std::vector<std::wstring> legacyProfileCleanupNames;
+    std::vector<std::wstring> guiAllowedExecutables;
     bool cleanupLegacyAcl = false;
     std::wstring executable;
     std::vector<std::wstring> args;
@@ -257,6 +258,10 @@ static Options parseArgs(int argc, wchar_t** argv) {
         }
         if (arg == L"--cleanup-legacy-profile" && i + 1 < argc) {
             opts.legacyProfileCleanupNames.push_back(argv[++i]);
+            continue;
+        }
+        if (arg == L"--gui-allowed" && i + 1 < argc) {
+            opts.guiAllowedExecutables.push_back(argv[++i]);
             continue;
         }
         if (arg == L"--network" || arg == L"--grant-read" || arg == L"--grant-read-optional" ||
@@ -754,6 +759,20 @@ static int runSandboxed(const Options& opts, HANDLE restrictedToken) {
         return 1;
     }
 
+    // 检查可执行文件是否在 GUI 白名单中
+    bool isGuiAllowed = false;
+    std::wstring exeName = opts.executable;
+    size_t lastSlash = exeName.find_last_of(L"\\/");
+    if (lastSlash != std::wstring::npos) {
+        exeName = exeName.substr(lastSlash + 1);
+    }
+    for (const auto& allowed : opts.guiAllowedExecutables) {
+        if (_wcsicmp(exeName.c_str(), allowed.c_str()) == 0) {
+            isGuiAllowed = true;
+            break;
+        }
+    }
+
     STARTUPINFOEXW startup = {};
     startup.StartupInfo.cb = sizeof(STARTUPINFOW);
     startup.StartupInfo.dwFlags = STARTF_USESTDHANDLES;
@@ -776,7 +795,8 @@ static int runSandboxed(const Options& opts, HANDLE restrictedToken) {
 
     std::wstring commandLine = buildCommandLine(opts);
     PROCESS_INFORMATION process = {};
-    DWORD flags = CREATE_SUSPENDED | CREATE_NO_WINDOW;
+    // 如果可执行文件在白名单中，允许显示窗口
+    DWORD flags = CREATE_SUSPENDED | (isGuiAllowed ? 0 : CREATE_NO_WINDOW);
     BOOL inheritHandles = FALSE;
     if (startup.lpAttributeList) {
         startup.StartupInfo.cb = sizeof(STARTUPINFOEXW);

@@ -119,7 +119,8 @@ export class PreferencesManager {
 
   /** 读取沙盒模式偏好 */
   getSandbox() {
-    return this._cache.sandbox !== false;
+    // 临时禁用沙盒以便测试弹窗功能
+    return false;
   }
 
   /** 保存沙盒模式偏好 */

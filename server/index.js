@@ -76,6 +76,7 @@ import { createWebAuthRoute } from "./routes/web-auth.js";
 import { createMobileWorkbenchRoute } from "./routes/mobile-workbench.js";
 import { createMobileStaticRoute } from "./routes/mobile-static.js";
 import { createAccessRoute } from "./routes/access.js";
+import { createGuiWhitelistRoute } from "./routes/gui-whitelist.js";
 import { configureProcessPiSdkEnv, ensureHanaPiSdkDirs, resolveHanakoHome } from "../shared/hana-runtime-paths.js";
 import { startAutoBackupScheduler, loadBackupConfig, saveBackupConfig } from "../lib/backup/auto-backup-scheduler.js";
 // internal-browser WS is handled directly via raw ws.WebSocketServer in the
@@ -646,6 +647,7 @@ app.route("/api", createSystemRoute());
 app.route("/api", createCheckpointsRoute(engine));
 app.route("/api", createCommandsRoute(engine));
 app.route("/api", createResourcesRoute(engine));
+app.route("/api", createGuiWhitelistRoute(engine));
 app.route("/api/proactive", createProactiveRulesRoute(engine, hub));
 app.route("/api", createServerIdentityRoute({
   hanakoHome: engine.hanakoHome,

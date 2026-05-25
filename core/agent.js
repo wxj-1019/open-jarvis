@@ -1248,6 +1248,20 @@ export class Agent {
       );
     }
 
+    // 通知和弹窗
+    parts.push(isZh
+      ? "\n## 通知和弹窗\n\n" +
+        "当用户要求发送通知、弹窗、提醒、消息框时，必须使用 notify 工具。" +
+        "不要使用 bash 命令（如 PowerShell MessageBox、msg.exe、Add-Type PresentationFramework 等）来创建弹窗。" +
+        "notify 工具会发送现代化的 Windows 系统通知，显示在右下角通知中心，样式美观且符合系统规范。" +
+        "示例：当用户说'给我一个弹窗'或'发个通知'时，使用 notify 工具，参数包含 title 和 body。"
+      : "\n## Notifications and Popups\n\n" +
+        "When the user asks to send a notification, show a popup, alert, or message box, you MUST use the notify tool. " +
+        "Do NOT use bash commands (like PowerShell MessageBox, msg.exe, Add-Type PresentationFramework, etc.) to create popups. " +
+        "The notify tool sends modern Windows system notifications that appear in the bottom-right Notification Center with proper styling. " +
+        "Example: When user says 'give me a popup' or 'send a notification', use the notify tool with title and body parameters."
+    );
+
     // 失败处理（诊断优先于换方案）
     parts.push(isZh
       ? "\n## 失败处理\n\n" +

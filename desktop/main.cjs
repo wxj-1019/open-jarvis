@@ -3425,7 +3425,11 @@ wrapIpcBestEffortHandler("reload-main-window", () => {
 
 // 系统通知（由 agent 的 notify 工具触发）
 wrapIpcBestEffortHandler("show-notification", (_event, title, body, opts = {}) => {
-  if (!Notification.isSupported()) return;
+  console.log('[main] show-notification called:', { title, body, opts });
+  if (!Notification.isSupported()) {
+    console.warn('[main] Notification not supported');
+    return;
+  }
   const { priority = "normal", sound = false } = opts;
   const notif = new Notification({
     title: title || "Hana",
@@ -3440,7 +3444,11 @@ wrapIpcBestEffortHandler("show-notification", (_event, title, body, opts = {}) =
       mainWindow.focus();
     }
   });
+  notif.on("error", (err) => {
+    console.error('[main] Notification error:', err);
+  });
   notif.show();
+  console.log('[main] Notification shown');
 });
 
 // Debug: 打开 Onboarding 窗口（DevTools 用）

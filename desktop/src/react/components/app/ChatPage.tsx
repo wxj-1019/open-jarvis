@@ -3,6 +3,7 @@ import { InputArea, type InputAreaProps } from '../InputArea';
 import { WelcomeScreen } from '../WelcomeScreen';
 import { ChatArea } from '../chat/ChatArea';
 import { RegionalErrorBoundary } from '../RegionalErrorBoundary';
+import { GuiWhitelistDialog } from '../GuiWhitelistDialog';
 
 function WelcomeContainer() {
   const visible = useStore(s => s.welcomeVisible);
@@ -41,6 +42,7 @@ export function ChatPage({
           <InputArea key={currentSessionPath || '__new'} surface={inputSurface} />
         </RegionalErrorBoundary>
       </div>
+      <GuiWhitelistDialog />
     </>
   );
 }

@@ -3,10 +3,15 @@
  * Cross-platform dev launcher
  * 解决 POSIX `VAR=val cmd` 语法和 `~` 在 Windows 上不工作的问题
  */
-import { spawn } from "node:child_process";
+import { spawn, execSync } from "node:child_process";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { createRequire } from "node:module";
+
+// Windows UTF-8 支持：设置控制台代码页为 65001，解决中文日志乱码问题
+if (process.platform === "win32") {
+  try { execSync("chcp 65001", { stdio: "ignore" }); } catch { /* ignore */ }
+}
 
 const require = createRequire(import.meta.url);
 process.env.HANA_HOME = join(homedir(), ".hanako-dev");
