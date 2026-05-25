@@ -1,0 +1,343 @@
+/**
+ * ChatLeftPanel.module.css — 对话区域左侧悬浮面板样式
+ *
+ * 默认收起为左侧细线，hover 时展开显示 MCP 和 Skill 内容。
+ */
+
+/* ── 主容器 ── */
+.leftPanel {
+  position: relative;
+  flex-shrink: 0;
+  width: 6px;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  transition: width 0.25s var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+              background 0.25s var(--ease-out),
+              box-shadow 0.25s var(--ease-out);
+  pointer-events: auto;
+  overflow: hidden;
+  align-self: stretch;
+}
+
+/* 展开状态 */
+.leftPanel.expanded {
+  width: 200px;
+  background: var(--bg-card, var(--bg, #faf8f5));
+  box-shadow: 2px 0 16px rgba(0, 0, 0, 0.08);
+  border-right: 1px solid var(--overlay-light, rgba(0, 0, 0, 0.06));
+}
+
+/* 固定状态 */
+.leftPanel.pinned {
+  background: var(--bg-card, var(--bg, #faf8f5));
+  border-right: 1px solid var(--overlay-light, rgba(0, 0, 0, 0.06));
+}
+
+/* ── 收起指示器 ── */
+.collapseIndicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 6px;
+  height: 100%;
+  padding: 12px 0;
+  opacity: 0.4;
+  transition: opacity 0.15s ease;
+}
+
+.leftPanel:hover .collapseIndicator {
+  opacity: 0.8;
+}
+
+.leftPanel.expanded .collapseIndicator {
+  display: none;
+}
+
+.collapseLine {
+  width: 2px;
+  flex: 1;
+  max-height: 120px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    var(--text-muted, #999) 20%,
+    var(--text-muted, #999) 80%,
+    transparent 100%
+  );
+  border-radius: 1px;
+  opacity: 0.5;
+}
+
+.collapseIcons {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  align-items: center;
+}
+
+.collapseIconActive {
+  color: var(--accent, #537D96);
+  opacity: 0.7;
+}
+
+/* ── 面板内容（展开时显示）── */
+.panelContent {
+  display: none;
+  flex-direction: column;
+  width: 200px;
+  height: 100%;
+  padding: 10px 10px 10px 12px;
+  overflow-y: auto;
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: opacity 0.2s ease 0.05s, transform 0.2s ease 0.05s;
+}
+
+.leftPanel.expanded .panelContent {
+  display: flex;
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ── 面板头部 ── */
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-muted, #888);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 0 8px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--overlay-light, rgba(0, 0, 0, 0.05));
+  flex-shrink: 0;
+}
+
+/* ── 头部操作按钮组 ── */
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.headerActionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: var(--text-muted, #aaa);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.headerActionBtn:hover {
+  background: var(--accent-light, rgba(83, 125, 150, 0.1));
+  color: var(--accent, #537D96);
+}
+
+.headerActionBtn.active {
+  color: var(--accent, #537D96);
+  background: var(--accent-light, rgba(83, 125, 150, 0.12));
+}
+
+/* 刷新按钮旋转动画 */
+@keyframes chat-left-panel-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinning {
+  animation: chat-left-panel-spin 0.8s linear infinite;
+}
+
+/* ── 面板区域 ── */
+.panelSection {
+  flex-shrink: 0;
+}
+
+/* ── 区域分隔线 ── */
+.sectionDivider {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    var(--overlay-light, rgba(0, 0, 0, 0.06)) 30%,
+    var(--overlay-light, rgba(0, 0, 0, 0.06)) 70%,
+    transparent 100%
+  );
+  margin: 8px 0;
+}
+
+/* ── 区域内容 ── */
+.sectionContent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-secondary, #666);
+  padding: 2px 0;
+  margin-bottom: 2px;
+}
+
+/* ── 空状态 ── */
+.emptySection {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 4px;
+  font-size: 0.72rem;
+  color: var(--text-muted, #aaa);
+  font-style: italic;
+}
+
+/* ── MCP 连接器项 ── */
+.connectorItem {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 4px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  transition: background 0.1s ease;
+}
+
+.connectorItem:hover {
+  background: var(--accent-light, rgba(83, 125, 150, 0.08));
+}
+
+.connectorStatus {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.connectorStatus.running {
+  color: var(--success, #6b9);
+}
+
+.connectorStatus.stopped {
+  color: var(--text-muted, #bbb);
+}
+
+.connectorName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text, #333);
+}
+
+.connectorTools {
+  font-size: 0.65rem;
+  color: var(--text-muted, #aaa);
+  flex-shrink: 0;
+}
+
+/* ── Skill 分组 ── */
+.skillGroup {
+  margin-bottom: 4px;
+}
+
+.skillGroupLabel {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--text-muted, #999);
+  padding: 2px 4px;
+  margin-bottom: 1px;
+  letter-spacing: 0.02em;
+}
+
+.skillItem {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 0.72rem;
+  transition: background 0.1s ease;
+  cursor: default;
+}
+
+.skillItem:hover {
+  background: var(--accent-light, rgba(83, 125, 150, 0.08));
+}
+
+.skillDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent, #537D96);
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.skillName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text, #333);
+}
+
+/* ── 滚动条美化 ── */
+.panelContent::-webkit-scrollbar {
+  width: 3px;
+}
+
+.panelContent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.panelContent::-webkit-scrollbar-thumb {
+  background: var(--overlay-light, rgba(0, 0, 0, 0.1));
+  border-radius: 2px;
+}
+
+/* ── 加载状态 ── */
+.loadingOverlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 0;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--text-muted, #aaa);
+}
+
+.loadingSpinner {
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid var(--overlay-light, rgba(0, 0, 0, 0.1));
+  border-top-color: var(--accent, #537D96);
+  border-radius: 50%;
+  animation: chat-left-panel-spin 0.6s linear infinite;
+}
+
+/* ── 暗色主题适配 ── */
+@media (prefers-color-scheme: dark) {
+  .leftPanel.expanded,
+  .leftPanel.pinned {
+    background: var(--bg-card, #1e1e1e);
+    box-shadow: 2px 0 16px rgba(0, 0, 0, 0.25);
+    border-right-color: var(--overlay-light, rgba(255, 255, 255, 0.06));
+  }
+}

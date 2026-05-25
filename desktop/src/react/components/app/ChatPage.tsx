@@ -4,6 +4,7 @@ import { WelcomeScreen } from '../WelcomeScreen';
 import { ChatArea } from '../chat/ChatArea';
 import { RegionalErrorBoundary } from '../RegionalErrorBoundary';
 import { GuiWhitelistDialog } from '../GuiWhitelistDialog';
+import { ChatLeftPanel } from '../chat/ChatLeftPanel';
 
 function WelcomeContainer() {
   const visible = useStore(s => s.welcomeVisible);
@@ -27,11 +28,14 @@ export function ChatPage({
 
   return (
     <>
-      <div className={`chat-area${hasPanels ? ' has-panels' : ''}`}>
-        <WelcomeContainer />
-        <RegionalErrorBoundary region={`${regionPrefix}chat`} resetKeys={[currentSessionPath]}>
-          <ChatArea />
-        </RegionalErrorBoundary>
+      <div className="chat-page-layout">
+        <ChatLeftPanel />
+        <div className={`chat-area${hasPanels ? ' has-panels' : ''}`}>
+          <WelcomeContainer />
+          <RegionalErrorBoundary region={`${regionPrefix}chat`} resetKeys={[currentSessionPath]}>
+            <ChatArea />
+          </RegionalErrorBoundary>
+        </div>
       </div>
       <div className="input-area">
         <RegionalErrorBoundary
