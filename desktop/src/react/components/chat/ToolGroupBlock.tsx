@@ -6,8 +6,10 @@ import { memo, useState, useCallback, useEffect } from 'react';
 import styles from './Chat.module.css';
 import { extractToolDetail } from '../../utils/message-parser';
 import type { ToolDetail } from '../../utils/message-parser';
-
 import type { ToolCall } from '../../stores/chat-types';
+import { getEmojiStylePreset, getSavedEmojiStyle } from '../../../shared/emoji-styles';
+
+type ToolPhase = 'running' | 'done' | 'failed';
 
 interface Props {
   tools: ToolCall[];
@@ -15,21 +17,42 @@ interface Props {
   agentName?: string;
 }
 
-function getToolLabel(name: string, phase: string, agentName: string): string {
-  const t = window.t;
+function getToolLabel(name: string, phase: ToolPhase, agentName: string): string {
+  const emojiStyle = getSavedEmojiStyle();
+  const preset = getEmojiStylePreset(emojiStyle);
+  const toolPreset = preset.tools[name];
+  
+  if (toolPreset && toolPreset[phase]) {
+    return toolPreset[phase].replace(/\{name\}/g, agentName);
+  }
+  
+  const t = window.t ?? ((key: string) => key);
   const vars = { name: agentName };
-  const val = t?.(`tool.${name}.${phase}`, vars);
+  const val = t(`tool.${name}.${phase}`, vars);
   if (val && val !== `tool.${name}.${phase}`) return val;
-  return t?.(`tool._fallback.${phase}`, vars) || name;
+  return t(`tool._fallback.${phase}`, vars) || name;
 }
 
 export const ToolGroupBlock = memo(function ToolGroupBlock({ tools: rawTools, collapsed: initialCollapsed, agentName = 'Hanako' }: Props) {
-  // subagent 有独立卡片，不在工具组里重复显示
   const tools = rawTools.filter(t => t.name !== 'subagent');
   const [collapsed, setCollapsed] = useState(initialCollapsed);
+  const [, forceUpdate] = useState(0);
+  
   useEffect(() => {
     setCollapsed(initialCollapsed);
   }, [initialCollapsed]);
+  
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail?.type === 'emoji-style-changed') {
+        forceUpdate(v => v + 1);
+      }
+    };
+    window.addEventListener('hana-settings', handler);
+    return () => window.removeEventListener('hana-settings', handler);
+  }, []);
+  
   const toggle = useCallback(() => setCollapsed(v => !v), []);
 
   if (tools.length === 0) return null;
@@ -128,7 +151,8 @@ const ToolIndicator = memo(function ToolIndicator({ tool, agentName }: { tool: T
   const detail = tool.name === 'wait'
     ? waitToolDetail(tool, now)
     : extractToolDetail(tool.name, tool.args);
-  const label = getToolLabel(tool.name, tool.done ? 'done' : 'running', agentName);
+  const phase: ToolPhase = tool.done ? (tool.success ? 'done' : 'failed') : 'running';
+  const label = getToolLabel(tool.name, phase, agentName);
   const detailTitle = detail.title || detail.href;
 
   // 如果 args 里有 tag 类型信息（如 agent 名）

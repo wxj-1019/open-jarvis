@@ -2404,5 +2404,33 @@
   "preview.exitMarkdownPreview": "回到编辑",
   "preview.openInNewWindow": "在新窗口查看",
   "preview.openInNewWindowUnsupported": "此类型不支持新窗口查看",
-  "preview.markdownEditorStatus": "选中 {selected} 字 · 共 {total} 字"
+  "preview.markdownEditorStatus": "选中 {selected} 字 · 共 {total} 字",
+  "emojiStyle": {
+    "title": "工具图标风格",
+    "description": "选择工具调用时显示的 emoji 风格",
+    "default": {
+      "name": "经典科技风",
+      "description": "🌐 互联网冲浪等经典表达"
+    },
+    "sakura": {
+      "name": "🌸 樱花系",
+      "description": "温暖日系可爱风，花海寻觅"
+    },
+    "animal": {
+      "name": "🐾 动物系",
+      "description": "Q弹萌宠风，外出探险"
+    },
+    "magic": {
+      "name": "✨ 魔法系",
+      "description": "梦幻魔法风，施展魔法"
+    },
+    "ribbon": {
+      "name": "🎀 蝴蝶结系",
+      "description": "甜美蝴蝶结风，包装礼物"
+    },
+    "starry": {
+      "name": "⭐ 星空系",
+      "description": "浪漫星空风，星海遨游"
+    }
+  }
 }

@@ -96,7 +96,7 @@ export function connectWebSocket(port?: string, token?: string): void {
     }
   };
 
-  _ws.onclose = () => {
+  _ws.onclose = (event) => {
     setStatus('status.disconnected', false);
     _wsRetryCount++;
 

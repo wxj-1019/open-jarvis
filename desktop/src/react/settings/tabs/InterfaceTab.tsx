@@ -19,6 +19,7 @@ import {
 import { persistAppearancePreferences } from '../../services/appearance-sync';
 import styles from '../Settings.module.css';
 import registry from '../../../shared/theme-registry';
+import { EMOJI_STYLE_PRESETS, EMOJI_STYLE_IDS, getEmojiStylePreset, getSavedEmojiStyle, saveEmojiStyle } from '../../../shared/emoji-styles';
 
 const platform = window.platform;
 const i18n = window.i18n;
@@ -88,6 +89,20 @@ export function InterfaceTab() {
     paperTextureBlocked,
     leavesOverlayEnabled,
   } = appearancePrefs;
+  
+  const [emojiStyle, setEmojiStyle] = useState(() => getSavedEmojiStyle());
+  
+  const saveEmojiStyleHandler = useCallback((styleId: string) => {
+    const success = saveEmojiStyle(styleId);
+    if (success) {
+      setEmojiStyle(styleId);
+      window.dispatchEvent(new CustomEvent('hana-settings', {
+        detail: { type: 'emoji-style-changed', styleId },
+      }));
+      platform?.settingsChanged?.('emoji-style-changed', { styleId });
+      useSettingsStore.getState().showToast(t('settings.autoSaved'), 'success');
+    }
+  }, []);
   const editorTypography = useMemo(
     () => normalizeEditorTypography(settingsConfig?.editor),
     [settingsConfig?.editor],
@@ -231,6 +246,33 @@ export function InterfaceTab() {
             />
           }
         />
+        
+        <div className={styles['emoji-style-divider']} />
+        
+        <div className={styles['emoji-style-section']}>
+          <h3 className={styles['emoji-style-section-title']}>{t('emojiStyle.title')}</h3>
+          <p className={styles['emoji-style-section-desc']}>{t('emojiStyle.description')}</p>
+          <div className={styles['emoji-style-grid']}>
+            {EMOJI_STYLE_IDS.map(styleId => {
+              const preset = EMOJI_STYLE_PRESETS[styleId];
+              const isActive = emojiStyle === styleId;
+              return (
+                <button
+                  key={styleId}
+                  role="radio"
+                  aria-checked={isActive}
+                  aria-label={t(preset.name)}
+                  className={`${styles['emoji-style-card']}${isActive ? ` ${styles['active']}` : ''}`}
+                  onClick={() => saveEmojiStyleHandler(styleId)}
+                >
+                  <div className={styles['emoji-style-preview']}>{preset.preview}</div>
+                  <div className={styles['emoji-style-name']}>{t(preset.name)}</div>
+                  <div className={styles['emoji-style-desc']}>{t(preset.description)}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </SettingsSection>
 
       <SettingsSection title={t('settings.interface.system')}>
