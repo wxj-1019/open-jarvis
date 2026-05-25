@@ -854,16 +854,19 @@ html[data-platform="linux"] .tb-toggle-right {
 
 /* ── 统一开关组件 ── */
 .hana-toggle {
-    width: 36px;
-    height: 20px;
-    border-radius: 5px;
-    border: none;
-    background: var(--overlay-medium);
+    width: 44px;
+    height: 24px;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     cursor: pointer;
     position: relative;
-    transition: background var(--duration-slow);
+    transition: all var(--duration-fast) var(--ease-out);
     flex-shrink: 0;
     padding: 0;
+    box-shadow: var(--glass-shadow);
 }
 
 .hana-toggle::after {
@@ -871,23 +874,28 @@ html[data-platform="linux"] .tb-toggle-right {
     position: absolute;
     top: 3px;
     left: 3px;
-    width: 14px;
-    height: 14px;
-    border-radius: 3px;
-    background: #fff;
-    transition: transform var(--duration-slow);
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    transition: all var(--duration-fast) var(--ease-out);
 }
 
 .hana-toggle:hover {
-    filter: brightness(0.92);
+    transform: scale(1.05);
+    box-shadow: var(--glass-shadow-hover);
 }
 
 .hana-toggle.on {
-    background: var(--accent);
+    background: linear-gradient(135deg, var(--accent), var(--accent-light));
+    border-color: var(--accent);
+    box-shadow: var(--glass-glow),
+                0 0 12px rgba(var(--accent-rgb), 0.3);
 }
 
 .hana-toggle.on::after {
-    transform: translateX(16px);
+    transform: translateX(20px);
 }
 
 .hana-toggle.disabled,

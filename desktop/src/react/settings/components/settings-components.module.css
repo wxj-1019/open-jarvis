@@ -47,10 +47,19 @@
 .sectionBody {
     display: flex;
     flex-direction: column;
-    background: var(--bg-card);
-    border: var(--border-width, 1px) solid var(--border);
-    border-radius: var(--radius-card, 10px);
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: var(--border-width, 1px) solid var(--glass-border);
+    border-radius: var(--glass-radius, 14px);
+    box-shadow: var(--glass-shadow);
+    transition: all var(--duration-normal) var(--ease-out);
     /* 左右 padding 移到 row/warning 自己上，让分隔线能贴卡片 border */
+}
+
+.sectionBody:hover {
+    box-shadow: var(--glass-shadow-hover);
+    border-color: var(--glass-border);
 }
 
 .sectionFooter {
@@ -141,6 +150,15 @@
 .row {
     padding: var(--space-sm) var(--space-md);
     position: relative;
+    transition: background var(--duration-fast) var(--ease-out);
+}
+
+.row:hover {
+    background: rgba(255, 255, 255, 0.3);
+    margin: 0 calc(-1 * var(--space-md));
+    padding-left: var(--space-md);
+    padding-right: var(--space-md);
+    border-radius: var(--glass-radius-sm);
 }
 
 /* 内部分隔线：row/warning 之间的线，贴卡片左右 border（到底，不留白）

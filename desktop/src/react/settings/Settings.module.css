@@ -2,11 +2,34 @@
    设置页面
    ======================================== */
 
+/* ========================================
+   Glassmorphism 设计系统变量
+   ======================================== */
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.65);
+  --glass-bg-hover: rgba(255, 255, 255, 0.75);
+  --glass-bg-active: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-border-light: rgba(255, 255, 255, 0.2);
+  --glass-blur: 12px;
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.06),
+                  0 2px 8px rgba(0, 0, 0, 0.04);
+  --glass-shadow-hover: 0 12px 48px rgba(0, 0, 0, 0.08),
+                        0 4px 12px rgba(0, 0, 0, 0.06);
+  --glass-radius: 14px;
+  --glass-radius-sm: 10px;
+  --glass-glow: 0 0 20px rgba(var(--accent-rgb), 0.15);
+}
+
 :global(.settings-panel) {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background-color: var(--bg);
+    background: linear-gradient(135deg,
+      rgba(255, 240, 245, 0.3) 0%,
+      rgba(245, 235, 255, 0.3) 50%,
+      rgba(255, 250, 240, 0.3) 100%
+    );
 }
 
 .settings-panel-modal {
@@ -126,7 +149,10 @@
     flex-direction: column;
     gap: 2px;
     padding: var(--space-xs) var(--space-sm);
-    border-right: 1px solid var(--overlay-light);
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border-right: 1px solid var(--glass-border-light);
     overflow-x: hidden;
     overflow-y: auto;
 }
@@ -158,14 +184,24 @@
 }
 
 .settings-nav-item:hover {
-    background: var(--bg-hover);
+    background: var(--glass-bg-hover);
     color: var(--text);
+    border-radius: var(--glass-radius-sm);
+    transition: all var(--duration-fast) var(--ease-out);
 }
 
 .settings-nav-item.active {
-    background: var(--accent-light);
+    background: var(--glass-bg-active);
     color: var(--accent);
     font-weight: 600;
+    border-radius: var(--glass-radius-sm);
+    box-shadow: inset 2px 0 0 var(--accent),
+                var(--glass-glow);
+}
+
+.settings-nav-item.active svg {
+    opacity: 1;
+    filter: drop-shadow(0 0 6px rgba(var(--accent-rgb), 0.4));
 }
 
 .settings-main {
@@ -1755,17 +1791,23 @@
     font-size: 0.85rem;
     line-height: 1.5;
     color: var(--text);
-    background-color: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-input, 4px);
+    background: var(--glass-bg);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--glass-radius-sm);
     padding: 0.45rem 0.65rem;
     outline: none;
-    transition: border-color var(--duration-slow) var(--ease-out);
+    transition: all var(--duration-fast) var(--ease-out);
     width: 100%;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .settings-input:focus {
     border-color: var(--accent);
+    box-shadow: var(--glass-glow),
+                0 0 0 3px rgba(var(--accent-rgb), 0.1);
+    background: var(--glass-bg-active);
 }
 
 .settings-input::placeholder {
@@ -2934,19 +2976,23 @@
     font-family: inherit;
     font-size: 0.72rem;
     color: var(--accent);
-    background: transparent;
+    background: var(--glass-bg);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 1.5px solid var(--accent);
-    border-radius: var(--radius-card, 10px);
+    border-radius: var(--glass-radius-sm);
     cursor: pointer;
     transition: all var(--duration-fast) var(--ease-out);
     letter-spacing: 0.02em;
-    box-shadow: 0 2px 8px var(--shadow);
+    box-shadow: var(--glass-shadow);
 }
 
 .settings-btn-primary:hover {
     background: var(--accent);
     color: white;
     transform: translateY(-1px);
+    box-shadow: var(--glass-glow),
+                0 0 16px rgba(var(--accent-rgb), 0.4);
 }
 
 .settings-btn-primary:disabled {
