@@ -96,6 +96,15 @@
     animation: hana-pulse-ring 1.5s ease-in-out infinite;
 }
 
+/* 录音时的红色脉冲效果 */
+.voice-btn.voice-btn-recording {
+    --voice-recording-color: #ef4444;
+    color: var(--voice-recording-color);
+    border-color: var(--voice-recording-color);
+    background: rgba(239, 68, 68, 0.12);
+    animation: hana-pulse-ring 1.2s ease-in-out infinite;
+}
+
 /* voice-pulse 动画已迁移至 animations.css，使用 hana-pulse-ring */
 /* 保留此处引用以兼容现有组件，后续统一迁移至 hana-pulse-ring */
 
