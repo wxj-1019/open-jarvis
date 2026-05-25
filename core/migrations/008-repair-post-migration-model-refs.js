@@ -7,6 +7,8 @@
 import path from "path";
 import YAML from "js-yaml";
 import {
+  buildIdToProviderMap,
+  normalizeCompositeModelRef,
   readYAMLSafe,
   scanAgentDirs,
   writeYAMLSafe,
@@ -15,41 +17,7 @@ import {
 export async function migrate(ctx) {
   const { agentsDir, prefs, providerRegistry, log } = ctx;
 
-  // ── 构建 id → provider 查找表（多 provider 同 id 取首个） ──
-  const idToProvider = new Map();
-  const rawProviders = providerRegistry.getAllProvidersRaw?.() || {};
-  for (const [providerId, p] of Object.entries(rawProviders || {})) {
-    for (const m of p.models || []) {
-      const id = typeof m === "object" ? m.id : m;
-      if (id && !idToProvider.has(id)) idToProvider.set(id, providerId);
-    }
-  }
-
-  function normalize(ref) {
-    if (!ref) return { value: ref, changed: false };
-
-    if (typeof ref === "object") {
-      if (ref.id && ref.provider) return { value: ref, changed: false };
-      if (ref.id && !ref.provider) {
-        const guess = idToProvider.get(ref.id);
-        if (guess) return { value: { id: ref.id, provider: guess }, changed: true };
-        return { value: ref, changed: false };
-      }
-      return { value: ref, changed: false };
-    }
-
-    if (typeof ref !== "string") return { value: ref, changed: false };
-
-    const slashIdx = ref.indexOf("/");
-    if (slashIdx > 0 && slashIdx < ref.length - 1) {
-      return { value: { provider: ref.slice(0, slashIdx), id: ref.slice(slashIdx + 1) }, changed: true };
-    }
-
-    const guess = idToProvider.get(ref);
-    if (guess) return { value: { id: ref, provider: guess }, changed: true };
-    return { value: ref, changed: false };
-  }
-
+  const idToProvider = buildIdToProviderMap(providerRegistry);
   const ROLES = ["chat", "utility", "utility_large"];
 
   // ── agent config.yaml ──
@@ -63,7 +31,7 @@ export async function migrate(ctx) {
     let changed = false;
     const next = { ...config.models };
     for (const role of ROLES) {
-      const { value, changed: ch } = normalize(config.models[role]);
+      const { value, changed: ch } = normalizeCompositeModelRef(config.models[role], idToProvider);
       if (ch) {
         next[role] = value;
         changed = true;
@@ -81,7 +49,7 @@ export async function migrate(ctx) {
   let prefsChanged = false;
   const prefKeys = ["utility_model", "utility_large_model"];
   for (const key of prefKeys) {
-    const { value, changed } = normalize(preferences[key]);
+    const { value, changed } = normalizeCompositeModelRef(preferences[key], idToProvider);
     if (changed) {
       preferences[key] = value;
       prefsChanged = true;

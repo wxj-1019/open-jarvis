@@ -30,11 +30,14 @@ As a tool, it is powerful: it remembers everything you've said, operates your co
 - Multi-stage compilation (Today / Week / Longterm / Facts) with automatic fingerprint caching
 - Deep memory extraction: LLM splits session summaries into atomic facts with auto-tagging
 - FTS5 full-text search + vector semantic search hybrid retrieval, with CJK ngram support
-- Compile retry mechanism: exponential backoff + degradation to cached results
-- Memory health monitoring: per-step health tracking with error deduplication
+- Forgetting curve: Ebhinghaus-based decay model that naturally attenuates old memory weights
+- Quality scoring & repair: per-step health tracking with automatic conflict detection and degradation repair
+- Compile retry & quality: exponential backoff + cache degradation, with compile quality scoring
+- Memory archive: migrate low-frequency memories to archive store to maintain primary DB performance
+- Embedding model: supports local and remote embedding services with automatic dimension selection
 - Full documentation: [Architecture](docs/memory-system-architecture.md) | [API Reference](docs/memory-api-reference.md) | [Configuration Guide](docs/memory-configuration-guide.md) | [Migration Guide](docs/memory-migration-guide.md)
 
-**Personality** — Not a generic "AI assistant". Each agent has its own voice and behavior through personality templates. Agents are self-contained folders, easy to back up and manage.
+**Personality** — Not a generic "AI assistant". Each agent has its own voice and behavior through personality templates. Agents are self-contained folders, easy to back up and manage. Supports manual and automatic scheduled backups including personality, avatar, memory, and skills.
 
 **Tools** — Read/write files, run one-shot commands or persistent terminal sessions, browse the web, search the internet through browser-backed or API providers, take screenshots and segmented long screenshots, preview media, and inspect pages. Covers the vast majority of daily work scenarios. A server-first CLI can also attach to the same Hana Server to show status, list sessions, and continue chats from a terminal.
 
@@ -49,6 +52,14 @@ As a tool, it is powerful: it remembers everything you've said, operates your co
 **Full-Screen Media Viewer** — Click any image, SVG, or video from chat or the desk to open a dark-overlay viewer with wheel-zoom, drag-to-pan, `+` / `−` / `0` shortcuts, and left/right navigation between sibling media in the same session or folder.
 
 **Cron & Heartbeat** — Agents can run scheduled tasks and periodically check for file changes on the desk. They work autonomously even when you're away.
+
+**Voice** — Integrated STT (Speech-to-Text) and TTS (Text-to-Speech) engines. Chat with voice input and hear responses spoken aloud. The voice pipeline handles encoding, chunking, and streaming automatically.
+
+**RAG (Document Retrieval)** — Ingest local documents (PDF, Markdown, plain text, etc.) with automatic chunking and vector embedding. RRF hybrid retrieval combining FTS5 keyword search and vector semantic search lets agents answer questions grounded in your knowledge base.
+
+**Multi-Step Planning** — Agents decompose complex tasks into multi-step execution plans, each step with independent status and dependency management. A parallel executor advances multiple independent steps simultaneously for faster task completion.
+
+**Proactive Engine** — A configurable rule engine that triggers autonomous agent actions based on time, events, context changes, and other conditions — not just responding to you, but acting on your behalf.
 
 **Sandbox** — Two-layer isolation: application-level PathGuard with four access tiers + OS-level sandboxing (macOS Seatbelt / Linux Bubblewrap / Windows restricted token). Agents can read ordinary system files, while writes and deletes stay limited to the workspace and managed data folders. On Windows, the command sandbox is a write-isolation model: reads use the current user's normal permissions, and network access keeps the current user's network permissions. macOS and Linux continue to use the network behavior provided by their platform sandbox backends. External network access can use system proxy, manual proxy, or direct mode.
 
@@ -76,7 +87,7 @@ The app is signed and notarized with an Apple Developer ID. macOS should allow i
 
 **Windows:** download the latest `.exe` installer from [Releases](https://github.com/liliMozi/openjarvis/releases).
 
-> **Windows SmartScreen notice:** The installer is not yet code-signed. Windows Defender SmartScreen may show a warning on first run. Click **More info** → **Run anyway**. This is expected for unsigned builds.
+> **Windows SmartScreen notice:** Windows installers now support code signing. Windows Defender SmartScreen may still show a warning on first run. Click **More info** → **Run anyway**. You can check signing details in Settings → Code Signing.
 
 **Linux:** download the latest `.AppImage` or `.deb` from [Releases](https://github.com/liliMozi/openjarvis/releases).
 
@@ -119,6 +130,7 @@ User data is rooted at `HANA_HOME` (`~/.hanako` in production, `~/.hanako-dev` i
 | Agent Runtime | [Pi SDK](https://github.com/nicepkg/pi) |
 | Database | better-sqlite3 (WAL mode) |
 | Testing | Vitest |
+| Package Manager | pnpm |
 | i18n | 5 languages (zh / en / ja / ko / zh-TW) |
 
 ## Platform Support
@@ -134,26 +146,26 @@ User data is rooted at `HANA_HOME` (`~/.hanako` in production, `~/.hanako-dev` i
 ## Development
 
 ```bash
-# Install dependencies
-npm install
+# Install dependencies (requires pnpm)
+pnpm install
 
 # Start with Electron (builds renderer first)
-npm start
+pnpm start
 
-# Start with Vite HMR (run npm run dev:renderer first)
-npm run start:vite
+# Start with Vite HMR (run pnpm dev:renderer first)
+pnpm start:vite
 
 # Server only
-npm run server
+pnpm server
 
 # Server-first CLI
-npm run cli
+pnpm cli
 
 # Run tests
-npm test
+pnpm test
 
 # Type check
-npm run typecheck
+pnpm typecheck
 ```
 
 ## License

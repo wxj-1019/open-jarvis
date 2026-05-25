@@ -569,7 +569,14 @@ export class HanaEngine {
   get slashDispatcher() { return this._slashSystem?.dispatcher ?? null; }
   /** /rc 接管态 + pending-selection 内存 store（Phase 2-A） */
   get rcState() { return this._slashSystem?.rcState ?? null; }
-  async closeSession(p) { return this._sessionCoord.closeSession(p); }
+  async closeSession(p) {
+    const result = await this._sessionCoord.closeSession(p);
+    // 清理该 session 的 UI context 和 strip 通知状态，防止内存泄漏
+    this._uiContextBySession.delete(p);
+    this._imageStripNotified.delete(p);
+    this._videoStripNotified.delete(p);
+    return result;
+  }
   getSessionByPath(p) { return this._sessionCoord.getSessionByPath(p); }
   getSessionContextUsage(p) { return this._sessionCoord.getSessionContextUsage(p); }
   /** 确保桌面 session 已加载进 cache 但不改 UI 焦点（Phase 2-C：/rc 接管态用） */

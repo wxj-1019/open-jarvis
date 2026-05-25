@@ -11,6 +11,8 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
+    "allowJs": true,
+    "checkJs": false,
     "baseUrl": ".",
     "paths": {
       "@hana/plugin-protocol": ["packages/plugin-protocol/src/index.ts"],
@@ -26,7 +28,14 @@
     "tests/**/*.ts",
     "tests/**/*.tsx",
     "packages/*/src/**/*.ts",
-    "packages/*/src/**/*.tsx"
+    "packages/*/src/**/*.tsx",
+    "core/**/*.js",
+    "lib/**/*.js",
+    "server/**/*.js",
+    "hub/**/*.js",
+    "shared/**/*.js",
+    "cli/**/*.js",
+    "plugins/**/*.js"
   ],
   "exclude": [
     "node_modules",

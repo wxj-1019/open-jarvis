@@ -45,6 +45,8 @@ node_modules/
 .claude/
 .agents/skills/
 *.code-workspace
+.idea/
+.vscode/
 
 # 项目私有文件
 CLAUDE.md
@@ -73,10 +75,10 @@ auth.json
 *.log
 logs/
 
-# 包管理器 lockfile（统一使用 npm）
+# 包管理器 lockfile（统一使用 pnpm）
 # ═══════════════════════════════════════════
-pnpm-lock.yaml
 yarn.lock
+package-lock.json
 
 # 系统文件
 .DS_Store
@@ -89,6 +91,9 @@ reviews/
 # Codex environments
 .codex/
 node-v22.14.0-win-x64/
+node-v22.14.0-win-x64.zip
+node-setup.msi
+nul
 node-v22.14.0-win-x64.zip
 node-setup.msi
 nul

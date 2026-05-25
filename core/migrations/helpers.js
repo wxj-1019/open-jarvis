@@ -278,6 +278,63 @@ export function buildModelProviderIndex(providerRegistry) {
   return { idToProvider, providerModelIds };
 }
 
+// ═══════════════════════════════════════════════════════
+//  模型引用复合键迁移工具（#005 / #008 共享）
+// ═══════════════════════════════════════════════════════
+
+/**
+ * 从 providerRegistry 构建 id → provider 查找表。
+ * 多 provider 同 id 时取首个（added-models.yaml 顺序决定）。
+ */
+export function buildIdToProviderMap(providerRegistry) {
+  const idToProvider = new Map();
+  const rawProviders = providerRegistry.getAllProvidersRaw?.() || {};
+  for (const [providerId, p] of Object.entries(rawProviders || {})) {
+    for (const m of p.models || []) {
+      const id = typeof m === "object" ? m.id : m;
+      if (id && !idToProvider.has(id)) idToProvider.set(id, providerId);
+    }
+  }
+  return idToProvider;
+}
+
+/**
+ * 将模型引用归一化为 {id, provider} 复合键对象。
+ * 支持三种输入形态：
+ *   1. 裸 id 字符串 "glm-5.1"                 → 通过 idToProvider 推断 provider
+ *   2. "provider/id" 字符串 "zhipu/glm-5.1"   → 拆成 {id, provider}
+ *   3. {id, provider: ""} 半成品对象          → 视作裸 id 推断
+ *
+ * 返回 { value, changed }，value 为迁移后的值（可能不变）。
+ */
+export function normalizeCompositeModelRef(ref, idToProvider) {
+  if (!ref) return { value: ref, changed: false };
+
+  // {id, provider} 对象
+  if (typeof ref === "object") {
+    if (ref.id && ref.provider) return { value: ref, changed: false };
+    if (ref.id && !ref.provider) {
+      const guess = idToProvider.get(ref.id);
+      if (guess) return { value: { id: ref.id, provider: guess }, changed: true };
+      return { value: ref, changed: false };
+    }
+    return { value: ref, changed: false };
+  }
+
+  if (typeof ref !== "string") return { value: ref, changed: false };
+
+  // "provider/id"
+  const slashIdx = ref.indexOf("/");
+  if (slashIdx > 0 && slashIdx < ref.length - 1) {
+    return { value: { provider: ref.slice(0, slashIdx), id: ref.slice(slashIdx + 1) }, changed: true };
+  }
+
+  // 裸 id
+  const guess = idToProvider.get(ref);
+  if (guess) return { value: { id: ref, provider: guess }, changed: true };
+  return { value: ref, changed: false };
+}
+
 /** 标准化 cron job 的 model 引用为复合键对象 */
 export function normalizeCronModelRefForMigration(ref, index) {
   if (!ref) return { value: "", changed: ref !== "" };

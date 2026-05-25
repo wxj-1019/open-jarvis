@@ -40,7 +40,7 @@
     "build:computer-use-helper": "node scripts/build-computer-use-helper.mjs",
     "build:windows-sandbox-helper": "node scripts/build-windows-sandbox-helper.mjs",
     "build:client": "npm run build:main && npm run build:preload && npm run build:renderer && npm run build:theme",
-    "build:packages": "npm run build --workspaces --if-present",
+    "build:packages": "pnpm -r build",
     "generate:windows-icon": "node scripts/generate-windows-icon.cjs",
     "pack": "npm run build:computer-use-helper && npm run build:client && npm run build:server && electron-builder --dir",
     "install:local": "npm run pack && rm -rf /Applications/Jarvis.app && cp -R dist/mac-arm64/Jarvis.app /Applications/ && printf 'provider: github\\nowner: liliMozi\\nrepo: openjarvis\\n' > /Applications/Jarvis.app/Contents/Resources/app-update.yml && node scripts/sign-local.cjs",

@@ -35,11 +35,14 @@ OpenJarvis 是一个更加易用的 AI agent，有记忆，有性格，会主动
 - 多阶段编译管线（今日/本周/长期/事实），自动指纹缓存避免重复编译
 - 深度记忆提取：LLM 从会话摘要中拆分原子事实 + 自动打标签
 - FTS5 全文搜索 + 向量语义搜索混合检索，支持中英文日韩国语言 ngram
-- 编译重试机制：指数退避重试 + 降级到缓存结果
-- 记忆质量监控：每步独立健康状态追踪，错误去重避免日志刷屏
+- 遗忘曲线模型：基于艾宾浩斯曲线自动衰减旧记忆权重，模拟人脑自然遗忘
+- 质量评分与修复：每步独立健康状态追踪，自动检测冲突记忆，修复降级错误
+- 编译重试与质量保障：指数退避重试 + 降级到缓存结果，编译质量评分
+- 记忆归档：将低频访问的旧记忆迁移到归档库，保证主库性能
+- 嵌入模型：支持本地和远程嵌入服务，自动选择合适的向量维度
 - 详细文档：[记忆系统架构](docs/memory-system-architecture.md) | [API 参考](docs/memory-api-reference.md) | [配置指南](docs/memory-configuration-guide.md) | [迁移指南](docs/memory-migration-guide.md)
 
-**人格** — 不是千篇一律的"AI 助手"。通过人格模板和自定义人格文件塑造独特的性格，每个 Agent 都有自己的说话方式和行为逻辑，Agent 之间分离做得很好，备份方便，Agent 就是文件夹，后续还会添加备份功能。
+**人格** — 不是千篇一律的"AI 助手"。通过人格模板和自定义人格文件塑造独特的性格，每个 Agent 都有自己的说话方式和行为逻辑，Agent 之间分离做得很好，备份方便，Agent 就是文件夹。支持手动备份和自动定时备份，备份内容包括人格、头像、记忆和技能。
 
 **工具** — 读写文件、执行一次性命令或持续终端会话、浏览网页、通过浏览器后端或 API 搜索互联网、截图、分段长截图、媒体预览、检查网页。能力覆盖日常办公的绝大多数场景。也可以通过 server-first CLI 连接同一个 Hana Server，在终端里查看状态、列会话和继续对话。
 
@@ -54,6 +57,14 @@ OpenJarvis 是一个更加易用的 AI agent，有记忆，有性格，会主动
 **全屏媒体查看器** — 聊天里或书桌上的任意图片、SVG、视频，点开就是暗色遮罩的全屏预览：滚轮缩放、拖拽平移，`+` / `−` / `0` 键盘快捷，左右箭头在同会话或同目录的相邻媒体间切换。
 
 **定时任务与心跳** — Agent 可以设置定时任务（Cron），也会定期巡检书桌上的文件变化。你不在的时候，Ta 也能按计划自主工作。
+
+**语音交互** — 集成 STT（语音转文本）和 TTS（文本转语音）引擎，支持在聊天中语音输入和语音输出。语音管线自动管理编码、分片和流式处理，让你可以用"说"的方式与 Agent 自然沟通。
+
+**文档检索 (RAG)** — 摄入本地文档（PDF、Markdown、纯文本等），自动分块并生成向量嵌入。通过 FTS5 关键词搜索 + 向量语义搜索的 RRF 混合检索，让 Agent 能基于你的知识库精准回答问题。
+
+**多步规划** — Agent 可以将复杂任务拆解为多步执行计划，每个步骤有独立状态和依赖管理。支持并行执行器同时推进多个独立步骤，提升任务完成效率。
+
+**主动引擎** — 可配置的规则引擎，让 Agent 能基于时间、事件、上下文变化等条件主动发起行动——不只是"响应你"，而是"为你着想"。
 
 **安全沙盒** — 双层隔离：应用层 PathGuard 四级访问控制 + 操作系统级沙盒（macOS Seatbelt / Linux Bubblewrap / Windows restricted token）。Agent 的权限在你的掌控之中。平时可只读访问系统普通文件，写入和删除限制在工作目录与受控数据目录。Windows 命令沙盒目前是写隔离模型：读取按当前用户权限自然发生，网络也按当前用户网络权限运行；macOS / Linux 的网络隔离仍由对应平台沙盒能力决定。如果你想调整权限，可以在设置 → 安全页面修改沙盒级别；外部网络也可以配置系统代理、手动代理或直连。
 
@@ -81,7 +92,7 @@ OpenJarvis 是一个更加易用的 AI agent，有记忆，有性格，会主动
 
 **Windows**：从 [Releases](https://github.com/liliMozi/openjarvis/releases) 下载最新 `.exe` 安装包。
 
-> **Windows SmartScreen 提示：** 安装包暂未经过代码签名，首次运行时 Windows Defender SmartScreen 可能会拦截，点击**更多信息** → **仍要运行**即可，未签名版本的正常现象。
+> **Windows SmartScreen 提示：** Windows 安装包现已支持代码签名，首次运行时 Windows Defender SmartScreen 可能仍会提示，点击**更多信息** → **仍要运行**后即可正常使用。你可以在设置 → 代码签名页面查看签名详情。
 
 **Linux**：从 [Releases](https://github.com/liliMozi/openjarvis/releases) 下载最新 `.AppImage` 或 `.deb`。
 
@@ -125,6 +136,7 @@ Server 以独立 Node.js 进程运行（由 Electron spawn 或独立启动），
 | Agent 运行时 | [Pi SDK](https://github.com/nicepkg/pi) |
 | 数据库 | better-sqlite3（WAL 模式） |
 | 测试 | Vitest |
+| 包管理 | pnpm |
 | 国际化 | 5 语言（zh / en / ja / ko / zh-TW） |
 
 ## 平台支持
@@ -140,26 +152,26 @@ Server 以独立 Node.js 进程运行（由 Electron spawn 或独立启动），
 ## 开发
 
 ```bash
-# 安装依赖
-npm install
+# 安装依赖（需要 pnpm）
+pnpm install
 
 # Electron 启动（自动构建 renderer）
-npm start
+pnpm start
 
-# Vite HMR 开发（需先运行 npm run dev:renderer）
-npm run start:vite
+# Vite HMR 开发（需先运行 pnpm dev:renderer）
+pnpm start:vite
 
 # 仅启动 server
-npm run server
+pnpm server
 
 # server-first CLI
-npm run cli
+pnpm cli
 
 # 运行测试
-npm test
+pnpm test
 
 # 类型检查
-npm run typecheck
+pnpm typecheck
 ```
 
 ## 许可证

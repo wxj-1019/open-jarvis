@@ -11,6 +11,7 @@ import YAML from "js-yaml";
 import { Agent } from "./agent.js";
 import { safeReadYAMLSync } from "../shared/safe-fs.js";
 import { createModuleLogger } from "../lib/debug-log.js";
+import { validateId } from "../server/utils/validation.js";
 import { clearConfigCache } from "../lib/memory/config-loader.js";
 import { hasCompiledMemory, writeCompiledMemorySnapshot } from "../lib/memory/compiled-memory-snapshot.js";
 import { t } from "../server/i18n.js";
