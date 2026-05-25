@@ -44,6 +44,36 @@ export const EMOJI_STYLE_PRESETS: Record<string, EmojiStylePreset> = {
         done: '💻 {name} 代码执行完成',
         failed: '💻 {name} 代码执行出错',
       },
+      browser: {
+        running: '🖥️ {name} 正在操作浏览器',
+        done: '🖥️ {name} 浏览器操作完成',
+        failed: '🖥️ {name} 浏览器操作失败',
+      },
+      computer_use: {
+        running: '🖱️ {name} 正在使用电脑',
+        done: '🖱️ {name} 电脑操作完成',
+        failed: '🖱️ {name} 电脑操作失败',
+      },
+      bash: {
+        running: '⚙️ {name} 正在执行命令',
+        done: '⚙️ {name} 命令执行完成',
+        failed: '⚙️ {name} 命令执行出错',
+      },
+      write: {
+        running: '✏️ {name} 正在写入文件',
+        done: '✏️ {name} 文件写入完成',
+        failed: '✏️ {name} 文件写入失败',
+      },
+      edit: {
+        running: '📝 {name} 正在编辑文件',
+        done: '📝 {name} 文件编辑完成',
+        failed: '📝 {name} 文件编辑失败',
+      },
+      wait: {
+        running: '⏳ {name} 正在等待',
+        done: '⏳ {name} 等待结束',
+        failed: '⏳ {name} 等待超时',
+      },
     },
   },
 
@@ -73,6 +103,36 @@ export const EMOJI_STYLE_PRESETS: Record<string, EmojiStylePreset> = {
         running: '🌸 {name} 正在编织花瓣',
         done: '🌸 {name} 编织完成了',
         failed: '🌸 {name} 线团乱了',
+      },
+      browser: {
+        running: '🌸 {name} 正在赏花',
+        done: '🌸 {name} 赏完花回来了',
+        failed: '🌸 {name} 花都谢了',
+      },
+      computer_use: {
+        running: '🌸 {name} 正在打理花园',
+        done: '🌸 {name} 花园打理好了',
+        failed: '🌸 {name} 花园乱糟糟的',
+      },
+      bash: {
+        running: '🌸 {name} 正在浇灌花田',
+        done: '🌸 {name} 浇灌完成了',
+        failed: '🌸 {name} 水壶空了',
+      },
+      write: {
+        running: '🌸 {name} 正在绘制花卷',
+        done: '🌸 {name} 花卷绘制好了',
+        failed: '🌸 {name} 画纸皱了',
+      },
+      edit: {
+        running: '🌸 {name} 正在修剪花枝',
+        done: '🌸 {name} 修剪完成了',
+        failed: '🌸 {name} 剪错了地方',
+      },
+      wait: {
+        running: '🌸 {name} 正在等待花开',
+        done: '🌸 {name} 花开了',
+        failed: '🌸 {name} 花期过了',
       },
     },
   },
@@ -104,6 +164,36 @@ export const EMOJI_STYLE_PRESETS: Record<string, EmojiStylePreset> = {
         done: '🐾 {name} 织好了小围巾',
         failed: '🐾 {name} 把毛线弄乱了',
       },
+      browser: {
+        running: '🐾 {name} 正在探索新领地',
+        done: '🐾 {name} 巡视完了',
+        failed: '🐾 {name} 迷路了',
+      },
+      computer_use: {
+        running: '🐾 {name} 正在扒拉键盘',
+        done: '🐾 {name} 操作完了',
+        failed: '🐾 {name} 把东西弄乱了',
+      },
+      bash: {
+        running: '🐾 {name} 正在刨土',
+        done: '🐾 {name} 刨完了',
+        failed: '🐾 {name} 什么都没刨到',
+      },
+      write: {
+        running: '🐾 {name} 正在藏骨头',
+        done: '🐾 {name} 藏好了',
+        failed: '🐾 {name} 被别的狗发现了',
+      },
+      edit: {
+        running: '🐾 {name} 正在整理窝窝',
+        done: '🐾 {name} 整理完了',
+        failed: '🐾 {name} 越弄越乱',
+      },
+      wait: {
+        running: '🐾 {name} 正在等主人',
+        done: '🐾 {name} 等到了',
+        failed: '🐾 {name} 等睡着了',
+      },
     },
   },
 
@@ -133,6 +223,36 @@ export const EMOJI_STYLE_PRESETS: Record<string, EmojiStylePreset> = {
         running: '✨ {name} 正在炼制魔法阵',
         done: '✨ {name} 炼制成功',
         failed: '✨ {name} 炼制失败了',
+      },
+      browser: {
+        running: '✨ {name} 正在打开魔法书',
+        done: '✨ {name} 魔法书合上了',
+        failed: '✨ {name} 魔法书打不开',
+      },
+      computer_use: {
+        running: '✨ {name} 正在操控魔法棒',
+        done: '✨ {name} 魔法棒操作完成',
+        failed: '✨ {name} 魔法棒断了',
+      },
+      bash: {
+        running: '✨ {name} 正在释放魔力',
+        done: '✨ {name} 魔力释放完毕',
+        failed: '✨ {name} 魔力不足',
+      },
+      write: {
+        running: '✨ {name} 正在书写魔法符文',
+        done: '✨ {name} 符文书写完成',
+        failed: '✨ {name} 符文画错了',
+      },
+      edit: {
+        running: '✨ {name} 正在调配魔法药',
+        done: '✨ {name} 魔法药调配好了',
+        failed: '✨ {name} 药水爆炸了',
+      },
+      wait: {
+        running: '✨ {name} 正在等待魔法冷却',
+        done: '✨ {name} 冷却好了',
+        failed: '✨ {name} 魔力耗尽了',
       },
     },
   },
@@ -164,6 +284,36 @@ export const EMOJI_STYLE_PRESETS: Record<string, EmojiStylePreset> = {
         done: '🎀 {name} 编织出了漂亮的图案',
         failed: '🎀 {name} 丝带缠在一起了',
       },
+      browser: {
+        running: '🎀 {name} 正在翻阅礼品册',
+        done: '🎀 {name} 翻阅完了',
+        failed: '🎀 {name} 册子撕坏了',
+      },
+      computer_use: {
+        running: '🎀 {name} 正在装饰礼品盒',
+        done: '🎀 {name} 装饰好了',
+        failed: '🎀 {name} 盒子弄坏了',
+      },
+      bash: {
+        running: '🎀 {name} 正在裁剪彩带',
+        done: '🎀 {name} 裁剪完了',
+        failed: '🎀 {name} 剪刀钝了',
+      },
+      write: {
+        running: '🎀 {name} 正在写祝福卡片',
+        done: '🎀 {name} 卡片写好了',
+        failed: '🎀 {name} 卡片写坏了',
+      },
+      edit: {
+        running: '🎀 {name} 正在整理礼品单',
+        done: '🎀 {name} 整理好了',
+        failed: '🎀 {name} 清单乱了',
+      },
+      wait: {
+        running: '🎀 {name} 正在等待派对开始',
+        done: '🎀 {name} 派对开始了',
+        failed: '🎀 {name} 派对取消了',
+      },
     },
   },
 
@@ -193,6 +343,36 @@ export const EMOJI_STYLE_PRESETS: Record<string, EmojiStylePreset> = {
         running: '⭐ {name} 正在连接星图',
         done: '⭐ {name} 星图连接完成',
         failed: '⭐ {name} 星图断开了',
+      },
+      browser: {
+        running: '⭐ {name} 正在观测星空',
+        done: '⭐ {name} 观测完了',
+        failed: '⭐ {name} 望远镜坏了',
+      },
+      computer_use: {
+        running: '⭐ {name} 正在调整望远镜',
+        done: '⭐ {name} 调整好了',
+        failed: '⭐ {name} 镜头模糊了',
+      },
+      bash: {
+        running: '⭐ {name} 正在记录星轨',
+        done: '⭐ {name} 记录完了',
+        failed: '⭐ {name} 笔记丢了',
+      },
+      write: {
+        running: '⭐ {name} 正在绘制星图',
+        done: '⭐ {name} 星图画好了',
+        failed: '⭐ {name} 图纸皱了',
+      },
+      edit: {
+        running: '⭐ {name} 正在整理星座表',
+        done: '⭐ {name} 整理好了',
+        failed: '⭐ {name} 数据乱了',
+      },
+      wait: {
+        running: '⭐ {name} 正在等待流星雨',
+        done: '⭐ {name} 流星雨来了',
+        failed: '⭐ {name} 云层遮住了',
       },
     },
   },
