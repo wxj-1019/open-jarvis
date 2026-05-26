@@ -211,7 +211,8 @@ ensureFirstRun(hanakoHome, productDir);
 log.log("① ensureFirstRun 完成");
 
 // ── 初始化 Debug 日志 ──
-const dlog = initDebugLog(path.join(hanakoHome, "logs"));
+const logPrefix = hanakoHome.includes(".hanako-dev") ? "jarvis-dev" : "jarvis";
+const dlog = initDebugLog(path.join(hanakoHome, "logs"), logPrefix);
 
 // ── 初始化引擎 ──
 log.log("② 创建 HanaEngine...");
