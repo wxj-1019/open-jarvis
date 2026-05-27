@@ -153,8 +153,10 @@ describe("Agent MCP Resources 字段", () => {
     });
 
     it("通过 _cb.getMcpResourcesText 回调获取资源文本（降级路径）", () => {
-      agent.setCallbacks({
-        getMcpResourcesText: () => "[hub:route] MCP routing info",
+      agent.initialize({
+        callbacks: {
+          getMcpResourcesText: () => "[hub:route] MCP routing info",
+        },
       });
       const prompt = agent.buildSystemPrompt();
       expect(prompt).toContain("# MCP 连接器资源");
@@ -163,8 +165,10 @@ describe("Agent MCP Resources 字段", () => {
 
     it("_cb.getMcpResourcesText 返回空时降级到 _mcpResourcesText", () => {
       agent.updateMcpResourcesText("[local] Local cache");
-      agent.setCallbacks({
-        getMcpResourcesText: () => "",
+      agent.initialize({
+        callbacks: {
+          getMcpResourcesText: () => "",
+        },
       });
       const prompt = agent.buildSystemPrompt();
       // _cb returns empty, falls back to _mcpResourcesText
@@ -173,8 +177,10 @@ describe("Agent MCP Resources 字段", () => {
 
     it("_mcpResourcesText 优先于 _cb.getMcpResourcesText", () => {
       agent.updateMcpResourcesText("[local] Local cache");
-      agent.setCallbacks({
-        getMcpResourcesText: () => "[hub] Hub callback",
+      agent.initialize({
+        callbacks: {
+          getMcpResourcesText: () => "[hub] Hub callback",
+        },
       });
       const prompt = agent.buildSystemPrompt();
       // _mcpResourcesText should appear first (|| short-circuit)

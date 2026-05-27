@@ -77,7 +77,7 @@ describe("ChannelRouter trigger lifecycle", () => {
 
     let onPost;
     const postAgent = {
-      setChannelPostHandler: (handler) => { onPost = handler; },
+      initialize: (opts) => { onPost = opts.channelPostHandler; },
     };
     const hub = {
       engine: {

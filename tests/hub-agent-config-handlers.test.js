@@ -8,7 +8,7 @@ function createEngine(overrides = {}) {
       {
         id: "agent-1",
         config: { mcp: { connectors: { github: { enabled: true } } } },
-        setDmSentHandler: vi.fn(),
+        initialize: vi.fn(),
       },
     ],
   ]);

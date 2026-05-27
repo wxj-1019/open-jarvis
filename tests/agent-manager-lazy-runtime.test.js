@@ -31,6 +31,8 @@ vi.mock("../core/agent.js", () => ({
     this.setOnInstallCallback = vi.fn();
     this.setNotifyHandler = vi.fn();
     this.setDescriptionRefreshHandler = vi.fn();
+    this.setDmSentHandler = vi.fn();
+    this.initialize = vi.fn();
     this.dispose = vi.fn();
     instances.push(this);
   }),

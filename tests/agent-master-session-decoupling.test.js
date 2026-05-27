@@ -174,13 +174,15 @@ describe("agent.systemPrompt: master / per-session 解耦", () => {
 
   it("Computer Use 开启时，system prompt 引导桌面应用控制不要绕去 shell", async () => {
     const agent = makeAgent(agentsDir, tmpDir);
-    agent.setCallbacks({
-      getEngine: () => ({
-        getComputerUseSettings: () => ({ enabled: true }),
-        getPrimaryAgentId: () => "test-agent",
-      }),
-      getLearnSkills: () => ({}),
-      isChannelsEnabled: () => false,
+    agent.initialize({
+      callbacks: {
+        getEngine: () => ({
+          getComputerUseSettings: () => ({ enabled: true }),
+          getPrimaryAgentId: () => "test-agent",
+        }),
+        getLearnSkills: () => ({}),
+        isChannelsEnabled: () => false,
+      },
     });
     await agent.init(() => {});
 
@@ -196,14 +198,16 @@ describe("agent.systemPrompt: master / per-session 解耦", () => {
 
   it("Computer Use 在不支持的平台上不进入工具快照和 system prompt", async () => {
     const agent = makeAgent(agentsDir, tmpDir);
-    agent.setCallbacks({
-      getEngine: () => ({
-        getComputerUseSettings: () => ({ enabled: true }),
-        getPrimaryAgentId: () => "test-agent",
-        isComputerUseSupported: () => false,
-      }),
-      getLearnSkills: () => ({}),
-      isChannelsEnabled: () => false,
+    agent.initialize({
+      callbacks: {
+        getEngine: () => ({
+          getComputerUseSettings: () => ({ enabled: true }),
+          getPrimaryAgentId: () => "test-agent",
+          isComputerUseSupported: () => false,
+        }),
+        getLearnSkills: () => ({}),
+        isChannelsEnabled: () => false,
+      },
     });
     await agent.init(() => {});
 
@@ -219,10 +223,12 @@ describe("agent.systemPrompt: master / per-session 解耦", () => {
   it("init 把首次记忆维护交给 manager 调度，不在启动路径直接 tick", async () => {
     const agent = makeAgent(agentsDir, tmpDir);
     const scheduleMemoryMaintenance = vi.fn();
-    agent.setCallbacks({
-      scheduleMemoryMaintenance,
-      getLearnSkills: () => ({}),
-      isChannelsEnabled: () => false,
+    agent.initialize({
+      callbacks: {
+        scheduleMemoryMaintenance,
+        getLearnSkills: () => ({}),
+        isChannelsEnabled: () => false,
+      },
     });
 
     await agent.init(() => {}, {}, () => ({ id: "gpt-4", provider: "openai" }));
