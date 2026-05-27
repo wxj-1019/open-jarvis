@@ -19,10 +19,10 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--space-md);
-    margin-bottom: var(--space-lg);
-    padding-bottom: var(--space-sm);
-    border-bottom: 0.5px solid var(--glass-border);
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.06);
 }
 
 .sectionTitle {
@@ -139,7 +139,7 @@
     font-size: 0.88rem;
     font-weight: 500;
     color: var(--text);
-    margin: 0 0 var(--space-md) 0;
+    margin: 0 0 0.75rem 0;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
     letter-spacing: 0.02em;
 }
