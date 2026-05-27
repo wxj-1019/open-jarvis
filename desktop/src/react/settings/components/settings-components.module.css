@@ -375,3 +375,34 @@
     background: rgba(30, 30, 40, 0.6);
     border-color: rgba(255, 255, 255, 0.1);
 }
+
+/* ─── 全宽布局优化 ─── */
+
+/* 当设置面板为全宽模式时，优化 Section 卡片的分布 */
+:global(.settings-panel-wide) .sectionBody {
+    width: 100%;
+    max-width: 100%;
+}
+
+/* 双列布局在全宽下更好地利用空间 */
+:global(.settings-panel-wide) .sectionDoubleColumn .sectionBody {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: var(--space-lg);
+}
+
+/* 确保卡片内容在全宽下不会过度拉伸 */
+:global(.settings-panel-wide) .sectionBody > * {
+    max-width: 100%;
+}
+
+/* Row 在全宽下保持合理的最大宽度，避免内容过宽难以阅读 */
+:global(.settings-panel-wide) .rowInline {
+    max-width: 100%;
+}
+
+/* 控制区域在全宽下保持右对齐 */
+:global(.settings-panel-wide) .rowControl {
+    margin-left: auto;
+}
+

@@ -199,7 +199,8 @@ export function SettingsContent({
     || AgentTab;
   const isModal = variant === 'modal';
   const activeTabTitle = TAB_TITLES[effectiveActiveTab] || titleToLabel(dynamicTab?.title);
-  const isWideTab = effectiveActiveTab === 'plugin-marketplace';
+  // 所有 tab 都使用全宽布局，不再限制特定 tab
+  const isWideTab = true;
 
   const reportActiveTabChange = useCallback((tab: string) => {
     const nextTab = normalizeNativeTabForPlatform(tab, platformName);

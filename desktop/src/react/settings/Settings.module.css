@@ -119,7 +119,7 @@
 
 .settings-header-modal {
     display: grid;
-    grid-template-columns: calc(var(--settings-nav-width, 200px) + var(--settings-main-x-padding, var(--space-xl))) minmax(0, 640px);
+    grid-template-columns: calc(var(--settings-nav-width, 200px) + var(--settings-main-x-padding, var(--space-xl))) 1fr;
     align-items: center;
     padding: var(--space-lg) 0 var(--space-md);
     gap: 0;
@@ -127,7 +127,7 @@
 }
 
 .settings-panel-wide.settings-panel-modal .settings-header-modal {
-    grid-template-columns: calc(var(--settings-nav-width, 200px) + var(--settings-main-x-padding, var(--space-xl))) minmax(0, 960px);
+    grid-template-columns: calc(var(--settings-nav-width, 200px) + var(--settings-main-x-padding, var(--space-xl))) 1fr;
 }
 
 .settings-return-btn {
@@ -283,7 +283,8 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: 0 var(--settings-main-x-padding, var(--space-xl)) var(--space-2xl);
-    max-width: 680px;
+    width: 100%;
+    max-width: 100%;
     animation: hana-fade-up 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     scrollbar-width: thin;
     scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
@@ -307,7 +308,8 @@
 }
 
 .settings-main-wide {
-    max-width: 960px;
+    width: 100%;
+    max-width: 100%;
 }
 
 .settings-panel-modal .settings-main::before {
