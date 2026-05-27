@@ -21,16 +21,19 @@
     justify-content: space-between;
     gap: var(--space-md);
     margin-bottom: var(--space-lg);
+    padding-bottom: var(--space-sm);
+    border-bottom: 0.5px solid var(--glass-border);
 }
 
 .sectionTitle {
-    font-size: 0.82rem;
-    font-weight: 600;
+    font-size: 0.78rem;
+    font-weight: 500;
     color: var(--text-muted);
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    opacity: 0.85;
 }
 
 .sectionContext {
@@ -133,11 +136,12 @@
 }
 
 .subBlockTitle {
-    font-size: 0.95rem;
-    font-weight: 600;
+    font-size: 0.88rem;
+    font-weight: 500;
     color: var(--text);
     margin: 0 0 var(--space-md) 0;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    letter-spacing: 0.02em;
 }
 
 /* ─── Row - visionOS 风格 ─── */

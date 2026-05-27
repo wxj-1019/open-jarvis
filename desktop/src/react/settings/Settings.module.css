@@ -282,7 +282,7 @@
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding: 0 var(--settings-main-x-padding, var(--space-xl)) var(--space-2xl);
+    padding: 0 var(--settings-main-x-padding, var(--space-2xl)) var(--space-2xl);
     width: 100%;
     max-width: 100%;
     animation: hana-fade-up 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -393,26 +393,22 @@
 /* Tab 顶部大标题 - visionOS 风格 */
 .settings-tab-title {
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
-    font-size: 1.5rem;
-    font-weight: 700;
+    font-size: 1.35rem;
+    font-weight: 600;
     color: var(--text);
     margin: 0 0 var(--space-xl) 0;
-    letter-spacing: -0.02em;
-    line-height: 1.2;
-    background: linear-gradient(135deg, var(--text) 0%, var(--text-muted) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    letter-spacing: -0.015em;
+    line-height: 1.3;
 }
 
 .settings-header-tab-title {
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
-    font-size: 1.5rem;
-    font-weight: 700;
+    font-size: 1.35rem;
+    font-weight: 600;
     color: var(--text);
     line-height: 1;
     margin: 0;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.015em;
     white-space: nowrap;
     -webkit-app-region: no-drag;
 }
