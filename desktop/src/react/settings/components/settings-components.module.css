@@ -24,12 +24,12 @@
 }
 
 .sectionTitle {
-    font-size: 1rem;
+    font-size: 0.78rem;
     font-weight: 600;
-    color: var(--text);
-    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
     margin: 0;
-    /* SPEC §4.1：左对齐，不画装饰线。整体 margin-bottom 由 sectionHeader 承担 */
 }
 
 .sectionContext {
@@ -50,16 +50,15 @@
     background: var(--glass-bg);
     backdrop-filter: blur(var(--glass-blur));
     -webkit-backdrop-filter: blur(var(--glass-blur));
-    border: var(--border-width, 1px) solid var(--glass-border);
-    border-radius: var(--glass-radius, 14px);
+    border: 0.5px solid var(--glass-border);
+    border-radius: 10px;
     box-shadow: var(--glass-shadow);
-    transition: all var(--duration-normal) var(--ease-out);
+    transition: box-shadow 0.2s ease;
     /* 左右 padding 移到 row/warning 自己上，让分隔线能贴卡片 border */
 }
 
 .sectionBody:hover {
     box-shadow: var(--glass-shadow-hover);
-    border-color: var(--glass-border);
 }
 
 .sectionFooter {
@@ -148,17 +147,17 @@
 /* ─── Row ─── */
 
 .row {
-    padding: var(--space-sm) var(--space-md);
+    padding: 10px var(--space-md);
     position: relative;
-    transition: background var(--duration-fast) var(--ease-out);
+    transition: background 0.15s ease;
 }
 
 .row:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.03);
     margin: 0 calc(-1 * var(--space-md));
     padding-left: var(--space-md);
     padding-right: var(--space-md);
-    border-radius: var(--glass-radius-sm);
+    border-radius: 8px;
 }
 
 /* 内部分隔线：row/warning 之间的线，贴卡片左右 border（到底，不留白）
@@ -204,15 +203,15 @@
 }
 
 .rowLabel {
-    font-size: 0.9rem;
+    font-size: 0.82rem;
     color: var(--text);
     font-weight: 500;
 }
 
 .rowHint {
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     color: var(--text-muted);
-    line-height: 1.4;
+    line-height: 1.45;
 }
 
 .rowHintWarn {
@@ -326,4 +325,46 @@
     gap: var(--space-sm);
     flex-wrap: wrap;
     justify-content: flex-end;
+}
+
+/* ─── Midnight 暗色主题覆盖 ─── */
+
+:global(html[data-theme="midnight"]) .sectionBody,
+:global(html[data-theme="midnight-contrast"]) .sectionBody {
+    background: rgba(30, 30, 40, 0.72);
+    border-color: rgba(255, 255, 255, 0.06);
+}
+
+:global(html[data-theme="midnight"]) .sectionTitle,
+:global(html[data-theme="midnight-contrast"]) .sectionTitle {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+:global(html[data-theme="midnight"]) .row:hover,
+:global(html[data-theme="midnight-contrast"]) .row:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+:global(html[data-theme="midnight"]) .rowLabel,
+:global(html[data-theme="midnight-contrast"]) .rowLabel {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+:global(html[data-theme="midnight"]) .rowHint,
+:global(html[data-theme="midnight-contrast"]) .rowHint {
+    color: rgba(255, 255, 255, 0.45);
+}
+
+:global(html[data-theme="midnight"]) .row + .row::before,
+:global(html[data-theme="midnight-contrast"]) .row + .row::before,
+:global(html[data-theme="midnight"]) .row + .sectionWarning::before,
+:global(html[data-theme="midnight-contrast"]) .row + .sectionWarning::before,
+:global(html[data-theme="midnight"]) .sectionNote + .row::before,
+:global(html[data-theme="midnight-contrast"]) .sectionNote + .row::before {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+:global(html[data-theme="midnight"]) .sectionWarning,
+:global(html[data-theme="midnight-contrast"]) .sectionWarning {
+    color: #ff6b6b;
 }

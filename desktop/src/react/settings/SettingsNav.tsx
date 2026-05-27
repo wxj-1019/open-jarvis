@@ -21,6 +21,7 @@ import {
   Info,
   List,
   Database,
+  MicrophoneStage,
 } from '@phosphor-icons/react';
 import styles from './Settings.module.css';
 
@@ -34,6 +35,7 @@ const TAB_ITEMS = [
   { id: 'bridge', key: 'settings.tabs.bridge', icon: Link },
   { id: 'providers', key: 'settings.tabs.providers', icon: Activity },
   { id: 'media', key: 'settings.tabs.media', icon: Image },
+  { id: 'voice', key: 'settings.tabs.voice', icon: MicrophoneStage },
   { id: 'sharing', key: 'settings.tabs.sharing', icon: UploadSimple },
   { id: 'access', key: 'settings.tabs.access', icon: Keyboard },
   { id: 'plugins', key: 'settings.tabs.plugins', icon: PuzzlePiece },

@@ -252,7 +252,7 @@ import { baiduCloudPlugin } from "../lib/providers/baidu-cloud.js";
 import { modelscopePlugin } from "../lib/providers/modelscope.js";
 import { infiniPlugin } from "../lib/providers/infini.js";
 import { mimoPlugin } from "../lib/providers/mimo.js";
-// 国际
+import { mimoTtsPlugin } from "../lib/providers/mimo-tts.js";
 import { groqPlugin } from "../lib/providers/groq.js";
 import { togetherPlugin } from "../lib/providers/together.js";
 import { fireworksPlugin } from "../lib/providers/fireworks.js";
@@ -286,6 +286,7 @@ const BUILTIN_PLUGINS = [
   modelscopePlugin,
   infiniPlugin,
   mimoPlugin,
+  mimoTtsPlugin,
   // 国际
   groqPlugin,
   togetherPlugin,

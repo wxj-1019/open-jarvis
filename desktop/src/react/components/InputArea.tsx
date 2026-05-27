@@ -137,10 +137,8 @@ function InputAreaInner({ surface }: Required<InputAreaProps>) {
     slashBusy,
     slashResult,
     handleSlashSelect,
-    handleSlashToggle,
     handleSlashResultClick,
-    dismissSlashMenu,
-    openSlashMenu: _openSlashMenu,
+    openSlashMenu,
   } = useSlashCommands({
     editor,
     slashMenuOpen: false,
@@ -172,6 +170,18 @@ function InputAreaInner({ surface }: Required<InputAreaProps>) {
     setDraft,
     clearDraft,
   });
+
+  // Real toggle/dismiss using actual state from useEditorSync
+  const dismissSlashMenu = useCallback(() => {
+    const text = editor?.getText().trim() ?? inputText.trim();
+    slashDismissedTextRef.current = text.startsWith('/') ? text : null;
+    setSlashMenuOpen(false);
+  }, [editor, inputText, setSlashMenuOpen, slashDismissedTextRef]);
+
+  const handleSlashToggle = useCallback(() => {
+    if (slashMenuOpen) dismissSlashMenu();
+    else openSlashMenu();
+  }, [slashMenuOpen, dismissSlashMenu, openSlashMenu]);
 
   // Compute filteredCommands with real inputText (breaks circular dep: useSlashCommands has stub inputText)
   const filteredCommands = useMemo(() => {

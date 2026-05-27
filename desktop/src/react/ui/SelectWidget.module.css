@@ -9,25 +9,31 @@
   justify-content: space-between;
   width: 100%;
   font-family: inherit;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   line-height: 1.5;
   color: var(--text);
-  background-color: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-input, 4px);
-  padding: 0.45rem 0.65rem;
+  background-color: var(--bg-card, rgba(255, 255, 255, 0.9));
+  border: 0.5px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 0.5rem 0.7rem;
   cursor: pointer;
   text-align: left;
-  transition: border-color var(--duration-slow) var(--ease-out);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.trigger:hover,
-.trigger:focus {
+.trigger:hover {
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+.trigger:focus,
+.trigger:focus-visible {
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12);
+  outline: none;
 }
 
 .trigger:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
@@ -45,10 +51,11 @@
 
 .arrow {
   flex-shrink: 0;
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
   margin-left: var(--space-sm);
-  transition: transform var(--duration-slow);
+  transition: transform 0.2s ease;
+  opacity: 0.5;
 }
 
 .open .arrow {
@@ -63,16 +70,19 @@
   width: 100%;
   min-width: 180px;
   max-height: 240px;
-  background-color: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-input, 4px);
+  background-color: var(--bg-card, rgba(255, 255, 255, 0.95));
+  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
   z-index: 9999;
   margin-top: 0;
   overflow-y: auto;
   flex-direction: column;
-  animation: hana-fade-up var(--duration-fast) var(--ease-out);
-  padding: var(--space-xs) 0;
+  animation: hana-fade-up 0.15s ease-out;
+  padding: 4px 0;
   -webkit-app-region: no-drag;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 .option {
@@ -80,25 +90,25 @@
   align-items: center;
   gap: 0.4rem;
   width: 100%;
-  padding: 0.45rem 0.65rem;
+  padding: 7px 12px;
   font-family: inherit;
-  font-size: 0.9rem;
-  color: var(--text-light);
+  font-size: 0.82rem;
+  color: var(--text);
   background: none;
   border: none;
   cursor: pointer;
   text-align: left;
-  transition: background var(--duration-fast);
+  transition: background 0.1s ease;
 }
 
 .option:hover {
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  background: rgba(0, 0, 0, 0.04);
 }
 
 .selected {
   color: var(--accent);
   font-weight: 600;
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  background: rgba(var(--accent-rgb), 0.08);
 }
 
 .disabled {
@@ -114,8 +124,10 @@
   padding: 0.35rem 0.65rem 0.15rem;
   font-size: 0.7rem;
   color: var(--text-muted);
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
   user-select: none;
+  text-transform: uppercase;
+  font-weight: 600;
 }
 
 :global(body.paper-texture) .trigger,
@@ -125,4 +137,28 @@
   background-size: 160px;
   background-attachment: fixed;
   background-blend-mode: var(--paper-texture-card-blend-mode);
+}
+
+/* Midnight 暗色主题 */
+:global(html[data-theme="midnight"]) .trigger,
+:global(html[data-theme="midnight-contrast"]) .trigger {
+  background-color: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+:global(html[data-theme="midnight"]) .trigger:focus,
+:global(html[data-theme="midnight-contrast"]) .trigger:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.2);
+}
+
+:global(html[data-theme="midnight"]) .popup,
+:global(html[data-theme="midnight-contrast"]) .popup {
+  background-color: rgba(40, 40, 50, 0.95);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+:global(html[data-theme="midnight"]) .option:hover,
+:global(html[data-theme="midnight-contrast"]) .option:hover {
+  background: rgba(255, 255, 255, 0.06);
 }

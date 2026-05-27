@@ -27,6 +27,7 @@ import { SkillsTab } from './tabs/SkillsTab';
 import { BridgeTab } from './tabs/BridgeTab';
 import { ProvidersTab } from './tabs/ProvidersTab';
 import { MediaTab } from './tabs/MediaTab';
+import { VoiceTab } from './tabs/VoiceTab';
 import { AboutTab } from './tabs/AboutTab';
 import { PluginsTab } from './tabs/PluginsTab';
 import { PluginMarketplaceTab } from './tabs/PluginMarketplaceTab';
@@ -56,6 +57,7 @@ const TAB_COMPONENTS: Record<string, React.ComponentType> = {
   bridge: BridgeTab,
   providers: ProvidersTab,
   media: MediaTab,
+  voice: VoiceTab,
   sharing: SharingTab,
   access: AccessTab,
   plugins: PluginsTab,
@@ -93,6 +95,7 @@ const TAB_TITLES: Record<string, string> = {
   bridge: '社交平台',
   providers: '供应商',
   media: '多媒体',
+  voice: '语音',
   sharing: '分享',
   access: '访问与设备',
   plugins: '插件',
