@@ -15,6 +15,7 @@ import { getLocale } from "../server/i18n.js";
 import { createFreshCompactDailyScheduler } from "../lib/fresh-compact/daily-scheduler.js";
 import { FreshCompactMaintainer } from "./fresh-compact-maintainer.js";
 import { ProactiveRuleEngine } from "../lib/proactive/proactive-rule-engine.js";
+import { DeepContextPipeline } from "../lib/context/deep-context-pipeline.js";
 import { createModuleLogger } from "../lib/debug-log.js";
 import { WORKSPACE_OUTPUT_ROOT_DIRNAME } from "../shared/workspace-output.js";
 
@@ -58,6 +59,8 @@ export class Scheduler {
       warn: (msg) => freshCompactLog.warn(msg),
     });
     this._ruleEngine = null; // 在 start() 中初始化（依赖 userContextTracker）
+    this._deepContextPipeline = null; // 在 start() 中初始化
+    this._richContextSyncInterval = null;
   }
 
   /** @returns {import('../core/engine.js').HanaEngine} */
@@ -82,9 +85,11 @@ export class Scheduler {
     this._freshCompactScheduler.start();
     this._subscribeOsEvents();
     this._startRuleEngine();
+    this._startDeepContextPipeline();
   }
 
   async stop() {
+    this._stopDeepContextPipeline();
     this._stopRuleEngine();
     this._unsubscribeOsEvents();
     this._freshCompactScheduler.stop();
@@ -480,6 +485,59 @@ export class Scheduler {
       this._ruleEngine = null;
     }
   }
+
+  // ──────────── DeepContextPipeline 集成 ────────────
+
+  /**
+   * 启动深度上下文管道
+   */
+  _startDeepContextPipeline() {
+    const hub = this._hub;
+    if (!hub?.eventBus) return;
+
+    // 从 preferences 读取隐私级别
+    let privacyLevel = "standard";
+    try {
+      const prefs = this._engine.preferences;
+      if (prefs && typeof prefs.get === "function") {
+        privacyLevel = prefs.get("context_privacy") || "standard";
+      }
+    } catch { /* ignore */ }
+
+    this._deepContextPipeline = new DeepContextPipeline({
+      eventBus: hub.eventBus,
+      options: { privacyLevel },
+    });
+    this._deepContextPipeline.start();
+
+    // 将 pipeline 的 richContext 定期同步到 UserContextTracker
+    if (hub.userContextTracker) {
+      const tracker = hub.userContextTracker;
+      this._richContextSyncInterval = setInterval(() => {
+        const rich = this._deepContextPipeline?.getRichContext();
+        if (rich) tracker.setRichContext(rich);
+      }, 1000);
+    }
+
+    log.log("深度上下文管道已启动 (privacy: %s)", privacyLevel);
+  }
+
+  /**
+   * 停止深度上下文管道
+   */
+  _stopDeepContextPipeline() {
+    if (this._richContextSyncInterval) {
+      clearInterval(this._richContextSyncInterval);
+      this._richContextSyncInterval = null;
+    }
+    if (this._deepContextPipeline) {
+      this._deepContextPipeline.stop();
+      this._deepContextPipeline = null;
+    }
+  }
+
+  /** 获取 DeepContextPipeline 实例 */
+  get deepContextPipeline() { return this._deepContextPipeline; }
 
   /**
    * 执行主动动作：触发 Agent 会话

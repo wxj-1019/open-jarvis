@@ -176,6 +176,13 @@ describe("validateRule", () => {
     expect(result.valid).toBe(true);
   });
 
+  it("rich_context_keyword 类型通过验证", () => {
+    const result = validateRule(makeRule({
+      conditions: [{ type: "rich_context_keyword", keywords: ["error"] }],
+    }));
+    expect(result.valid).toBe(true);
+  });
+
   it("conditions 缺少 type 报错", () => {
     const result = validateRule(makeRule({
       conditions: [{ pattern: "test" }],
@@ -753,6 +760,114 @@ describe("ProactiveRuleEngine", () => {
       expect(ideTrigger).toBe(false);
 
       engine.stop();
+    });
+  });
+
+  describe("rich_context_keyword condition", () => {
+    it("匹配 L2 文件内容中的关键词", () => {
+      const ctx = {
+        richContext: {
+          l2: { fileContent: "const error = new Error();" },
+        },
+      };
+      const engine = createRuleEngine({
+        contextTracker: createMockContextTracker(ctx),
+        customRules: [
+          makeRule({
+            conditions: [{ type: "rich_context_keyword", keywords: ["error", "Error"] }],
+          }),
+        ],
+      });
+
+      const matched = engine.evaluate(
+        { type: "window_focus_changed", app: "Code", timestamp: Date.now() },
+        ctx,
+      );
+      expect(matched.find((r) => r.id === "test-rule-1")).toBeDefined();
+    });
+
+    it("不匹配时不触发", () => {
+      const ctx = {
+        richContext: {
+          l2: { fileContent: "const x = 1;" },
+        },
+      };
+      const engine = createRuleEngine({
+        contextTracker: createMockContextTracker(ctx),
+        customRules: [
+          makeRule({
+            conditions: [{ type: "rich_context_keyword", keywords: ["error"] }],
+          }),
+        ],
+      });
+
+      const matched = engine.evaluate(
+        { type: "window_focus_changed", app: "Code", timestamp: Date.now() },
+        ctx,
+      );
+      expect(matched.find((r) => r.id === "test-rule-1")).toBeUndefined();
+    });
+
+    it("匹配剪贴板内容", () => {
+      const ctx = {
+        richContext: {
+          l2: { fileContent: null, clipboard: "Uncaught TypeError: undefined" },
+        },
+      };
+      const engine = createRuleEngine({
+        contextTracker: createMockContextTracker(ctx),
+        customRules: [
+          makeRule({
+            conditions: [{ type: "rich_context_keyword", keywords: ["TypeError"] }],
+          }),
+        ],
+      });
+
+      const matched = engine.evaluate(
+        { type: "window_focus_changed", app: "Terminal", timestamp: Date.now() },
+        ctx,
+      );
+      expect(matched.find((r) => r.id === "test-rule-1")).toBeDefined();
+    });
+
+    it("无 richContext 时不匹配", () => {
+      const ctx = { currentApp: "Code" };
+      const engine = createRuleEngine({
+        contextTracker: createMockContextTracker(ctx),
+        customRules: [
+          makeRule({
+            conditions: [{ type: "rich_context_keyword", keywords: ["error"] }],
+          }),
+        ],
+      });
+
+      const matched = engine.evaluate(
+        { type: "window_focus_changed", app: "Code", timestamp: Date.now() },
+        ctx,
+      );
+      expect(matched.find((r) => r.id === "test-rule-1")).toBeUndefined();
+    });
+
+    it("keywords 为空数组时不匹配", () => {
+      const ctx = {
+        richContext: {
+          l2: { fileContent: "some error here" },
+        },
+      };
+      const engine = createRuleEngine({
+        contextTracker: createMockContextTracker(ctx),
+        customRules: [
+          makeRule({
+            conditions: [{ type: "rich_context_keyword", keywords: [] }],
+          }),
+        ],
+      });
+
+      const matched = engine.evaluate(
+        { type: "window_focus_changed", app: "Code", timestamp: Date.now() },
+        ctx,
+      );
+      expect(matched.find((r) => r.id === "test-rule-1")).toBeUndefined();
     });
   });
 });

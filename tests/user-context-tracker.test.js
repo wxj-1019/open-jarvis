@@ -237,4 +237,62 @@ describe("UserContextTracker", () => {
       expect(summary).toContain("最近涉及文件");
     });
   });
+
+  describe("rich context", () => {
+    it("setRichContext / getRichContext", () => {
+      tracker.start();
+      const rich = { timestamp: 123, l1: { app: "Code" }, l2: null, l3: null };
+      tracker.setRichContext(rich);
+      expect(tracker.getRichContext()).toEqual(rich);
+    });
+
+    it("getContextSnapshot 包含 richContext", () => {
+      tracker.start();
+      const rich = { timestamp: 123, l1: { app: "Code" }, l2: null, l3: null };
+      tracker.setRichContext(rich);
+      const snap = tracker.getContextSnapshot();
+      expect(snap.richContext).toEqual(rich);
+    });
+
+    it("getContextSummary 中文模式包含 L2 文件内容", () => {
+      tracker.start();
+      tracker.setRichContext({
+        timestamp: 123,
+        l1: { app: "Code.exe", title: "test.js" },
+        l2: { filePath: "/src/test.js", fileContent: "const x = 1;", language: "javascript" },
+        l3: null,
+      });
+      const summary = tracker.getContextSummary("zh");
+      expect(summary).toContain("当前文件");
+      expect(summary).toContain("/src/test.js");
+      expect(summary).toContain("const x = 1;");
+    });
+
+    it("getContextSummary 英文模式包含 L2 文件内容", () => {
+      tracker.start();
+      tracker.setRichContext({
+        timestamp: 123,
+        l1: { app: "Code.exe", title: "test.js" },
+        l2: { filePath: "/src/test.js", fileContent: "const x = 1;", language: "javascript" },
+        l3: null,
+      });
+      const summary = tracker.getContextSummary("en");
+      expect(summary).toContain("Current file");
+      expect(summary).toContain("/src/test.js");
+    });
+
+    it("getContextSummary L2 为空时不包含文件信息", () => {
+      tracker.start();
+      bus.emit({ type: "window_focus_changed", app: "Chrome", title: "Google", platform: "win32", timestamp: 1000 });
+      const summary = tracker.getContextSummary("zh");
+      expect(summary).not.toContain("当前文件");
+    });
+
+    it("setRichContext(null) 清除 richContext", () => {
+      tracker.start();
+      tracker.setRichContext({ timestamp: 123, l1: {}, l2: null, l3: null });
+      tracker.setRichContext(null);
+      expect(tracker.getRichContext()).toBeNull();
+    });
+  });
 });
