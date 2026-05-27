@@ -870,10 +870,25 @@ html[data-platform="linux"] .tb-toggle-right {
     background: rgba(120, 120, 128, 0.16);
     cursor: pointer;
     position: relative;
-    transition: background 0.25s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     flex-shrink: 0;
     padding: 0;
-    box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+    box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+}
+
+.hana-toggle::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.hana-toggle:hover::before {
+    opacity: 1;
 }
 
 .hana-toggle::after {
@@ -885,23 +900,41 @@ html[data-platform="linux"] .tb-toggle-right {
     height: 27px;
     border-radius: 50%;
     background: white;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
-    transition: transform 0.25s cubic-bezier(0.45, 0.05, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .hana-toggle:hover {
-    transform: none;
-    box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+    transform: scale(1.02);
+    box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.hana-toggle:active {
+    transform: scale(0.98);
+}
+
+.hana-toggle:active::after {
+    width: 30px;
 }
 
 .hana-toggle.on {
     background: #34c759;
     border-color: transparent;
-    box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+    box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(52, 199, 89, 0.25);
+}
+
+.hana-toggle.on::before {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, transparent 100%);
+    opacity: 1;
 }
 
 .hana-toggle.on::after {
     transform: translateX(20px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15), 0 0 0 0.5px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.hana-toggle.on:hover {
+    box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(52, 199, 89, 0.35);
 }
 
 .hana-toggle.disabled,
@@ -909,9 +942,9 @@ html[data-platform="linux"] .tb-toggle-right {
     opacity: 0.35;
     cursor: not-allowed;
     pointer-events: none;
+    transform: none;
 }
 
-/* loading：异步数据未到位的中性态。滑块居中，背景脉冲，覆盖 disabled 的低 opacity */
 .hana-toggle.loading {
     opacity: 0.55;
     animation: hana-toggle-loading-pulse 1.2s ease-in-out infinite;
@@ -919,6 +952,7 @@ html[data-platform="linux"] .tb-toggle-right {
 
 .hana-toggle.loading::after {
     transform: translateX(8px);
+    animation: hana-toggle-loading-shimmer 1.2s ease-in-out infinite;
 }
 
 @keyframes hana-toggle-loading-pulse {
@@ -926,27 +960,44 @@ html[data-platform="linux"] .tb-toggle-right {
     50% { opacity: 0.35; }
 }
 
-.hana-toggle-label {
-    font-size: 0.78rem;
-    color: var(--text-muted);
+@keyframes hana-toggle-loading-shimmer {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
 }
 
-/* Toggle 暗色主题 */
+.hana-toggle-label {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+}
+
+/* Toggle 暗色主题 - visionOS 风格 */
 html[data-theme="midnight"] .hana-toggle,
 html[data-theme="midnight-contrast"] .hana-toggle {
     background: rgba(120, 120, 128, 0.32);
-    box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.06);
+    box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+html[data-theme="midnight"] .hana-toggle::before,
+html[data-theme="midnight-contrast"] .hana-toggle::before {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
 }
 
 html[data-theme="midnight"] .hana-toggle::after,
 html[data-theme="midnight-contrast"] .hana-toggle::after {
     background: #e5e5ea;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 0 0.5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3), 0 0 0 0.5px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 html[data-theme="midnight"] .hana-toggle.on,
 html[data-theme="midnight-contrast"] .hana-toggle.on {
     background: #30d158;
+    box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 2px 8px rgba(48, 209, 88, 0.3);
+}
+
+html[data-theme="midnight"] .hana-toggle.on::before,
+html[data-theme="midnight-contrast"] .hana-toggle.on::before {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
 }
 
 .settings-disabled {

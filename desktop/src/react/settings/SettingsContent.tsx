@@ -46,6 +46,7 @@ import { BridgeTutorial } from './overlays/BridgeTutorial';
 import { WechatQrcodeOverlay } from './overlays/WechatQrcodeOverlay';
 import { InputContextMenu } from '../components/InputContextMenu';
 import styles from './Settings.module.css';
+import './visionos-effects.css';
 
 const TAB_COMPONENTS: Record<string, React.ComponentType> = {
   agent: AgentTab,

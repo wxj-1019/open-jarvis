@@ -1,0 +1,241 @@
+/* ═══════════════════════════════════════════════════════
+   visionOS 动效系统
+   用于设置页面的页面切换、hover 效果、状态指示动画
+   ═══════════════════════════════════════════════════════ */
+
+/* ─── 页面切换动效 ─── */
+
+@keyframes visionos-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes visionos-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes visionos-slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes visionos-slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes visionos-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ─── 状态指示动画 ─── */
+
+@keyframes visionos-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes visionos-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 var(--glow-primary);
+  }
+  50% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+}
+
+@keyframes visionos-shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes visionos-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ─── 骨架屏扫光 ─── */
+
+@keyframes visionos-skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.visionos-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--glass-ultra-thin) 25%,
+    var(--glass-thin) 37%,
+    var(--glass-ultra-thin) 63%
+  );
+  background-size: 200% 100%;
+  animation: visionos-skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}
+
+/* ─── 悬浮效果工具类 ─── */
+
+.visionos-hover-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.visionos-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-depth-2);
+}
+
+.visionos-hover-lift:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.visionos-hover-glow {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.visionos-hover-glow:hover {
+  box-shadow: var(--shadow-depth-2), 0 0 20px var(--glow-primary);
+}
+
+.visionos-hover-scale {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.visionos-hover-scale:hover {
+  transform: scale(1.02);
+}
+
+.visionos-hover-scale:active {
+  transform: scale(0.98);
+}
+
+/* ─── 状态指示器 ─── */
+
+.visionos-status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  position: relative;
+}
+
+.visionos-status-indicator::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  animation: visionos-pulse 2s ease-in-out infinite;
+}
+
+.visionos-status-indicator.success {
+  background: #34c759;
+}
+
+.visionos-status-indicator.success::after {
+  background: rgba(52, 199, 89, 0.3);
+}
+
+.visionos-status-indicator.warning {
+  background: #ff9500;
+}
+
+.visionos-status-indicator.warning::after {
+  background: rgba(255, 149, 0, 0.3);
+}
+
+.visionos-status-indicator.danger {
+  background: #ff3b30;
+}
+
+.visionos-status-indicator.danger::after {
+  background: rgba(255, 59, 48, 0.3);
+}
+
+.visionos-status-indicator.info {
+  background: #007aff;
+}
+
+.visionos-status-indicator.info::after {
+  background: rgba(0, 122, 255, 0.3);
+}
+
+/* ─── 玻璃光晕效果 ─── */
+
+.visionos-glow-primary {
+  box-shadow: 0 0 0 0 var(--glow-primary);
+  animation: visionos-glow-pulse 2s ease-in-out infinite;
+}
+
+.visionos-glow-success {
+  box-shadow: 0 0 0 0 var(--glow-success);
+  animation: visionos-glow-pulse 2s ease-in-out infinite;
+}
+
+.visionos-glow-warning {
+  box-shadow: 0 0 0 0 var(--glow-warning);
+  animation: visionos-glow-pulse 2s ease-in-out infinite;
+}
+
+/* ─── 渐变文字 ─── */
+
+.visionos-gradient-text {
+  background: linear-gradient(135deg, var(--text) 0%, var(--text-muted) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── 减少动效偏好 ─── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
