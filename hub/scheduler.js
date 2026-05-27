@@ -60,7 +60,7 @@ export class Scheduler {
     });
     this._ruleEngine = null; // 在 start() 中初始化（依赖 userContextTracker）
     this._deepContextPipeline = null; // 在 start() 中初始化
-    this._richContextSyncInterval = null;
+    this._richContextUnsubscriber = null;
   }
 
   /** @returns {import('../core/engine.js').HanaEngine} */
@@ -510,13 +510,15 @@ export class Scheduler {
     });
     this._deepContextPipeline.start();
 
-    // 将 pipeline 的 richContext 定期同步到 UserContextTracker
+    // 事件驱动同步：监听 rich_context_changed 事件
     if (hub.userContextTracker) {
       const tracker = hub.userContextTracker;
-      this._richContextSyncInterval = setInterval(() => {
-        const rich = this._deepContextPipeline?.getRichContext();
-        if (rich) tracker.setRichContext(rich);
-      }, 1000);
+      this._richContextUnsubscriber = hub.eventBus.subscribe(
+        (event) => {
+          tracker.setRichContext(event.context);
+        },
+        { types: ["rich_context_changed"] },
+      );
     }
 
     log.log("深度上下文管道已启动 (privacy: %s)", privacyLevel);
@@ -526,9 +528,9 @@ export class Scheduler {
    * 停止深度上下文管道
    */
   _stopDeepContextPipeline() {
-    if (this._richContextSyncInterval) {
-      clearInterval(this._richContextSyncInterval);
-      this._richContextSyncInterval = null;
+    if (this._richContextUnsubscriber) {
+      this._richContextUnsubscriber();
+      this._richContextUnsubscriber = null;
     }
     if (this._deepContextPipeline) {
       this._deepContextPipeline.stop();

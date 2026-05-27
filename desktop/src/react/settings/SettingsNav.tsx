@@ -22,6 +22,7 @@ import {
   List,
   Database,
   MicrophoneStage,
+  Plugs,
 } from '@phosphor-icons/react';
 import styles from './Settings.module.css';
 
@@ -32,6 +33,7 @@ const TAB_ITEMS = [
   { id: 'work', key: 'settings.tabs.work', icon: Briefcase },
   { id: 'computer', key: 'settings.tabs.computer', icon: Desktop },
   { id: 'skills', key: 'settings.tabs.skills', icon: Wrench },
+  { id: 'mcp', key: 'settings.tabs.mcp', icon: Plugs },
   { id: 'bridge', key: 'settings.tabs.bridge', icon: Link },
   { id: 'providers', key: 'settings.tabs.providers', icon: Activity },
   { id: 'media', key: 'settings.tabs.media', icon: Image },

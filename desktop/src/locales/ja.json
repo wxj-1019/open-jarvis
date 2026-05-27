@@ -627,7 +627,8 @@
       "access": "アクセスとデバイス",
       "plugins": "プラグイン",
       "about": "概要",
-      "security": "セキュリティ"
+      "security": "セキュリティ",
+      "backup": "バックアップ"
     },
     "computerUse": {
       "title": "Computer Use",
@@ -691,7 +692,15 @@
       "uiScaleHint": "設定 {{preference}}%、このウィンドウの実効値は約 {{effective}}%。小さいウィンドウでは自動で少し縮小します。{{shortcut}}+スクロール、{{shortcut}}+加減で調整、{{shortcut}}+0 または右のボタンで既定に戻します。",
       "uiScaleReset": "既定に戻す",
       "hardwareAcceleration": "ハードウェアアクセラレーション",
-      "hardwareAccelerationHint": "GPU でウィンドウを描画します。オフにすると次回起動からソフトウェア描画を使い、Windows の GPU ドライバー起因の起動クラッシュ復旧に役立ちます。"
+      "hardwareAccelerationHint": "GPU でウィンドウを描画します。オフにすると次回起動からソフトウェア描画を使い、Windows の GPU ドライバー起因の起動クラッシュ復旧に役立ちます。",
+      "contextPrivacy": "コンテキストプライバシーレベル",
+      "contextPrivacyHint": "AI がユーザーの現在の活動をどの程度収集するかを制御します。高いレベルほど AI がコンテキストをより理解できますが、より多くの内容を読み取ります。",
+      "contextPrivacyMinimal": "最小",
+      "contextPrivacyMinimalDesc": "ウィンドウフォーカス情報のみ",
+      "contextPrivacyStandard": "標準",
+      "contextPrivacyStandardDesc": "ウィンドウフォーカス + ファイル/クリップボード内容",
+      "contextPrivacyFull": "完全",
+      "contextPrivacyFullDesc": "視覚スクリーンショット分析を含む全収集"
     },
     "editor": {
       "title": "エディター",
@@ -769,12 +778,30 @@
         "title": "ツール",
         "description": "ツールの切り替えは、会話を再開するか新しく始めた後に反映されます。進行中の会話は開始時のツールセットを使い続けます。",
         "items": {
-          "browser": { "label": "ブラウザ", "summary": "ヘッドレスブラウザを操作してウェブを閲覧" },
-          "computer": { "label": "Computer Use", "summary": "承認済みのデスクトップアプリを操作し、動作カーソルを表示します" },
-          "cron": { "label": "定期実行", "summary": "指定した時刻にタスクを自動実行" },
-          "dm": { "label": "ダイレクトメッセージ", "summary": "別のエージェントに 1 対 1 のメッセージを送信" },
-          "install_skill": { "label": "スキルをインストール", "summary": "GitHub またはスキルライブラリから新しいスキルをインストール" },
-          "update_settings": { "label": "設定を変更", "summary": "Agent にアプリ設定の変更を許可" }
+          "browser": {
+            "label": "ブラウザ",
+            "summary": "ヘッドレスブラウザを操作してウェブを閲覧"
+          },
+          "computer": {
+            "label": "Computer Use",
+            "summary": "承認済みのデスクトップアプリを操作し、動作カーソルを表示します"
+          },
+          "cron": {
+            "label": "定期実行",
+            "summary": "指定した時刻にタスクを自動実行"
+          },
+          "dm": {
+            "label": "ダイレクトメッセージ",
+            "summary": "別のエージェントに 1 対 1 のメッセージを送信"
+          },
+          "install_skill": {
+            "label": "スキルをインストール",
+            "summary": "GitHub またはスキルライブラリから新しいスキルをインストール"
+          },
+          "update_settings": {
+            "label": "設定を変更",
+            "summary": "Agent にアプリ設定の変更を許可"
+          }
         }
       },
       "computerUse": {
@@ -1357,7 +1384,11 @@
       "removeConfirm": "Remove this connector? Saved per-agent switches will remain but no longer take effect.",
       "agentTitle": "Agent Configuration",
       "agentConnectorDesc": "Enable for the selected agent, just like skills.",
-      "saveError": "Save failed"
+      "saveError": "Save failed",
+      "connector": {
+        "preset": "プリセット",
+        "presetPlaceholder": "プリセットを選択して自動入力"
+      }
     },
     "screenshot": {
       "title": "スクリーンショット共有",
@@ -1449,6 +1480,72 @@
         "上の入力欄に App ID と App Secret を貼り付けてスイッチをオンにします"
       ],
       "whatsappHint": "近日対応予定"
+    },
+    "backup": {
+      "title": "バックアップと復元",
+      "manualBackup": "手動バックアップ",
+      "selectAgent": "エージェントを選択",
+      "exportBackup": "バックアップをエクスポート",
+      "importBackup": "バックアップをインポート",
+      "backupHistory": "バックアップ履歴",
+      "filename": "ファイル名",
+      "size": "サイズ",
+      "date": "日付",
+      "actions": "操作",
+      "download": "ダウンロード",
+      "delete": "削除",
+      "restore": "復元",
+      "autoBackup": "自動バックアップ",
+      "enableAutoBackup": "自動バックアップを有効にする",
+      "frequency": "頻度",
+      "time": "時刻",
+      "retainCount": "保持数",
+      "daily": "毎日",
+      "weekly": "毎週",
+      "monthly": "毎月",
+      "restoreConfirm": "復元の確認",
+      "restoreWarning": "復元すると現在のエージェントデータが上書きされます。この操作は取り消せません。",
+      "backupDetails": "バックアップ詳細",
+      "noBackups": "バックアップなし",
+      "loading": "読み込み中...",
+      "exportSuccess": "バックアップのエクスポートに成功しました",
+      "importSuccess": "バックアップの復元に成功しました",
+      "deleteSuccess": "バックアップを削除しました",
+      "configSaved": "自動バックアップ設定を保存しました",
+      "exportFailed": "バックアップのエクスポートに失敗しました",
+      "importFailed": "バックアップの復元に失敗しました",
+      "deleteFailed": "バックアップの削除に失敗しました"
+    },
+    "codeSigning": {
+      "title": "コード署名の検証",
+      "description": "アプリケーションのデジタル署名を検証し、信頼できるソースであることを確認します。",
+      "loading": "署名状態を確認中...",
+      "unsupported": "コード署名の検証はWindowsでのみ利用可能です",
+      "validSignature": "署名が有効です",
+      "invalidSignature": "署名が無効です",
+      "noSignature": "署名されていません",
+      "verify": "検証",
+      "verifySuccess": "署名の検証に成功しました",
+      "verifyFailed": "署名の検証に失敗しました",
+      "verifyError": "検証中にエラーが発生しました",
+      "subject": "サブジェクト",
+      "issuer": "発行者",
+      "validPeriod": "有効期間",
+      "thumbprint": "拇印"
+    },
+    "health": {
+      "bannerTitle": "システム依存関係が不足しています",
+      "multipleIssues": "{count} 件の依存関係の問題が見つかりました",
+      "fixButton": "一括修復",
+      "viewDetails": "詳細を表示",
+      "fixSingle": "修復",
+      "fixing": "修復中...",
+      "fixSuccess": "修復が完了しました。アプリを再起動してください",
+      "fixFailed": "修復に失敗しました",
+      "restartNow": "今すぐ再起動",
+      "retry": "再試行",
+      "better-sqlite3": "メモリデータベース",
+      "sharp": "画像処理"
     }
   },
   "onboarding": {
@@ -2324,5 +2421,33 @@
   "preview.exitMarkdownPreview": "編集に戻る",
   "preview.openInNewWindow": "新しいウィンドウで表示",
   "preview.openInNewWindowUnsupported": "このファイル形式は対応していません",
-  "preview.markdownEditorStatus": "選択 {selected} 文字 · 合計 {total} 文字"
+  "preview.markdownEditorStatus": "選択 {selected} 文字 · 合計 {total} 文字",
+  "emojiStyle": {
+    "title": "ツールアイコンスタイル",
+    "description": "ツール呼び出し時に表示される絵文字スタイルを選択",
+    "default": {
+      "name": "クラシックテック",
+      "description": "🌐 インターネットサーフィンなどのクラシックな表現"
+    },
+    "sakura": {
+      "name": "🌸 さくら",
+      "description": "暖かくて可愛い和風、花の海"
+    },
+    "animal": {
+      "name": "🐾 どうぶつ",
+      "description": "かわいいペットスタイル、冒険に出かけよう"
+    },
+    "magic": {
+      "name": "✨ マジック",
+      "description": "夢のような魔法スタイル、魔法を唱えよう"
+    },
+    "ribbon": {
+      "name": "🎀 リボン",
+      "description": "甘いリボンスタイル、ギフトを包もう"
+    },
+    "starry": {
+      "name": "⭐ スターリー",
+      "description": "ロマンチックな星空スタイル、星の海を旅しよう"
+    }
+  }
 }

@@ -6,6 +6,7 @@ import { Toggle } from '../widgets/Toggle';
 import { SettingsSection } from '../components/SettingsSection';
 import { SettingsRow } from '../components/SettingsRow';
 import { NumberInput } from '../components/NumberInput';
+import { hanaFetch } from '../api';
 import {
   applyEditorTypography,
   mergeEditorTypography,
@@ -116,6 +117,37 @@ export function InterfaceTab() {
     () => normalizeEditorTypography(settingsConfig?.editor),
     [settingsConfig?.editor],
   );
+  const [contextPrivacy, setContextPrivacy] = useState<string>('standard');
+
+  // 加载当前隐私级别
+  useEffect(() => {
+    let cancelled = false;
+    hanaFetch('/api/deep-context/privacy')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => { if (!cancelled && data?.level) setContextPrivacy(data.level); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  const saveContextPrivacy = async (level: string) => {
+    const previous = contextPrivacy;
+    setContextPrivacy(level);
+    try {
+      const res = await hanaFetch('/api/deep-context/privacy', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ level }),
+      });
+      if (res.ok) {
+        useSettingsStore.getState().showToast(t('settings.autoSaved'), 'success');
+      } else {
+        setContextPrivacy(previous);
+      }
+    } catch {
+      setContextPrivacy(previous);
+    }
+  };
+
   const hardwareAccelerationEnabled = settingsConfig?.hardware_acceleration !== false;
   const uiScale = normalizeUiScale(settingsConfig?.ui_scale);
   const uiScalePercent = Math.round(uiScale * 100);
@@ -360,6 +392,32 @@ export function InterfaceTab() {
               on={hardwareAccelerationEnabled}
               onChange={saveHardwareAcceleration}
             />
+          }
+        />
+      </SettingsSection>
+
+      <SettingsSection title={t('settings.interface.contextPrivacy')}>
+        <SettingsRow
+          label={t('settings.interface.contextPrivacy')}
+          hint={t('settings.interface.contextPrivacyHint')}
+          control={
+            <div className={styles['privacy-level-group']}>
+              {(['minimal', 'standard', 'full'] as const).map(level => (
+                <button
+                  key={level}
+                  type="button"
+                  className={`${styles['privacy-level-btn']}${contextPrivacy === level ? ` ${styles['active']}` : ''}`}
+                  onClick={() => saveContextPrivacy(level)}
+                >
+                  <span className={styles['privacy-level-name']}>
+                    {t(`settings.interface.contextPrivacy${level.charAt(0).toUpperCase() + level.slice(1)}`)}
+                  </span>
+                  <span className={styles['privacy-level-desc']}>
+                    {t(`settings.interface.contextPrivacy${level.charAt(0).toUpperCase() + level.slice(1)}Desc`)}
+                  </span>
+                </button>
+              ))}
+            </div>
           }
         />
       </SettingsSection>

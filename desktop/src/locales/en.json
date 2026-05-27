@@ -669,7 +669,15 @@
       "uiScaleHint": "Preference {{preference}}%, effective in this window about {{effective}}%. Smaller windows shrink slightly for fit. Use {{shortcut}}+scroll, {{shortcut}}+/- to adjust, or {{shortcut}}+0 / the button to reset.",
       "uiScaleReset": "Reset",
       "hardwareAcceleration": "Hardware Acceleration",
-      "hardwareAccelerationHint": "Use the GPU to render app windows. Turning this off takes effect on next launch and uses software rendering for Windows GPU-driver startup recovery."
+      "hardwareAccelerationHint": "Use the GPU to render app windows. Turning this off takes effect on next launch and uses software rendering for Windows GPU-driver startup recovery.",
+      "contextPrivacy": "Context Privacy Level",
+      "contextPrivacyHint": "Controls how deeply the AI collects your current activity. Higher levels make the AI more context-aware but read more content.",
+      "contextPrivacyMinimal": "Minimal",
+      "contextPrivacyMinimalDesc": "Only window focus info",
+      "contextPrivacyStandard": "Standard",
+      "contextPrivacyStandardDesc": "Window focus + file/clipboard content",
+      "contextPrivacyFull": "Full",
+      "contextPrivacyFullDesc": "All collection including visual screenshot analysis"
     },
     "editor": {
       "title": "Editor",
@@ -822,12 +830,30 @@
         "title": "Tools",
         "description": "Tool switches take effect after restarting or starting a conversation. Active conversations keep using the tool set they started with.",
         "items": {
-          "browser": { "label": "Browser", "summary": "Control a headless browser to navigate web pages" },
-          "computer": { "label": "Computer Use", "summary": "Control approved desktop apps with a visible action overlay" },
-          "cron": { "label": "Scheduled Tasks", "summary": "Run tasks automatically at specified times" },
-          "dm": { "label": "Direct Message", "summary": "Send a one-on-one message to another agent" },
-          "install_skill": { "label": "Install Skill", "summary": "Install new skills from GitHub or the skill library" },
-          "update_settings": { "label": "Update Settings", "summary": "Allow the agent to modify application configuration" }
+          "browser": {
+            "label": "Browser",
+            "summary": "Control a headless browser to navigate web pages"
+          },
+          "computer": {
+            "label": "Computer Use",
+            "summary": "Control approved desktop apps with a visible action overlay"
+          },
+          "cron": {
+            "label": "Scheduled Tasks",
+            "summary": "Run tasks automatically at specified times"
+          },
+          "dm": {
+            "label": "Direct Message",
+            "summary": "Send a one-on-one message to another agent"
+          },
+          "install_skill": {
+            "label": "Install Skill",
+            "summary": "Install new skills from GitHub or the skill library"
+          },
+          "update_settings": {
+            "label": "Update Settings",
+            "summary": "Allow the agent to modify application configuration"
+          }
         }
       },
       "computerUse": {
@@ -942,16 +968,18 @@
       "loadFailed": "Failed to load access settings"
     },
     "health": {
-      "bannerTitle": "System Component Issue",
-      "multipleIssues": "{{count}} components need repair",
+      "bannerTitle": "System Dependencies Missing",
+      "multipleIssues": "{count} dependency issues found",
       "fixButton": "Fix All",
       "viewDetails": "View Details",
       "fixSingle": "Fix",
       "fixing": "Fixing...",
-      "fixSuccess": "Fixed! Please restart the app",
+      "fixSuccess": "Fix complete, please restart the app",
       "fixFailed": "Fix failed",
       "restartNow": "Restart Now",
-      "retry": "Retry"
+      "retry": "Retry",
+      "better-sqlite3": "Memory Database",
+      "sharp": "Image Processing"
     },
     "security": {
       "sandbox": "Sandbox",
@@ -1427,20 +1455,6 @@
       "agentTitle": "Agent Configuration",
       "agentConnectorDesc": "Enable for the selected agent, just like skills.",
       "saveError": "Save failed"
-    },
-    "health": {
-      "bannerTitle": "System Dependencies Missing",
-      "multipleIssues": "{count} dependency issues found",
-      "fixButton": "Fix All",
-      "viewDetails": "View Details",
-      "fixSingle": "Fix",
-      "fixing": "Fixing...",
-      "fixSuccess": "Fix complete, please restart the app",
-      "fixFailed": "Fix failed",
-      "restartNow": "Restart Now",
-      "retry": "Retry",
-      "better-sqlite3": "Memory Database",
-      "sharp": "Image Processing"
     },
     "screenshot": {
       "title": "Screenshot Sharing",
@@ -2407,5 +2421,33 @@
   "preview.exitMarkdownPreview": "Back to editing",
   "preview.openInNewWindow": "Open in new window",
   "preview.openInNewWindowUnsupported": "Not supported for this type",
-  "preview.markdownEditorStatus": "Selected {selected} chars · Total {total} chars"
+  "preview.markdownEditorStatus": "Selected {selected} chars · Total {total} chars",
+  "emojiStyle": {
+    "title": "Tool Icon Style",
+    "description": "Choose the emoji style shown during tool calls",
+    "default": {
+      "name": "Classic Tech",
+      "description": "🌐 Classic expressions like surfing the internet"
+    },
+    "sakura": {
+      "name": "🌸 Sakura",
+      "description": "Warm Japanese cute style, flower fields"
+    },
+    "animal": {
+      "name": "🐾 Animal",
+      "description": "Cute pet style, outdoor adventures"
+    },
+    "magic": {
+      "name": "✨ Magic",
+      "description": "Dreamy magic style, casting spells"
+    },
+    "ribbon": {
+      "name": "🎀 Ribbon",
+      "description": "Sweet ribbon style, wrapping gifts"
+    },
+    "starry": {
+      "name": "⭐ Starry",
+      "description": "Romantic starry style, exploring the cosmos"
+    }
+  }
 }

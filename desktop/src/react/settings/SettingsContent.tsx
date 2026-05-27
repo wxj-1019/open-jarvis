@@ -24,6 +24,7 @@ import { InterfaceTab } from './tabs/InterfaceTab';
 import { WorkTab } from './tabs/WorkTab';
 import { ComputerUseTab } from './tabs/ComputerUseTab';
 import { SkillsTab } from './tabs/SkillsTab';
+import { McpTab } from './tabs/McpTab';
 import { BridgeTab } from './tabs/BridgeTab';
 import { ProvidersTab } from './tabs/ProvidersTab';
 import { MediaTab } from './tabs/MediaTab';
@@ -55,6 +56,7 @@ const TAB_COMPONENTS: Record<string, React.ComponentType> = {
   work: WorkTab,
   computer: ComputerUseTab,
   skills: SkillsTab,
+  mcp: McpTab,
   bridge: BridgeTab,
   providers: ProvidersTab,
   media: MediaTab,

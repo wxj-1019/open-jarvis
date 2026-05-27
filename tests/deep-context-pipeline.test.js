@@ -4,6 +4,23 @@ import { EventBus } from "../hub/event-bus.js";
 // Mock adapters（在 import pipeline 之前）
 vi.mock("../lib/context/adapters/ide-content-adapter.js", () => ({
   IDEContentAdapter: {
+    name: "IDEContentAdapter",
+    supports: vi.fn(() => false),
+    extract: vi.fn(),
+  },
+}));
+
+vi.mock("../lib/context/adapters/browser-adapter.js", () => ({
+  BrowserContentAdapter: {
+    name: "BrowserContentAdapter",
+    supports: vi.fn(() => false),
+    extract: vi.fn(),
+  },
+}));
+
+vi.mock("../lib/context/adapters/terminal-adapter.js", () => ({
+  TerminalContentAdapter: {
+    name: "TerminalContentAdapter",
     supports: vi.fn(() => false),
     extract: vi.fn(),
   },
@@ -11,6 +28,7 @@ vi.mock("../lib/context/adapters/ide-content-adapter.js", () => ({
 
 vi.mock("../lib/context/adapters/clipboard-adapter.js", () => ({
   ClipboardAdapter: {
+    name: "ClipboardAdapter",
     supports: vi.fn(() => true),
     extract: vi.fn(() => Promise.resolve({ type: "clipboard", content: "test", metadata: {} })),
   },
@@ -18,6 +36,7 @@ vi.mock("../lib/context/adapters/clipboard-adapter.js", () => ({
 
 const { DeepContextPipeline } = await import("../lib/context/deep-context-pipeline.js");
 const { ClipboardAdapter } = await import("../lib/context/adapters/clipboard-adapter.js");
+const { IDEContentAdapter } = await import("../lib/context/adapters/ide-content-adapter.js");
 
 describe("DeepContextPipeline", () => {
   let bus;
@@ -172,6 +191,77 @@ describe("DeepContextPipeline", () => {
       const original = pipeline._privacyLevel;
       pipeline.setPrivacyLevel("invalid");
       expect(pipeline._privacyLevel).toBe(original);
+    });
+  });
+
+  describe("事件驱动 rich_context_changed", () => {
+    it("L1 变化时发出 rich_context_changed 事件", () => {
+      pipeline.start();
+      const handler = vi.fn();
+      bus.subscribe(handler, { types: ["rich_context_changed"] });
+
+      bus.emit({
+        type: "window_focus_changed",
+        app: "Code.exe",
+        title: "test.js",
+        platform: "win32",
+        timestamp: Date.now(),
+      }, null);
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      const event = handler.mock.calls[0][0];
+      expect(event.type).toBe("rich_context_changed");
+      expect(event.context.l1.app).toBe("Code.exe");
+    });
+
+    it("同一窗口重复事件不重复发出", () => {
+      pipeline.start();
+      const handler = vi.fn();
+      bus.subscribe(handler, { types: ["rich_context_changed"] });
+
+      const ts = Date.now();
+      bus.emit({ type: "window_focus_changed", app: "Code", title: "a.js", platform: "win32", timestamp: ts }, null);
+      bus.emit({ type: "window_focus_changed", app: "Code", title: "a.js", platform: "win32", timestamp: ts }, null);
+
+      // 第二次 app+title 相同，不触发新事件（去重）
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it("不同窗口变化发出不同事件", () => {
+      pipeline.start();
+      const handler = vi.fn();
+      bus.subscribe(handler, { types: ["rich_context_changed"] });
+
+      bus.emit({ type: "window_focus_changed", app: "Code", title: "a.js", platform: "win32", timestamp: 1000 }, null);
+      bus.emit({ type: "window_focus_changed", app: "Chrome", title: "Google", platform: "win32", timestamp: 2000 }, null);
+
+      expect(handler).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe("适配器链优先级", () => {
+    it("IDE 适配器优先于 Clipboard", async () => {
+      IDEContentAdapter.supports.mockReturnValueOnce(true);
+      IDEContentAdapter.extract.mockResolvedValueOnce({
+        type: "ide",
+        content: "const x = 1;",
+        metadata: { filePath: "/test.js", language: "javascript" },
+      });
+
+      pipeline.start();
+      bus.emit({
+        type: "window_focus_changed",
+        app: "Code.exe",
+        title: "test.js",
+        platform: "win32",
+        timestamp: Date.now(),
+      }, null);
+
+      await new Promise((r) => setTimeout(r, 200));
+
+      const ctx = pipeline.getRichContext();
+      expect(ctx.l2.sourceType).toBe("ide");
+      expect(ctx.l2.fileContent).toBe("const x = 1;");
     });
   });
 });

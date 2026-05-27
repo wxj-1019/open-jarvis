@@ -669,7 +669,15 @@
       "uiScaleHint": "偏好 {{preference}}%，当前窗口实际约 {{effective}}%。窗口较小时会自动略缩小以适配。可用 {{shortcut}}+滚轮、{{shortcut}}+加/减 调整，{{shortcut}}+0 或右侧按钮恢复默认。",
       "uiScaleReset": "恢复默认",
       "hardwareAcceleration": "硬件加速",
-      "hardwareAccelerationHint": "使用显卡渲染窗口内容。关闭后会在下次启动使用软件渲染，可用于恢复 Windows 显卡驱动导致的启动闪退。"
+      "hardwareAccelerationHint": "使用显卡渲染窗口内容。关闭后会在下次启动使用软件渲染，可用于恢复 Windows 显卡驱动导致的启动闪退。",
+      "contextPrivacy": "上下文隐私级别",
+      "contextPrivacyHint": "控制 AI 采集用户当前活动的深度。较高级别可让 AI 更智能地感知上下文，但会读取更多内容。",
+      "contextPrivacyMinimal": "最小化",
+      "contextPrivacyMinimalDesc": "仅采集窗口焦点信息",
+      "contextPrivacyStandard": "标准",
+      "contextPrivacyStandardDesc": "窗口焦点 + 文件/剪贴板内容",
+      "contextPrivacyFull": "完整",
+      "contextPrivacyFullDesc": "全部采集，包括视觉截图分析"
     },
     "editor": {
       "title": "编辑器",

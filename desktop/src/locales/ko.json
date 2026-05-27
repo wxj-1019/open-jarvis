@@ -627,7 +627,8 @@
       "access": "접근 및 기기",
       "plugins": "플러그인",
       "about": "소개",
-      "security": "보안"
+      "security": "보안",
+      "backup": "백업"
     },
     "computerUse": {
       "title": "Computer Use",
@@ -691,7 +692,15 @@
       "uiScaleHint": "설정 {{preference}}%, 이 창에서 실제 약 {{effective}}%. 작은 창에서는 자동으로 약간 축소됩니다. {{shortcut}}+스크롤, {{shortcut}}+/-로 조절, {{shortcut}}+0 또는 오른쪽 버튼으로 초기화.",
       "uiScaleReset": "초기화",
       "hardwareAcceleration": "하드웨어 가속",
-      "hardwareAccelerationHint": "GPU로 앱 창을 렌더링합니다. 끄면 다음 실행부터 소프트웨어 렌더링을 사용해 Windows GPU 드라이버로 인한 시작 충돌 복구에 도움이 됩니다."
+      "hardwareAccelerationHint": "GPU로 앱 창을 렌더링합니다. 끄면 다음 실행부터 소프트웨어 렌더링을 사용해 Windows GPU 드라이버로 인한 시작 충돌 복구에 도움이 됩니다.",
+      "contextPrivacy": "컨텍스트 개인정보 수준",
+      "contextPrivacyHint": "AI가 사용자의 현재 활동을 얼마나 수집하는지 제어합니다. 높은 수준일수록 AI가 컨텍스트를 더 잘 이해하지만 더 많은 내용을 읽습니다.",
+      "contextPrivacyMinimal": "최소",
+      "contextPrivacyMinimalDesc": "창 포커스 정보만",
+      "contextPrivacyStandard": "표준",
+      "contextPrivacyStandardDesc": "창 포커스 + 파일/클립보드 내용",
+      "contextPrivacyFull": "전체",
+      "contextPrivacyFullDesc": "시각적 스크린샷 분석을 포함한 전체 수집"
     },
     "editor": {
       "title": "편집기",
@@ -769,12 +778,30 @@
         "title": "도구",
         "description": "도구 스위치는 대화를 다시 시작하거나 새 대화를 시작한 뒤 적용돼요. 진행 중인 대화는 시작할 때의 도구 집합을 계속 사용해요.",
         "items": {
-          "browser": { "label": "브라우저", "summary": "헤드리스 브라우저로 웹 페이지를 탐색" },
-          "computer": { "label": "Computer Use", "summary": "승인된 데스크톱 앱을 제어하고 실시간 동작 커서를 표시합니다" },
-          "cron": { "label": "예약 작업", "summary": "지정한 시간에 작업을 자동 실행" },
-          "dm": { "label": "다이렉트 메시지", "summary": "다른 에이전트에게 1대1 메시지 전송" },
-          "install_skill": { "label": "스킬 설치", "summary": "GitHub 또는 스킬 라이브러리에서 새 스킬 설치" },
-          "update_settings": { "label": "설정 변경", "summary": "Agent가 앱 설정을 수정할 수 있도록 허용" }
+          "browser": {
+            "label": "브라우저",
+            "summary": "헤드리스 브라우저로 웹 페이지를 탐색"
+          },
+          "computer": {
+            "label": "Computer Use",
+            "summary": "승인된 데스크톱 앱을 제어하고 실시간 동작 커서를 표시합니다"
+          },
+          "cron": {
+            "label": "예약 작업",
+            "summary": "지정한 시간에 작업을 자동 실행"
+          },
+          "dm": {
+            "label": "다이렉트 메시지",
+            "summary": "다른 에이전트에게 1대1 메시지 전송"
+          },
+          "install_skill": {
+            "label": "스킬 설치",
+            "summary": "GitHub 또는 스킬 라이브러리에서 새 스킬 설치"
+          },
+          "update_settings": {
+            "label": "설정 변경",
+            "summary": "Agent가 앱 설정을 수정할 수 있도록 허용"
+          }
         }
       },
       "computerUse": {
@@ -1357,7 +1384,11 @@
       "removeConfirm": "Remove this connector? Saved per-agent switches will remain but no longer take effect.",
       "agentTitle": "Agent Configuration",
       "agentConnectorDesc": "Enable for the selected agent, just like skills.",
-      "saveError": "Save failed"
+      "saveError": "Save failed",
+      "connector": {
+        "preset": "프리셋",
+        "presetPlaceholder": "프리셋 선택하여 자동 입력"
+      }
     },
     "screenshot": {
       "title": "스크린샷 공유",
@@ -1449,6 +1480,72 @@
         "위 입력란에 App ID와 App Secret을 붙여넣고 스위치를 켜주세요"
       ],
       "whatsappHint": "곧 지원 예정"
+    },
+    "backup": {
+      "title": "백업 및 복원",
+      "manualBackup": "수동 백업",
+      "selectAgent": "에이전트 선택",
+      "exportBackup": "백업 내보내기",
+      "importBackup": "백업 가져오기",
+      "backupHistory": "백업 기록",
+      "filename": "파일명",
+      "size": "크기",
+      "date": "날짜",
+      "actions": "작업",
+      "download": "다운로드",
+      "delete": "삭제",
+      "restore": "복원",
+      "autoBackup": "자동 백업",
+      "enableAutoBackup": "자동 백업 활성화",
+      "frequency": "빈도",
+      "time": "시간",
+      "retainCount": "보관 수",
+      "daily": "매일",
+      "weekly": "매주",
+      "monthly": "매월",
+      "restoreConfirm": "복원 확인",
+      "restoreWarning": "복원하면 현재 에이전트 데이터를 덮어씁니다. 이 작업은 되돌릴 수 없습니다.",
+      "backupDetails": "백업 상세",
+      "noBackups": "백업 없음",
+      "loading": "로딩 중...",
+      "exportSuccess": "백업 내보내기 성공",
+      "importSuccess": "백업 복원 성공",
+      "deleteSuccess": "백업 삭제됨",
+      "configSaved": "자동 백업 설정 저장됨",
+      "exportFailed": "백업 내보내기 실패",
+      "importFailed": "백업 복원 실패",
+      "deleteFailed": "백업 삭제 실패"
+    },
+    "codeSigning": {
+      "title": "코드 서명 확인",
+      "description": "응용 프로그램의 디지털 서명을 확인하여 신뢰할 수 있는 소스인지 확인합니다.",
+      "loading": "서명 상태 확인 중...",
+      "unsupported": "코드 서명 확인은 Windows에서만 사용 가능합니다",
+      "validSignature": "서명 유효",
+      "invalidSignature": "서명 무효",
+      "noSignature": "서명 없음",
+      "verify": "확인",
+      "verifySuccess": "서명 확인 성공",
+      "verifyFailed": "서명 확인 실패",
+      "verifyError": "확인 중 오류 발생",
+      "subject": "주체",
+      "issuer": "발급자",
+      "validPeriod": "유효 기간",
+      "thumbprint": "지문"
+    },
+    "health": {
+      "bannerTitle": "시스템 의존성 누락",
+      "multipleIssues": "{count}개의 의존성 문제 발견",
+      "fixButton": "일괄 수정",
+      "viewDetails": "상세 보기",
+      "fixSingle": "수정",
+      "fixing": "수정 중...",
+      "fixSuccess": "수정 완료, 앱을 재시작하세요",
+      "fixFailed": "수정 실패",
+      "restartNow": "지금 재시작",
+      "retry": "재시도",
+      "better-sqlite3": "메모리 데이터베이스",
+      "sharp": "이미지 처리"
     }
   },
   "onboarding": {
@@ -2324,5 +2421,33 @@
   "preview.exitMarkdownPreview": "편집으로 돌아가기",
   "preview.openInNewWindow": "새 창에서 보기",
   "preview.openInNewWindowUnsupported": "이 파일 형식은 지원되지 않습니다",
-  "preview.markdownEditorStatus": "선택 {selected}자 · 총 {total}자"
+  "preview.markdownEditorStatus": "선택 {selected}자 · 총 {total}자",
+  "emojiStyle": {
+    "title": "도구 아이콘 스타일",
+    "description": "도구 호출 시 표시되는 이모지 스타일 선택",
+    "default": {
+      "name": "클래식 테크",
+      "description": "🌐 인터넷 서핑 등 클래식한 표현"
+    },
+    "sakura": {
+      "name": "🌸 사쿠라",
+      "description": "따뜻하고 귀여운 일본풍, 꽃의 바다"
+    },
+    "animal": {
+      "name": "🐾 동물",
+      "description": "귀여운 애완동물 스타일, 야외 탐험"
+    },
+    "magic": {
+      "name": "✨ 매직",
+      "description": "몽환적인 마법 스타일, 마법 시전"
+    },
+    "ribbon": {
+      "name": "🎀 리본",
+      "description": "달콤한 리본 스타일, 선물 포장"
+    },
+    "starry": {
+      "name": "⭐ 스타리",
+      "description": "낭만적인 별빛 스타일, 별의 바다 여행"
+    }
+  }
 }

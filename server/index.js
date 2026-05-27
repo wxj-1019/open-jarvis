@@ -72,6 +72,7 @@ import { createCheckpointsRoute } from "./routes/checkpoints.js";
 import { createCommandsRoute } from "./routes/commands.js";
 import { createServerIdentityRoute } from "./routes/server-identity.js";
 import { createProactiveRulesRoute } from "./routes/proactive-rules.js";
+import { createDeepContextRoute } from "./routes/deep-context.js";
 import { createResourcesRoute } from "./routes/resources.js";
 import { createWebAuthRoute } from "./routes/web-auth.js";
 import { createMobileWorkbenchRoute } from "./routes/mobile-workbench.js";
@@ -655,6 +656,7 @@ app.route("/api", createGuiWhitelistRoute(engine, hub));
 app.route("/api", createVoiceRoute(engine));
 app.route("/api", createTTSRoute(engine));
 app.route("/api/proactive", createProactiveRulesRoute(engine, hub));
+  app.route("/api/deep-context", createDeepContextRoute(engine, hub));
 app.route("/api", createServerIdentityRoute({
   hanakoHome: engine.hanakoHome,
   appVersion,

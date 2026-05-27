@@ -294,5 +294,44 @@ describe("UserContextTracker", () => {
       tracker.setRichContext(null);
       expect(tracker.getRichContext()).toBeNull();
     });
+
+    it("getContextSummary 包含浏览器搜索上下文", () => {
+      tracker.start();
+      tracker.setRichContext({
+        timestamp: 123,
+        l1: { app: "chrome.exe", title: "react hooks - Google Search" },
+        l2: { sourceType: "browser", pageTitle: "react hooks - Google Search", searchQuery: "react hooks", searchEngine: "google", fileContent: "react hooks - Google Search" },
+        l3: null,
+      });
+      const summary = tracker.getContextSummary("zh");
+      expect(summary).toContain("搜索");
+      expect(summary).toContain("react hooks");
+    });
+
+    it("getContextSummary 英文模式包含浏览器搜索上下文", () => {
+      tracker.start();
+      tracker.setRichContext({
+        timestamp: 123,
+        l1: { app: "chrome.exe", title: "react hooks - Google Search" },
+        l2: { sourceType: "browser", pageTitle: "react hooks - Google Search", searchQuery: "react hooks", searchEngine: "google", fileContent: "react hooks - Google Search" },
+        l3: null,
+      });
+      const summary = tracker.getContextSummary("en");
+      expect(summary).toContain("searching");
+      expect(summary).toContain("react hooks");
+    });
+
+    it("getContextSummary 包含终端工作目录", () => {
+      tracker.start();
+      tracker.setRichContext({
+        timestamp: 123,
+        l1: { app: "WindowsTerminal.exe", title: "C:\\Users\\test" },
+        l2: { sourceType: "terminal", workingDir: "C:\\Users\\test", shellType: "powershell", isSsh: false, fileContent: "C:\\Users\\test" },
+        l3: null,
+      });
+      const summary = tracker.getContextSummary("zh");
+      expect(summary).toContain("终端工作目录");
+      expect(summary).toContain("C:\\Users\\test");
+    });
   });
 });

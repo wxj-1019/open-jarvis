@@ -86,4 +86,48 @@ describe("RichContextAggregator._normalizeL2", () => {
     expect(result.language).toBeNull();
     expect(result.sourceType).toBe("unknown");
   });
+
+  it("browser 类型 L2 归一化", () => {
+    const l2 = {
+      type: "browser",
+      content: "GitHub",
+      metadata: { pageTitle: "GitHub", searchQuery: null, searchEngine: null, url: null },
+    };
+
+    const result = RichContextAggregator._normalizeL2(l2);
+
+    expect(result.sourceType).toBe("browser");
+    expect(result.pageTitle).toBe("GitHub");
+    expect(result.searchQuery).toBeNull();
+    expect(result.fileContent).toBe("GitHub");
+  });
+
+  it("browser 类型带搜索信息", () => {
+    const l2 = {
+      type: "browser",
+      content: "react hooks",
+      metadata: { pageTitle: "react hooks - Google Search", searchQuery: "react hooks", searchEngine: "google", url: null },
+    };
+
+    const result = RichContextAggregator._normalizeL2(l2);
+
+    expect(result.searchQuery).toBe("react hooks");
+    expect(result.searchEngine).toBe("google");
+  });
+
+  it("terminal 类型 L2 归一化", () => {
+    const l2 = {
+      type: "terminal",
+      content: "C:\\Users\\test\\project",
+      metadata: { workingDir: "C:\\Users\\test\\project", shellType: "powershell", isSsh: false },
+    };
+
+    const result = RichContextAggregator._normalizeL2(l2);
+
+    expect(result.sourceType).toBe("terminal");
+    expect(result.workingDir).toBe("C:\\Users\\test\\project");
+    expect(result.shellType).toBe("powershell");
+    expect(result.isSsh).toBe(false);
+    expect(result.fileContent).toBe("C:\\Users\\test\\project");
+  });
 });
