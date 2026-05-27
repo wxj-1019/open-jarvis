@@ -28,5 +28,26 @@ export default defineConfig({
         inline: ["electron-updater", /desktop\/auto-updater/],
       },
     },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      reportsDirectory: './coverage',
+      thresholds: {
+        lines: 70,
+        functions: 70,
+        branches: 70,
+        statements: 70
+      },
+      include: [
+        'core/**/*.js',
+        'lib/**/*.js',
+        'server/**/*.js'
+      ],
+      exclude: [
+        'node_modules/**',
+        'dist/**',
+        'tests/**'
+      ]
+    }
   },
 });
