@@ -405,21 +405,23 @@ export class ChannelRouter {
    */
   setupPostHandler() {
     for (const [, agent] of this._engine.agents || []) {
-      agent.setChannelPostHandler((channelName, senderId, message) => {
-        debugLog()?.log("channel", `agent ${senderId} posted to #${channelName}, triggering phone delivery`);
-        if (message) {
-          this._hub.eventBus.emit({
-            type: "channel_new_message",
-            channelName,
-            sender: senderId,
-            message,
-          }, null);
-        }
-        const mentionedAgents = this._extractMentionedAgents(channelName, message);
-        const opts = mentionedAgents.length > 0 ? { mentionedAgents } : undefined;
-        this.triggerImmediate(channelName, opts)?.catch(err =>
-          log.error(`agent post delivery 失败: ${err.message}`)
-        );
+      agent.initialize({
+        channelPostHandler: (channelName, senderId, message) => {
+          debugLog()?.log("channel", `agent ${senderId} posted to #${channelName}, triggering phone delivery`);
+          if (message) {
+            this._hub.eventBus.emit({
+              type: "channel_new_message",
+              channelName,
+              sender: senderId,
+              message,
+            }, null);
+          }
+          const mentionedAgents = this._extractMentionedAgents(channelName, message);
+          const opts = mentionedAgents.length > 0 ? { mentionedAgents } : undefined;
+          this.triggerImmediate(channelName, opts)?.catch(err =>
+            log.error(`agent post delivery 失败: ${err.message}`)
+          );
+        },
       });
     }
   }

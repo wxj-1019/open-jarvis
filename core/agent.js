@@ -674,15 +674,68 @@ export class Agent {
   //  外部回调 setter（统一入口，禁止外部直接赋值 _xxx）
   // ════════════════════════════
 
-  setCallbacks(cb) { this._cb = cb; }
-  setGetOwnerIds(fn) { this._getOwnerIds = fn; }
-  setOnInstallCallback(fn) { this._onInstallCallback = fn; }
-  setNotifyHandler(fn) { this._notifyHandler = fn; }
-  setDescriptionRefreshHandler(fn) { this._descriptionRefreshHandler = fn; }
-  setDmSentHandler(fn) { this._dmSentHandler = fn; }
-  setChannelPostHandler(fn) { this._channelPostHandler = fn; }
-  setUtilityModel(val) { this._utilityModel = val; }
-  setMemoryModel(val) { this._memoryModel = val; }
+  setCallbacks(cb) {
+    console.warn('Agent.setCallbacks() is deprecated. Use Agent.initialize({ callbacks }) instead.');
+    this._cb = cb;
+  }
+  setGetOwnerIds(fn) {
+    console.warn('Agent.setGetOwnerIds() is deprecated. Use Agent.initialize({ getOwnerIds }) instead.');
+    this._getOwnerIds = fn;
+  }
+  setOnInstallCallback(fn) {
+    console.warn('Agent.setOnInstallCallback() is deprecated. Use Agent.initialize({ onInstallCallback }) instead.');
+    this._onInstallCallback = fn;
+  }
+  setNotifyHandler(fn) {
+    console.warn('Agent.setNotifyHandler() is deprecated. Use Agent.initialize({ notifyHandler }) instead.');
+    this._notifyHandler = fn;
+  }
+  setDescriptionRefreshHandler(fn) {
+    console.warn('Agent.setDescriptionRefreshHandler() is deprecated. Use Agent.initialize({ descriptionRefreshHandler }) instead.');
+    this._descriptionRefreshHandler = fn;
+  }
+  setDmSentHandler(fn) {
+    console.warn('Agent.setDmSentHandler() is deprecated. Use Agent.initialize({ dmSentHandler }) instead.');
+    this._dmSentHandler = fn;
+  }
+  setChannelPostHandler(fn) {
+    console.warn('Agent.setChannelPostHandler() is deprecated. Use Agent.initialize({ channelPostHandler }) instead.');
+    this._channelPostHandler = fn;
+  }
+  setUtilityModel(val) {
+    console.warn('Agent.setUtilityModel() is deprecated. Use Agent.initialize({ utilityModel }) instead.');
+    this._utilityModel = val;
+  }
+  setMemoryModel(val) {
+    console.warn('Agent.setMemoryModel() is deprecated. Use Agent.initialize({ memoryModel }) instead.');
+    this._memoryModel = val;
+  }
+
+  /**
+   * Unified initialization method. Replaces individual set* calls.
+   * @param {Object} options
+   * @param {Object}   [options.callbacks]              - Callback object for agent events
+   * @param {Function} [options.getOwnerIds]             - Function to retrieve owner IDs
+   * @param {Function} [options.onInstallCallback]       - Callback triggered on skill install
+   * @param {Function} [options.notifyHandler]           - Handler for notification payloads
+   * @param {Function} [options.descriptionRefreshHandler] - Handler for description refresh events
+   * @param {Function} [options.dmSentHandler]           - Handler for new DM events (fromId, toId)
+   * @param {Function} [options.channelPostHandler]      - Handler for channel posts (channelName, senderId, message)
+   * @param {*}        [options.utilityModel]            - Utility model reference (may be falsy)
+   * @param {*}        [options.memoryModel]             - Memory model reference (may be falsy)
+   */
+  initialize(options) {
+    if (!options || typeof options !== 'object') return;
+    if (options.callbacks !== undefined) this._cb = options.callbacks;
+    if (options.getOwnerIds !== undefined) this._getOwnerIds = options.getOwnerIds;
+    if (options.onInstallCallback !== undefined) this._onInstallCallback = options.onInstallCallback;
+    if (options.notifyHandler !== undefined) this._notifyHandler = options.notifyHandler;
+    if (options.descriptionRefreshHandler !== undefined) this._descriptionRefreshHandler = options.descriptionRefreshHandler;
+    if (options.dmSentHandler !== undefined) this._dmSentHandler = options.dmSentHandler;
+    if (options.channelPostHandler !== undefined) this._channelPostHandler = options.channelPostHandler;
+    if (options.utilityModel !== undefined) this._utilityModel = options.utilityModel;
+    if (options.memoryModel !== undefined) this._memoryModel = options.memoryModel;
+  }
 
   // ════════════════════════════
   //  状态访问

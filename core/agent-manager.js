@@ -127,7 +127,7 @@ export class AgentManager {
     if (this._agents.has(agentId)) return this._agents.get(agentId);
 
     const ag = this._createAgentInstance(agentId, () => ({}));
-    ag.setGetOwnerIds(this._makeOwnerIdsFn(ag));
+    ag.initialize({ getOwnerIds: this._makeOwnerIdsFn(ag) });
     try {
       ag.loadConfigOnly();
     } catch (err) {
@@ -521,7 +521,7 @@ export class AgentManager {
 
     // 初始化并加入长驻 Map
     const ag = this._createAgentInstance(agentId, () => ({}));
-    ag.setGetOwnerIds(this._makeOwnerIdsFn(ag));
+    ag.initialize({ getOwnerIds: this._makeOwnerIdsFn(ag) });
     const resolveModel = (bareId) =>
       this._d.getModels().resolveModelWithCredentials(bareId);
     try {
@@ -559,7 +559,7 @@ export class AgentManager {
     // 注入 DM 回调
     const dmRouter = hub?.dmRouter;
     if (dmRouter) {
-      ag.setDmSentHandler((fromId, toId) => dmRouter.handleNewDm(fromId, toId));
+      ag.initialize({ dmSentHandler: (fromId, toId) => dmRouter.handleNewDm(fromId, toId) });
     }
 
     this.invalidateAgentListCache();
@@ -840,65 +840,67 @@ export class AgentManager {
       channelsDir: this._d.channelsDir,
       searchConfigResolver: () => this._d.getSearchConfig(),
     });
-    ag.setGetOwnerIds(getOwnerIds);
     // 回调注入：Agent 通过 _cb 访问 Engine 能力，不直接持有 Engine 引用
     const getEngine = () => this._d.getEngine?.();
-    ag.setCallbacks({
-      emitDevLog:           (text, level) => getEngine()?.emitDevLog?.(text, level),
-      getConfirmStore:      () => getEngine()?.confirmStore ?? null,
-      getCurrentSessionPath:() => getEngine()?.currentSessionPath ?? null,
-      getSessionCwd:        (sp) => getEngine()?.getSessionByPath?.(sp)?.sessionManager?.getCwd?.() ?? null,
-      getSessionWorkspaceFolders: (sp) => getEngine()?.getSessionWorkspaceFolders?.(sp) ?? [],
-      getHomeCwd:           (agentId) => getEngine()?.getHomeCwd?.(agentId) ?? null,
-      getStudioCronStore:   () => getEngine()?.getStudioCronStore?.() ?? null,
-      emitEvent:            (event, sp) => getEngine()?._emitEvent?.(event, sp),
-      emitSessionEvent:     (event) => getEngine()?.emitSessionEvent?.(event),
-      getDeferredResults:   () => getEngine()?.deferredResults ?? null,
-      getSubagentRunStore:  () => getEngine()?.subagentRuns ?? null,
-      getTaskRegistry:      () => getEngine()?.taskRegistry ?? null,
-      getTerminalSessionManager: () => getEngine()?.terminalSessions ?? null,
-      registerSessionFile:  (entry) => getEngine()?.registerSessionFile?.(entry),
-      setSubagentController: (id, ctrl) => getEngine()?.setSubagentController(id, ctrl),
-      removeSubagentController: (id) => getEngine()?.removeSubagentController(id),
-      executeIsolated:      (prompt, opts) => getEngine()?.executeIsolated(prompt, opts),
-      getCurrentModelId:    () => getEngine()?.currentModel?.id ?? null,
-      getSkillsDir:         () => getEngine()?.skillsDir ?? null,
-      getLearnSkills:       () => getEngine()?.getLearnSkills?.() ?? {},
-      isChannelsEnabled:    () => getEngine()?.isChannelsEnabled?.() ?? false,
-      resolveUtilityConfig: () => getEngine()?.resolveUtilityConfig?.({ agentId: ag.id }),
-      getCwd:               () => getEngine()?.cwd ?? "",
-      getTimezone:          () => getEngine()?.getTimezone?.() ?? "",
-      getMcpResourcesText:  () => {
-        const pm = getEngine()?.pluginManager;
-        return pm?.ctx?._mcpRuntime?._cachedResourcesText || "";
+    ag.initialize({
+      getOwnerIds,
+      callbacks: {
+        emitDevLog:           (text, level) => getEngine()?.emitDevLog?.(text, level),
+        getConfirmStore:      () => getEngine()?.confirmStore ?? null,
+        getCurrentSessionPath:() => getEngine()?.currentSessionPath ?? null,
+        getSessionCwd:        (sp) => getEngine()?.getSessionByPath?.(sp)?.sessionManager?.getCwd?.() ?? null,
+        getSessionWorkspaceFolders: (sp) => getEngine()?.getSessionWorkspaceFolders?.(sp) ?? [],
+        getHomeCwd:           (agentId) => getEngine()?.getHomeCwd?.(agentId) ?? null,
+        getStudioCronStore:   () => getEngine()?.getStudioCronStore?.() ?? null,
+        emitEvent:            (event, sp) => getEngine()?._emitEvent?.(event, sp),
+        emitSessionEvent:     (event) => getEngine()?.emitSessionEvent?.(event),
+        getDeferredResults:   () => getEngine()?.deferredResults ?? null,
+        getSubagentRunStore:  () => getEngine()?.subagentRuns ?? null,
+        getTaskRegistry:      () => getEngine()?.taskRegistry ?? null,
+        getTerminalSessionManager: () => getEngine()?.terminalSessions ?? null,
+        registerSessionFile:  (entry) => getEngine()?.registerSessionFile?.(entry),
+        setSubagentController: (id, ctrl) => getEngine()?.setSubagentController(id, ctrl),
+        removeSubagentController: (id) => getEngine()?.removeSubagentController(id),
+        executeIsolated:      (prompt, opts) => getEngine()?.executeIsolated(prompt, opts),
+        getCurrentModelId:    () => getEngine()?.currentModel?.id ?? null,
+        getSkillsDir:         () => getEngine()?.skillsDir ?? null,
+        getLearnSkills:       () => getEngine()?.getLearnSkills?.() ?? {},
+        isChannelsEnabled:    () => getEngine()?.isChannelsEnabled?.() ?? false,
+        resolveUtilityConfig: () => getEngine()?.resolveUtilityConfig?.({ agentId: ag.id }),
+        getCwd:               () => getEngine()?.cwd ?? "",
+        getTimezone:          () => getEngine()?.getTimezone?.() ?? "",
+        getMcpResourcesText:  () => {
+          const pm = getEngine()?.pluginManager;
+          return pm?.ctx?._mcpRuntime?._cachedResourcesText || "";
+        },
+        scheduleMemoryMaintenance: (agentId, reason) =>
+          this.scheduleAgentMemoryMaintenance(agentId, reason, ag),
+        getEngine,  // update-settings-tool 仍需要完整 engine
       },
-      scheduleMemoryMaintenance: (agentId, reason) =>
-        this.scheduleAgentMemoryMaintenance(agentId, reason, ag),
-      getEngine,  // update-settings-tool 仍需要完整 engine
-    });
-    ag.setOnInstallCallback(async (skillName) => {
-      const skills = this._d.getSkills();
-      await skills.reload(this._d.getResourceLoader?.(), this._agents);
-      const enabled = new Set(ag.config?.skills?.enabled || []);
-      enabled.add(skillName);
-      ag.updateConfig({ skills: { enabled: [...enabled] } });
-      skills.syncAgentSkills(ag);
-    });
-    ag.setNotifyHandler((payload) => {
-      const engine = this._d.getEngine?.();
-      if (typeof engine?.deliverNotification === "function") {
-        return engine.deliverNotification(payload, { agentId: ag.id });
-      }
-      this._d.getHub()?.eventBus?.emit({
-        type: "notification",
-        title: payload?.title || "",
-        body: payload?.body || "",
-        agentId: ag.id,
-      }, null);
-      return undefined;
-    });
-    ag.setDescriptionRefreshHandler(() => {
-      this._refreshDescription(ag.id).catch(() => {});
+      onInstallCallback: async (skillName) => {
+        const skills = this._d.getSkills();
+        await skills.reload(this._d.getResourceLoader?.(), this._agents);
+        const enabled = new Set(ag.config?.skills?.enabled || []);
+        enabled.add(skillName);
+        ag.updateConfig({ skills: { enabled: [...enabled] } });
+        skills.syncAgentSkills(ag);
+      },
+      notifyHandler: (payload) => {
+        const engine = this._d.getEngine?.();
+        if (typeof engine?.deliverNotification === "function") {
+          return engine.deliverNotification(payload, { agentId: ag.id });
+        }
+        this._d.getHub()?.eventBus?.emit({
+          type: "notification",
+          title: payload?.title || "",
+          body: payload?.body || "",
+          agentId: ag.id,
+        }, null);
+        return undefined;
+      },
+      descriptionRefreshHandler: () => {
+        this._refreshDescription(ag.id).catch(() => {});
+      },
     });
     return ag;
   }

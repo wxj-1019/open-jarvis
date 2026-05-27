@@ -564,8 +564,10 @@ export class Hub {
     const engine = this._engine;
     // 给所有 agent 注入 DM 回调
     for (const [, agent] of engine.agents || []) {
-      agent.setDmSentHandler((fromId, toId) =>
-        this._dmRouter.handleNewDm(fromId, toId));
+      agent.initialize({
+        dmSentHandler: (fromId, toId) =>
+          this._dmRouter.handleNewDm(fromId, toId),
+      });
     }
   }
 
