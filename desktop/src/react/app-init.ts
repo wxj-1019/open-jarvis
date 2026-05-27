@@ -23,6 +23,7 @@ import { openSettingsModal } from './stores/settings-modal-actions';
 import { configureAppEventActions, handleAppEvent, readConfigCwdHistory, readConfigHomeFolder, readConfigMemoryMasterEnabled } from './services/app-event-actions';
 import { configureWsMessageHandler } from './services/ws-message-handler';
 import { applyEditorTypography } from './editor/typography';
+import { applyUiScale, normalizeUiScale, resolveEffectiveUiScale } from './ui-scale';
 import {
   LOCAL_CONNECTION_ID,
   createLocalServerConnection,
@@ -157,6 +158,10 @@ export async function initApp(): Promise<void> {
     const healthData = await healthRes.json();
     const configData = await configRes.json();
     applyEditorTypography(configData.editor);
+    applyUiScale(resolveEffectiveUiScale(normalizeUiScale(configData.ui_scale), {
+      width: window.innerWidth,
+      height: window.innerHeight,
+    }));
 
     // 3. 加载 i18n
     await i18n.load(configData.locale || 'zh-CN');

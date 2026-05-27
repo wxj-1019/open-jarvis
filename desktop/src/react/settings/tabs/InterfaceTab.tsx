@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSettingsStore } from '../store';
 import { t, VALID_THEMES, autoSaveConfig } from '../helpers';
 import { SelectWidget } from '@/ui';
@@ -17,6 +17,14 @@ import {
   isPaperTextureEnabled,
 } from '../../../shared/appearance-preferences';
 import { persistAppearancePreferences } from '../../services/appearance-sync';
+import {
+  applyUiScale,
+  DEFAULT_UI_SCALE,
+  getUiZoomShortcutLabel,
+  normalizeUiScale,
+  resolveEffectiveUiScale,
+} from '../../ui-scale';
+import componentStyles from '../components/settings-components.module.css';
 import styles from '../Settings.module.css';
 import registry from '../../../shared/theme-registry';
 import { EMOJI_STYLE_PRESETS, EMOJI_STYLE_IDS, getEmojiStylePreset, getSavedEmojiStyle, saveEmojiStyle } from '../../../shared/emoji-styles';
@@ -73,6 +81,7 @@ const EDITOR_FONT_SIZE_ROWS: Array<{
 
 export function InterfaceTab() {
   const settingsConfig = useSettingsStore(s => s.settingsConfig);
+  const platformName = useSettingsStore(s => s.platformName);
   const [appearancePrefs, setAppearancePrefs] = useState<AppearancePrefs>(() => readAppearancePrefs());
   const refreshAppearancePrefs = useCallback(() => {
     setAppearancePrefs(readAppearancePrefs());
@@ -108,6 +117,41 @@ export function InterfaceTab() {
     [settingsConfig?.editor],
   );
   const hardwareAccelerationEnabled = settingsConfig?.hardware_acceleration !== false;
+  const uiScale = normalizeUiScale(settingsConfig?.ui_scale);
+  const uiScalePercent = Math.round(uiScale * 100);
+  const [viewport, setViewport] = useState(() => ({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  }));
+  useEffect(() => {
+    const onResize = () => {
+      setViewport({ width: window.innerWidth, height: window.innerHeight });
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  const effectiveUiScalePercent = Math.round(resolveEffectiveUiScale(uiScale, viewport) * 100);
+
+  const saveUiScale = async (scale: number) => {
+    const normalized = normalizeUiScale(scale);
+    const previousConfig = useSettingsStore.getState().settingsConfig || {};
+    useSettingsStore.setState({ settingsConfig: { ...previousConfig, ui_scale: normalized } });
+    applyUiScale(resolveEffectiveUiScale(normalized, { width: window.innerWidth, height: window.innerHeight }));
+    platform?.settingsChanged?.('ui-scale-changed', { ui_scale: normalized });
+
+    const saved = await autoSaveConfig({ ui_scale: normalized }, { silent: true });
+    if (saved) {
+      useSettingsStore.getState().showToast(t('settings.autoSaved'), 'success');
+      return;
+    }
+
+    useSettingsStore.setState({ settingsConfig: previousConfig });
+    applyUiScale(resolveEffectiveUiScale(normalizeUiScale(previousConfig.ui_scale), {
+      width: window.innerWidth,
+      height: window.innerHeight,
+    }));
+    platform?.settingsChanged?.('ui-scale-changed', { ui_scale: normalizeUiScale(previousConfig.ui_scale) });
+  };
 
   const saveEditorTypography = async (patch: Partial<EditorMarkdownTypography>) => {
     const previousConfig = useSettingsStore.getState().settingsConfig || {};
@@ -277,6 +321,38 @@ export function InterfaceTab() {
 
       <SettingsSection title={t('settings.interface.system')}>
         <SettingsRow
+          label={t('settings.interface.uiScale')}
+          hint={t('settings.interface.uiScaleHint', {
+            preference: uiScalePercent,
+            effective: effectiveUiScalePercent,
+            shortcut: getUiZoomShortcutLabel(platformName),
+          })}
+          control={
+            <div
+              className={componentStyles.numberInputRow}
+              data-ui-scale-wheel="ignore"
+            >
+              <NumberInput
+                value={uiScalePercent}
+                onChange={(value) => saveUiScale(value / 100)}
+                unit="%"
+                min={75}
+                max={150}
+                step={5}
+                commitOnBlur
+              />
+              <button
+                type="button"
+                className={styles['settings-btn-secondary']}
+                disabled={uiScale === DEFAULT_UI_SCALE}
+                onClick={() => saveUiScale(DEFAULT_UI_SCALE)}
+              >
+                {t('settings.interface.uiScaleReset')}
+              </button>
+            </div>
+          }
+        />
+        <SettingsRow
           label={t('settings.interface.hardwareAcceleration')}
           hint={t('settings.interface.hardwareAccelerationHint')}
           control={
@@ -301,6 +377,7 @@ export function InterfaceTab() {
                 unit="px"
                 min={row.min}
                 max={row.max}
+                commitOnBlur
               />
             }
           />
@@ -316,6 +393,7 @@ export function InterfaceTab() {
               max={2.2}
               step={0.05}
               precision="float"
+              commitOnBlur
             />
           }
         />
@@ -329,6 +407,7 @@ export function InterfaceTab() {
               unit="px"
               min={0}
               max={64}
+              commitOnBlur
             />
           }
         />

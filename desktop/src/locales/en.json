@@ -665,6 +665,9 @@
     },
     "interface": {
       "system": "System",
+      "uiScale": "Interface Zoom",
+      "uiScaleHint": "Preference {{preference}}%, effective in this window about {{effective}}%. Smaller windows shrink slightly for fit. Use {{shortcut}}+scroll, {{shortcut}}+/- to adjust, or {{shortcut}}+0 / the button to reset.",
+      "uiScaleReset": "Reset",
       "hardwareAcceleration": "Hardware Acceleration",
       "hardwareAccelerationHint": "Use the GPU to render app windows. Turning this off takes effect on next launch and uses software rendering for Windows GPU-driver startup recovery."
     },

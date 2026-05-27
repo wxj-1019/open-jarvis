@@ -2,11 +2,13 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { WindowControls } from '../components/WindowControls';
+import { useUiScale } from '../hooks/use-ui-scale';
 import { SettingsContent } from './SettingsContent';
 
 const titlebarEl = document.querySelector('.titlebar');
 
 export function SettingsApp() {
+  useUiScale();
   return (
     <ErrorBoundary region="settings">
       <SettingsContent variant="window" listenToWindowTabSwitch />

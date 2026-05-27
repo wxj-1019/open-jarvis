@@ -242,7 +242,10 @@ export function SettingsContent({
         </div>
         <div className={styles['settings-body']}>
           <SettingsNav onTabChange={reportActiveTabChange} />
-          <div className={`${styles['settings-main']}${isWideTab ? ' ' + styles['settings-main-wide'] : ''}`}>
+          <div
+            className={`${styles['settings-main']}${isWideTab ? ' ' + styles['settings-main-wide'] : ''}`}
+            data-ui-scale-wheel="ignore"
+          >
             {!isModal && (
               <h1 className={styles['settings-tab-title']}>{activeTabTitle}</h1>
             )}

@@ -17,6 +17,7 @@ import { ChannelCreateOverlay } from './components/channels/ChannelCreateOverlay
 import { SidebarLayout, toggleSidebar } from './components/SidebarLayout';
 import { FloatPreviewCard, useFloatCard } from './components/FloatPreviewCard';
 import { useSidebarResize } from './hooks/use-sidebar-resize';
+import { useUiScale } from './hooks/use-ui-scale';
 import { createNewSession } from './stores/session-actions';
 import { toggleJianSidebar } from './stores/desk-actions';
 import { ToastContainer } from './components/ToastContainer';
@@ -109,6 +110,7 @@ function usePerformanceMonitor() {
 
 function App() {
   useSidebarResize();
+  useUiScale();
   usePerformanceMonitor();
   // 订阅 locale 变化，驱动整棵树重渲染
   useStore(s => s.locale);

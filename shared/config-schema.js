@@ -25,6 +25,7 @@ export const CONFIG_SCHEMA = {
   sandbox:                      { scope: 'global', setter: 'setSandbox',        getter: 'getSandbox', defaultValue: true },
   sandbox_network:              { scope: 'global', setter: 'setSandboxNetwork', getter: 'getSandboxNetwork', defaultValue: true },
   hardware_acceleration:        { scope: 'global', setter: 'setHardwareAcceleration', getter: 'getHardwareAcceleration', defaultValue: true },
+  ui_scale:                     { scope: 'global', setter: 'setUiScale', getter: 'getUiScale', defaultValue: 1 },
   file_backup:                  { scope: 'global', setter: 'setFileBackup',    getter: 'getFileBackup' },
   update_channel:               { scope: 'global', setter: 'setUpdateChannel',  getter: 'getUpdateChannel', defaultValue: 'stable' },
   auto_check_updates:           { scope: 'global', setter: 'setAutoCheckUpdates', getter: 'getAutoCheckUpdates', defaultValue: true },

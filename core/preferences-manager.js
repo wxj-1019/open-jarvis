@@ -23,6 +23,7 @@ import {
 } from "../shared/workspace-ui-state.js";
 import { normalizeWorkspacePath } from "../shared/workspace-history.js";
 import { normalizeNetworkProxyConfig } from "../shared/network-proxy.js";
+import { DEFAULT_UI_SCALE, normalizeUiScale } from "../shared/ui-scale.js";
 import { createModuleLogger } from "../lib/debug-log.js";
 
 const log = createModuleLogger("preferences");
@@ -156,6 +157,18 @@ export class PreferencesManager {
     } else {
       prefs.hardware_acceleration = !!enabled;
     }
+    this.savePreferences(prefs);
+  }
+
+  /** 读取桌面 UI 缩放偏好（1 = 100%）。 */
+  getUiScale() {
+    return normalizeUiScale(this._cache.ui_scale, DEFAULT_UI_SCALE);
+  }
+
+  /** 保存桌面 UI 缩放偏好。 */
+  setUiScale(scale) {
+    const prefs = this._mutableCopy();
+    prefs.ui_scale = normalizeUiScale(scale);
     this.savePreferences(prefs);
   }
 

@@ -196,6 +196,8 @@ export default defineConfig({
     },
   },
   css: {
+    // Inline config only — never load D:\postcss.config.mjs from parent directories.
+    postcss: { plugins: [] },
     modules: {
       // hana-* 是 animations.css 全局 keyframe 命名空间，不要被 CSS Modules hash 化。
       // 否则模块文件里的 animation: hana-popout 会变成 animation: _hana-popout_xxxx，

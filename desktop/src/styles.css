@@ -63,15 +63,20 @@
     /* 纸质纹理：卡片层默认提亮纸纹，深色主题可关闭补偿 */
     --paper-texture-card-blend-mode: lighten;
 
-    /* sidebar 宽度 */
-    --sidebar-width: 240px;
-    --jian-sidebar-width: 260px;
-    --channel-inspector-width: 280px;
-    --preview-panel-width: 580px;
+    /* sidebar 宽度（随 --ui-scale 缩放） */
+    --sidebar-width: calc(240px * var(--ui-scale, 1));
+    --jian-sidebar-width: calc(260px * var(--ui-scale, 1));
+    --jian-sidebar-min-width: calc(200px * var(--ui-scale, 1));
+    --channel-inspector-width: calc(280px * var(--ui-scale, 1));
+    --preview-panel-width: calc(580px * var(--ui-scale, 1));
+    --preview-panel-min-width: calc(240px * var(--ui-scale, 1));
     --jian-columns: 1;
 
     /* titlebar 高度：toast / 主区域 padding 等所有需要避让 titlebar 的地方统一引用 */
-    --titlebar-h: 44px;
+    --titlebar-h: calc(44px * var(--ui-scale, 1));
+
+    /* 界面缩放：由 ui-scale.ts 写入，联动 html 根字号与布局 token */
+    --ui-scale: 1;
 
 }
 
@@ -530,6 +535,8 @@ html[data-platform="linux"] .tb-toggle-right {
     flex-direction: row;
     height: 100vh;
     max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .main-content {
@@ -537,7 +544,7 @@ html[data-platform="linux"] .tb-toggle-right {
     display: flex;
     flex-direction: column;
     min-width: 0; /* 防止 flex 子项溢出 */
-    position: relative; /* 给 drop overlay 定位 */
+    position: relative; /* drop overlay、任务计划等浮动面板锚点 */
 }
 
 /* ========================================
@@ -662,6 +669,8 @@ html[data-platform="linux"] .tb-toggle-right {
 .sidebar-activity-bar svg {
     flex-shrink: 0;
     opacity: 0.45;
+    width: calc(14px * var(--ui-scale, 1));
+    height: calc(14px * var(--ui-scale, 1));
 }
 
 .sidebar-activity-bar:hover svg {
@@ -2190,8 +2199,10 @@ html[data-platform="linux"] .tb-toggle-right {
 /* 右侧 sidebar — 镜像左侧 sidebar 的 flex 布局 */
 .jian-sidebar {
     position: relative;
+    flex: 0 1 var(--jian-sidebar-width);
     width: var(--jian-sidebar-width);
-    flex-shrink: 0;
+    max-width: var(--jian-sidebar-width);
+    min-width: var(--jian-sidebar-min-width, calc(200px * var(--ui-scale, 1)));
     display: flex;
     flex-direction: column;
     padding-top: 40px;
@@ -2201,14 +2212,17 @@ html[data-platform="linux"] .tb-toggle-right {
 }
 
 .jian-sidebar.collapsed {
+    flex: 0 0 0;
     width: 0;
+    min-width: 0;
+    max-width: 0;
 }
 
 .jian-sidebar-inner {
     display: flex;
     flex-direction: column;
-    width: var(--jian-sidebar-width);
-    min-width: var(--jian-sidebar-width);
+    width: 100%;
+    min-width: 0;
     height: 100%;
     overflow: hidden;
     padding: 10px 7px 7px 0;

@@ -687,6 +687,9 @@
     },
     "interface": {
       "system": "系統",
+      "uiScale": "介面縮放",
+      "uiScaleHint": "偏好 {{preference}}%，目前視窗實際約 {{effective}}%。視窗較小時會自動略縮小以適配。可用 {{shortcut}}+滾輪、{{shortcut}}+加/減 調整，{{shortcut}}+0 或右側按鈕恢復預設。",
+      "uiScaleReset": "恢復預設",
       "hardwareAcceleration": "硬體加速",
       "hardwareAccelerationHint": "使用顯示卡繪製視窗內容。關閉後會在下次啟動使用軟體渲染，可用於恢復 Windows 顯示卡驅動導致的啟動閃退。"
     },

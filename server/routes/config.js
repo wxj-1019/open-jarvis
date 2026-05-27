@@ -79,6 +79,13 @@ function emitConfigAppEvents(engine, { globalFields, agentPartial, providersChan
     });
   }
 
+  const uiScale = getGlobalValue(globalFields, "ui_scale");
+  if (uiScale !== undefined) {
+    emitAppEvent(engine, "ui-scale-changed", {
+      ui_scale: typeof engine.getUiScale === "function" ? engine.getUiScale() : uiScale,
+    });
+  }
+
   const networkProxy = getGlobalValue(globalFields, "network_proxy");
   if (networkProxy !== undefined) {
     emitAppEvent(engine, "network-proxy-changed", {

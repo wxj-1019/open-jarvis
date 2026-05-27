@@ -6,6 +6,8 @@ import { loadModels } from '../utils/ui-helpers';
 import { activateWorkspaceDesk } from '../stores/desk-actions';
 import { loadChannels } from '../stores/channel-actions';
 import { applyEditorTypography } from '../editor/typography';
+import { applyUiScale, normalizeUiScale, resolveEffectiveUiScale } from '../ui-scale';
+import { useSettingsStore } from '../settings/store';
 // @ts-expect-error — shared JS module
 import { mergeWorkspaceHistory } from '../../../../shared/workspace-history.js';
 
@@ -217,6 +219,16 @@ export function handleAppEvent(type: string, data: any = {}, options: AppEventOp
     case 'editor-typography-changed':
       applyEditorTypography(data.editor ?? data);
       break;
+    case 'ui-scale-changed': {
+      const userScale = normalizeUiScale((data as { ui_scale?: unknown })?.ui_scale ?? data);
+      const previousConfig = useSettingsStore.getState().settingsConfig || {};
+      useSettingsStore.setState({ settingsConfig: { ...previousConfig, ui_scale: userScale } });
+      applyUiScale(resolveEffectiveUiScale(userScale, {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      }));
+      break;
+    }
     case 'network-proxy-changed':
       if (options.source === 'server') {
         window.platform?.settingsChanged?.('network-proxy-changed', data);

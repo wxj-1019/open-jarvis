@@ -319,3 +319,11 @@
     font-size: 0.9rem;
     color: var(--text-muted);
 }
+
+.numberInputRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}

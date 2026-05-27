@@ -94,7 +94,7 @@ export function SettingsNav({ onTabChange }: SettingsNavProps) {
   const activeNavTab = activeTab === 'plugin-marketplace' ? 'plugins' : activeTab;
 
   return (
-    <nav className={styles['settings-nav']}>
+    <nav className={styles['settings-nav']} data-ui-scale-wheel="ignore">
       {navItems.map(item => (
         <button
           key={item.id}

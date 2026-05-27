@@ -687,6 +687,9 @@
     },
     "interface": {
       "system": "システム",
+      "uiScale": "UI ズーム",
+      "uiScaleHint": "設定 {{preference}}%、このウィンドウの実効値は約 {{effective}}%。小さいウィンドウでは自動で少し縮小します。{{shortcut}}+スクロール、{{shortcut}}+加減で調整、{{shortcut}}+0 または右のボタンで既定に戻します。",
+      "uiScaleReset": "既定に戻す",
       "hardwareAcceleration": "ハードウェアアクセラレーション",
       "hardwareAccelerationHint": "GPU でウィンドウを描画します。オフにすると次回起動からソフトウェア描画を使い、Windows の GPU ドライバー起因の起動クラッシュ復旧に役立ちます。"
     },

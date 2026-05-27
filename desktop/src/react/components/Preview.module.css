@@ -4,8 +4,10 @@
 
 .previewPanel {
     position: relative;
+    flex: 0 1 var(--preview-panel-width);
     width: var(--preview-panel-width);
-    flex-shrink: 0;
+    max-width: var(--preview-panel-width);
+    min-width: var(--preview-panel-min-width, calc(240px * var(--ui-scale, 1)));
     display: flex;
     flex-direction: column;
     background: var(--bg);
@@ -18,15 +20,18 @@
 }
 
 .previewPanelCollapsed {
+    flex: 0 0 0;
     width: 0;
+    min-width: 0;
+    max-width: 0;
     border-left: none;
 }
 
 .previewPanelInner {
     display: flex;
     flex-direction: column;
-    width: var(--preview-panel-width);
-    min-width: var(--preview-panel-width);
+    width: 100%;
+    min-width: 0;
     height: 100%;
     min-height: 0;
     opacity: 1;

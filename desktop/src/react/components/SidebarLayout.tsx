@@ -13,7 +13,6 @@ import { closePreview } from '../stores/preview-actions';
 
 const CHAT_MIN_WIDTH = 400;
 
-
 function getSidebarWidth(): number {
   return parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width')) || 240;
 }
@@ -41,16 +40,29 @@ export function updateLayout(): void {
   const channelInspectorW = currentTab === 'channels' && s.currentChannel ? getChannelInspectorWidth() : 0;
   const contentW = w - leftW - rightW - previewW - channelInspectorW;
 
+  const previewKeepsSidePanels = currentTab === 'chat' && s.previewOpen;
+
   if (contentW < CHAT_MIN_WIDTH) {
-    if (s.jianOpen) {
+    if (s.jianOpen && !previewKeepsSidePanels) {
       useStore.setState({ jianOpen: false, jianAutoCollapsed: true });
 
       const newContentW = w - (s.sidebarOpen ? getSidebarWidth() : 0) - previewW - channelInspectorW;
       if (newContentW < CHAT_MIN_WIDTH && s.sidebarOpen) {
         useStore.setState({ sidebarOpen: false, sidebarAutoCollapsed: true });
       }
-    } else if (s.sidebarOpen) {
+    } else if (s.sidebarOpen && !previewKeepsSidePanels) {
       useStore.setState({ sidebarOpen: false, sidebarAutoCollapsed: true });
+    } else if (s.sidebarOpen && previewKeepsSidePanels) {
+      const minPreview = parseInt(
+        getComputedStyle(document.documentElement).getPropertyValue('--preview-panel-min-width'),
+      ) || 240;
+      const minJian = parseInt(
+        getComputedStyle(document.documentElement).getPropertyValue('--jian-sidebar-min-width'),
+      ) || 200;
+      const reserved = leftW + minPreview + minJian + channelInspectorW;
+      if (w - reserved < CHAT_MIN_WIDTH) {
+        useStore.setState({ sidebarOpen: false, sidebarAutoCollapsed: true });
+      }
     }
   } else {
     if (s.sidebarAutoCollapsed) {
