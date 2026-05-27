@@ -221,16 +221,44 @@ export async function loadMoreMessages(forPath?: string): Promise<void> {
 // Session 列表
 // ══════════════════════════════════════════════════════
 
+function mergeSessionsWithCurrent(
+  incoming: any[],
+  state: Record<string, any>,
+): any[] {
+  const currentPath = state.currentSessionPath;
+  if (!currentPath || incoming.some((session) => session.path === currentPath)) {
+    return incoming;
+  }
+  const existing = state.sessions.find((session: any) => session.path === currentPath);
+  const fallback = {
+    path: currentPath,
+    title: null,
+    firstMessage: '',
+    modified: new Date().toISOString(),
+    messageCount: 0,
+    agentId: state.currentAgentId ?? null,
+    agentName: state.agentName ?? null,
+    cwd: null,
+  };
+  return [existing || fallback, ...incoming];
+}
+
 export async function loadSessions(): Promise<void> {
   try {
     const res = await hanaFetch('/api/sessions');
     const data = await res.json();
-    const sessions = data || [];
+    const incoming = Array.isArray(data) ? data : [];
 
-    const s = useStore.getState();
+    const stateBefore = useStore.getState();
+    const sessions = mergeSessionsWithCurrent(incoming, stateBefore);
     useStore.setState({ sessions });
 
-    if (sessions.length > 0 && !s.currentSessionPath && !s.pendingNewSession && !s.pendingSessionSwitchPath) {
+    if (
+      sessions.length > 0 &&
+      !stateBefore.currentSessionPath &&
+      !stateBefore.pendingNewSession &&
+      !stateBefore.pendingSessionSwitchPath
+    ) {
       // 首次加载：走完整的 switchSession 确保后端同步 + 消息加载
       await switchSession(sessions[0].path);
     }
@@ -415,29 +443,167 @@ export async function switchSession(path: string): Promise<void> {
 // 新建 Session
 // ══════════════════════════════════════════════════════
 
+type NewSessionPriorState = {
+  currentAgentId: string | null;
+  agentName: string | null;
+  agents: any[];
+  selectedFolder: string | null;
+};
+
+function buildNewSessionBody(
+  state: Record<string, any>,
+  previousSessionPath?: string | null,
+): Record<string, any> {
+  const body: Record<string, any> = { memoryEnabled: state.memoryEnabled };
+  if (state.selectedFolder) {
+    body.cwd = state.selectedFolder;
+  }
+  if (state.workspaceFolders?.length) {
+    body.workspaceFolders = state.workspaceFolders;
+  }
+  if (state.selectedAgentId && state.selectedAgentId !== state.currentAgentId) {
+    body.agentId = state.selectedAgentId;
+  }
+  const resumeFromPath = previousSessionPath !== undefined
+    ? previousSessionPath
+    : state.currentSessionPath;
+  if (typeof resumeFromPath === 'string' && resumeFromPath) {
+    body.currentSessionPath = resumeFromPath;
+  }
+  return body;
+}
+
+function prependCreatedSessionToList(data: Record<string, any>, prior: NewSessionPriorState): void {
+  if (!data.path) return;
+  const state = useStore.getState();
+  const now = new Date().toISOString();
+  const entry = {
+    path: data.path,
+    title: null,
+    firstMessage: '',
+    modified: now,
+    messageCount: 0,
+    agentId: data.agentId ?? prior.currentAgentId ?? state.currentAgentId ?? null,
+    agentName: data.agentName ?? prior.agentName ?? state.agentName ?? null,
+    cwd: typeof data.cwd === 'string' ? data.cwd : null,
+  };
+  useStore.setState({
+    sessions: [entry, ...state.sessions.filter((session: any) => session.path !== data.path)],
+  });
+}
+
+async function requestNewSession(body: Record<string, any>): Promise<Record<string, any> | null> {
+  try {
+    const res = await hanaFetch('/api/sessions/new', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (data.error) {
+      console.error('[session] create failed:', data.error);
+      showSessionCreationError(data.error);
+      return null;
+    }
+    return data;
+  } catch (err) {
+    console.error('[session] create failed:', err);
+    showSessionCreationError(errorMessage(err));
+    return null;
+  }
+}
+
+async function applyCreatedSession(
+  data: Record<string, any>,
+  prior: NewSessionPriorState,
+  options?: { justSelectedFolder?: string | null },
+): Promise<void> {
+  const justSelected = options?.justSelectedFolder ?? prior.selectedFolder ?? null;
+
+  const patch: Record<string, any> = {
+    pendingNewSession: false,
+    pendingSessionSwitchPath: null,
+    selectedFolder: null,
+    workspaceFolders: Array.isArray(data.workspaceFolders) ? data.workspaceFolders : [],
+    selectedAgentId: null,
+  };
+
+  if (data.agentId) {
+    const switched = data.agentId !== prior.currentAgentId;
+    patch.currentAgentId = data.agentId;
+    if (data.agentName) patch.agentName = data.agentName;
+    if (switched) {
+      const ag = prior.agents.find((a: any) => a.id === data.agentId);
+      if (ag?.yuan) patch.agentYuan = ag.yuan;
+      patch.agentAvatarUrl = null;
+      window.i18n.defaultName = data.agentName || prior.agentName;
+      hanaFetch('/api/health').then((r: Response) => r.json()).then((d: any) => {
+        loadAvatarsAction(d.avatars);
+      }).catch(() => {
+        loadAvatarsAction();
+      });
+    }
+  }
+
+  if (data.path) {
+    patch.currentSessionPath = data.path;
+    useStore.getState().initSession(data.path, [], false);
+    prependCreatedSessionToList(data, prior);
+  }
+
+  useStore.setState(patch);
+  if (data.thinkingLevel) {
+    useStore.getState().setThinkingLevel(data.thinkingLevel);
+  }
+
+  await resetDeskForSessionCwd(data.cwd || null);
+
+  window.dispatchEvent(new CustomEvent('hana-plan-mode', {
+    detail: {
+      enabled: data.permissionMode === 'read_only' || data.accessMode === 'read_only' || data.planMode === true,
+      mode: data.permissionMode || data.accessMode,
+    },
+  }));
+
+  await loadSessions();
+  loadModels();
+
+  if (justSelected) {
+    const currentState = useStore.getState();
+    let cwdHistory = currentState.cwdHistory.filter((p: string) => p !== justSelected);
+    cwdHistory = [justSelected, ...cwdHistory];
+    if (cwdHistory.length > 10) cwdHistory = cwdHistory.slice(0, 10);
+    useStore.setState({ cwdHistory });
+  }
+}
+
 export async function createNewSession(): Promise<void> {
-  // Entering the pending new-session workspace is a navigation boundary.
+  // Entering the new-session workspace is a navigation boundary.
   // Any in-flight switchSession response now belongs to the previous view.
   invalidateSessionSwitches();
 
-  // 关闭浮动面板
   if (useStore.getState().activePanel === 'activity') {
     useStore.getState().setActivePanel(null);
   }
 
   const s = useStore.getState();
+  const previousSessionPath = s.currentSessionPath;
   const defaultFolder = s.homeFolder || s.deskBasePath || null;
+  const prior: NewSessionPriorState = {
+    currentAgentId: s.currentAgentId,
+    agentName: s.agentName,
+    agents: s.agents,
+    selectedFolder: defaultFolder,
+  };
 
   useStore.setState({
     welcomeVisible: true,
     currentSessionPath: null,
     pendingSessionSwitchPath: null,
-    // 有显式 Agent home 时以 home 为准；没有绑定 workspace 的 agent
-    // 以当前 session cwd 延续工作流，不从其他 agent 的 home_folder 推导。
     selectedFolder: defaultFolder,
     workspaceFolders: [],
     selectedAgentId: null,
-    pendingNewSession: true,
+    pendingNewSession: false,
     attachedFiles: [],
     deskContextAttached: false,
     docContextAttached: false,
@@ -445,7 +611,6 @@ export async function createNewSession(): Promise<void> {
 
   await activateWorkspaceDesk(defaultFolder);
 
-  // 重置 context ring
   useStore.setState({ contextTokens: null, contextWindow: null, contextPercent: null });
   try {
     const res = await hanaFetch('/api/session-permission-mode');
@@ -458,10 +623,31 @@ export async function createNewSession(): Promise<void> {
     window.dispatchEvent(new CustomEvent('hana-plan-mode', { detail: { enabled: false, mode: 'ask' } }));
   }
 
-  // pending 状态下刷新 model 列表，让 ModelSelector 显示 agent Chat 默认 model
   loadModels();
 
-  requestChatInputFocus(null);
+  const created = await requestNewSession(
+    buildNewSessionBody(useStore.getState(), previousSessionPath),
+  );
+  if (!created) {
+    useStore.setState({
+      pendingNewSession: !previousSessionPath,
+      currentSessionPath: previousSessionPath,
+    });
+    requestChatInputFocus(previousSessionPath);
+    return;
+  }
+
+  const beforeApply = useStore.getState();
+  const userNavigatedAway = !!(
+    beforeApply.currentSessionPath &&
+    beforeApply.currentSessionPath !== created.path &&
+    beforeApply.pendingSessionSwitchPath !== created.path
+  );
+
+  await applyCreatedSession(created, prior, { justSelectedFolder: defaultFolder });
+  if (!userNavigatedAway) {
+    requestChatInputFocus(created.path ?? null);
+  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -472,102 +658,17 @@ export async function ensureSession(): Promise<boolean> {
   const s = useStore.getState();
   if (!s.pendingNewSession) return true;
 
-  try {
-    const body: Record<string, any> = { memoryEnabled: s.memoryEnabled };
-    if (s.selectedFolder) {
-      body.cwd = s.selectedFolder;
-    }
-    if (s.workspaceFolders?.length) {
-      body.workspaceFolders = s.workspaceFolders;
-    }
-    if (s.selectedAgentId && s.selectedAgentId !== s.currentAgentId) {
-      body.agentId = s.selectedAgentId;
-    }
-    if (typeof s.currentSessionPath === 'string' && s.currentSessionPath) {
-      body.currentSessionPath = s.currentSessionPath;
-    }
+  const prior: NewSessionPriorState = {
+    currentAgentId: s.currentAgentId,
+    agentName: s.agentName,
+    agents: s.agents,
+    selectedFolder: s.selectedFolder,
+  };
+  const created = await requestNewSession(buildNewSessionBody(s));
+  if (!created) return false;
 
-    const res = await hanaFetch('/api/sessions/new', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
-    if (data.error) {
-      console.error('[session] create failed:', data.error);
-      showSessionCreationError(data.error);
-      return false;
-    }
-
-    const justSelected = s.selectedFolder;
-
-    // 基础状态更新
-    const patch: Record<string, any> = {
-      pendingNewSession: false,
-      pendingSessionSwitchPath: null,
-      selectedFolder: null,
-      workspaceFolders: Array.isArray(data.workspaceFolders) ? data.workspaceFolders : [],
-      selectedAgentId: null,
-    };
-
-    if (data.agentId) {
-      const switched = data.agentId !== s.currentAgentId;
-      patch.currentAgentId = data.agentId;
-      if (data.agentName) patch.agentName = data.agentName;
-      if (switched) {
-        const ag = s.agents.find((a: any) => a.id === data.agentId);
-        if (ag?.yuan) patch.agentYuan = ag.yuan;
-        patch.agentAvatarUrl = null;
-        window.i18n.defaultName = data.agentName || s.agentName;
-        // 异步刷新头像
-        hanaFetch('/api/health').then((r: Response) => r.json()).then((d: any) => {
-          loadAvatarsAction(d.avatars);
-        }).catch(() => {
-          loadAvatarsAction();
-        });
-      }
-    }
-
-    if (data.path) {
-      patch.currentSessionPath = data.path;
-      // 初始化空 session，ChatArea 自动渲染
-      useStore.getState().initSession(data.path, [], false);
-    }
-
-    useStore.setState(patch);
-    if (data.thinkingLevel) {
-      useStore.getState().setThinkingLevel(data.thinkingLevel);
-    }
-
-    await resetDeskForSessionCwd(data.cwd || null);
-
-    window.dispatchEvent(new CustomEvent('hana-plan-mode', {
-      detail: {
-        enabled: data.permissionMode === 'read_only' || data.accessMode === 'read_only' || data.planMode === true,
-        mode: data.permissionMode || data.accessMode,
-      },
-    }));
-
-    await loadSessions();
-
-    // 刷新模型列表：session 创建后 activeModel 已绑定，需要同步到 UI
-    loadModels();
-
-    // 更新 cwdHistory
-    if (justSelected) {
-      const currentState = useStore.getState();
-      let cwdHistory = currentState.cwdHistory.filter((p: string) => p !== justSelected);
-      cwdHistory = [justSelected, ...cwdHistory];
-      if (cwdHistory.length > 10) cwdHistory = cwdHistory.slice(0, 10);
-      useStore.setState({ cwdHistory });
-    }
-
-    return true;
-  } catch (err) {
-    console.error('[session] create failed:', err);
-    showSessionCreationError(errorMessage(err));
-    return false;
-  }
+  await applyCreatedSession(created, prior, { justSelectedFolder: s.selectedFolder });
+  return true;
 }
 
 // ══════════════════════════════════════════════════════

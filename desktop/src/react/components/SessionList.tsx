@@ -127,11 +127,27 @@ function SessionListInner() {
     }
   }, []);
 
-  if (sessions.length === 0) {
+  const visibleSessions = useMemo(() => {
+    if (!currentSessionPath || sessions.some(s => s.path === currentSessionPath)) {
+      return sessions;
+    }
+    return [{
+      path: currentSessionPath,
+      title: null,
+      firstMessage: '',
+      modified: new Date().toISOString(),
+      messageCount: 0,
+      agentId: null,
+      agentName: null,
+      cwd: null,
+    }, ...sessions];
+  }, [sessions, currentSessionPath]);
+
+  if (visibleSessions.length === 0) {
     return <div className={styles.sessionEmpty}>{t('sidebar.empty')}</div>;
   }
 
-  const sections = buildSessionSections(sessions, { mode: 'time' });
+  const sections = buildSessionSections(visibleSessions, { mode: 'time' });
   const activeSessionPath = pendingSessionSwitchPath || currentSessionPath;
 
   return (

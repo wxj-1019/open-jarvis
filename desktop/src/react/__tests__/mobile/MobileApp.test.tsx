@@ -263,7 +263,7 @@ describe('MobileApp', () => {
     });
   });
 
-  it('uses the desktop new-session draft flow on mobile instead of creating an empty session immediately', async () => {
+  it('creates an empty session immediately when starting a new chat on mobile', async () => {
     fetchMock.mockImplementation((input: RequestInfo | URL, options?: RequestInit) => {
       const url = String(input);
       if (url.includes('/api/web-auth/session')) {
@@ -276,10 +276,13 @@ describe('MobileApp', () => {
     await waitForMobileChatReady();
     fireEvent.click(titlebarNewSessionButton());
 
-    expect(useStore.getState().pendingNewSession).toBe(true);
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some(([input]) => String(input).includes('/api/sessions/new'))).toBe(true);
+    });
+    expect(useStore.getState().pendingNewSession).toBe(false);
+    expect(useStore.getState().currentSessionPath).toBe('/hana/sessions/new.jsonl');
     expect(useStore.getState().welcomeVisible).toBe(true);
-    expect(fetchMock.mock.calls.some(([input]) => String(input).includes('/api/sessions/new'))).toBe(false);
-    expect(screen.getByLabelText('titlebar.currentChatTitle')).toHaveTextContent('sidebar.newChat');
+    expect(useStore.getState().sessions.some((session) => session.path === '/hana/sessions/new.jsonl')).toBe(true);
   });
 
   it('leaves mobile keyboard viewport handling to the browser', async () => {
@@ -530,8 +533,23 @@ function jsonResponseForMobile(url: string, _options?: RequestInit): unknown {
   if (url.includes('/api/sessions/messages')) {
     return { messages: [], blocks: [], todos: [], hasMore: false, sessionFiles: [] };
   }
+  if (url.includes('/api/session-permission-mode')) {
+    return { mode: 'ask', defaultMode: 'ask' };
+  }
+  if (url.includes('/api/sessions/new')) {
+    return {
+      ok: true,
+      path: '/hana/sessions/new.jsonl',
+      cwd: '/workspace',
+      workspaceFolders: [],
+      agentId: 'hana',
+      agentName: 'Hana',
+      permissionMode: 'ask',
+    };
+  }
   if (url.includes('/api/sessions')) {
     return [
+      { path: '/hana/sessions/new.jsonl', title: null, firstMessage: '', modified: '2026-05-16T12:00:00.000Z', messageCount: 0, agentId: 'hana', agentName: 'Hana', cwd: '/workspace' },
       { path: '/hana/sessions/one.jsonl', title: '日常记录', firstMessage: '', modified: '2026-05-16T00:00:00.000Z', messageCount: 2, agentId: 'hana', agentName: 'Hana', cwd: '/workspace' },
     ];
   }

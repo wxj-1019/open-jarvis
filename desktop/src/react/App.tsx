@@ -148,7 +148,7 @@ function App() {
       <div className="app">
         <ChatSidebar
           open={sidebarOpen && !isPluginTab}
-          onNewSession={createNewSession}
+          onNewSession={() => { void createNewSession(); }}
           onCollapse={() => toggleSidebar()}
           onOpenSettings={() => openSettingsModal()}
           onTogglePanel={togglePanel}
