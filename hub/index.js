@@ -51,7 +51,9 @@ export class Hub {
       agentWorkspaces: this._collectAgentWorkspaces(engine),
       options: {
         debounceMs: 300,
-        pollIntervalMs: 1000,
+        fastPollMs: 500,
+        slowPollMs: 2000,
+        stableThreshold: 5,
       },
     });
     this._userContextTracker = new UserContextTracker({
@@ -304,14 +306,14 @@ export class Hub {
    * 初始化所有调度器（Scheduler + ChannelRouter）
    * 在 engine.init() 完成后由 server/index.js 调用
    */
-  initSchedulers() {
+  async initSchedulers() {
     const engine = this._engine;
 
     // Scheduler（heartbeat + cron）
     this._scheduler.start();
 
     // OSEventSource（窗口焦点 + 文件变化监听）
-    this._osEventSource.start();
+    await this._osEventSource.start();
 
     // UserContextTracker（用户上下文追踪）
     this._userContextTracker.start();

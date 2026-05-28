@@ -300,7 +300,7 @@ if (mcpPlugin?.ctx?._mcpRuntime) {
 }
 
 // 启动 Hub 调度器（Scheduler + ChannelRouter）
-hub.initSchedulers();
+await hub.initSchedulers();
 
 engine.cleanupCheckpoints().catch(err => {
   checkpointLog.warn(`startup cleanup failed: ${err.message}`);
