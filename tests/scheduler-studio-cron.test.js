@@ -68,6 +68,8 @@ vi.mock("../lib/context/pattern-miner.js", () => ({}));
 vi.mock("../lib/context/task-predictor.js", () => ({}));
 vi.mock("../lib/context/rule-suggestion-engine.js", () => ({}));
 vi.mock("../lib/db/window-events-store.js", () => ({}));
+vi.mock("../lib/context/productivity-analyzer.js", () => ({}));
+vi.mock("../lib/context/agent-suggestion-engine.js", () => ({}));
 
 import { Scheduler } from "../hub/scheduler.js";
 

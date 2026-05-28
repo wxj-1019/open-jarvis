@@ -24,6 +24,8 @@ import { PatternMiner } from "../lib/context/pattern-miner.js";
 import { TaskPredictor } from "../lib/context/task-predictor.js";
 import { RuleSuggestionEngine } from "../lib/context/rule-suggestion-engine.js";
 import { WindowEventsStore } from "../lib/db/window-events-store.js";
+import { ProductivityAnalyzer } from "../lib/context/productivity-analyzer.js";
+import { AgentSuggestionEngine } from "../lib/context/agent-suggestion-engine.js";
 import { WORKSPACE_OUTPUT_ROOT_DIRNAME } from "../shared/workspace-output.js";
 
 const log = createModuleLogger("scheduler");
@@ -76,6 +78,8 @@ export class Scheduler {
     this._ruleSuggestionEngine = null; // 规则建议（Phase 5）
     this._windowEventsStore = null; // 窗口事件存储（Phase 5）
     this._patternLearningTimer = null; // 模式学习定时器（Phase 5）
+    this._productivityAnalyzer = null; // 生产力分析（Phase 6）
+    this._suggestionEngine = null; // Agent 建议引擎（Phase 6）
   }
 
   /** @returns {import('../core/engine.js').HanaEngine} */
@@ -708,6 +712,10 @@ export class Scheduler {
       this._ruleSuggestionEngine = new RuleSuggestionEngine();
       this._usageStats = new UsageStatistics({ store: this._windowEventsStore });
 
+      // Phase 6: Productivity analysis
+      this._productivityAnalyzer = new ProductivityAnalyzer({ store: this._windowEventsStore });
+      this._suggestionEngine = new AgentSuggestionEngine();
+
       // 每小时运行一次模式分析
       this._patternLearningTimer = setInterval(() => {
         this._runPatternAnalysis().catch((err) => {
@@ -734,6 +742,8 @@ export class Scheduler {
     this._taskPredictor = null;
     this._ruleSuggestionEngine = null;
     this._windowEventsStore = null;
+    this._productivityAnalyzer = null;
+    this._suggestionEngine = null;
   }
 
   /**
