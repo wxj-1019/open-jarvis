@@ -16,6 +16,7 @@ import { createFreshCompactDailyScheduler } from "../lib/fresh-compact/daily-sch
 import { FreshCompactMaintainer } from "./fresh-compact-maintainer.js";
 import { ProactiveRuleEngine } from "../lib/proactive/proactive-rule-engine.js";
 import { DeepContextPipeline } from "../lib/context/deep-context-pipeline.js";
+import { EventCaptureEngine } from "../lib/events/event-capture-engine.js";
 import { createModuleLogger } from "../lib/debug-log.js";
 import { WORKSPACE_OUTPUT_ROOT_DIRNAME } from "../shared/workspace-output.js";
 
@@ -61,6 +62,7 @@ export class Scheduler {
     this._ruleEngine = null; // 在 start() 中初始化（依赖 userContextTracker）
     this._deepContextPipeline = null; // 在 start() 中初始化
     this._richContextUnsubscriber = null;
+    this._eventCaptureEngine = null; // 事件驱动捕获引擎（Phase 1）
   }
 
   /** @returns {import('../core/engine.js').HanaEngine} */
@@ -86,9 +88,11 @@ export class Scheduler {
     this._subscribeOsEvents();
     this._startRuleEngine();
     this._startDeepContextPipeline();
+    this._startEventCaptureEngine();
   }
 
   async stop() {
+    this._stopEventCaptureEngine();
     this._stopDeepContextPipeline();
     this._stopRuleEngine();
     this._unsubscribeOsEvents();
@@ -540,6 +544,51 @@ export class Scheduler {
 
   /** 获取 DeepContextPipeline 实例 */
   get deepContextPipeline() { return this._deepContextPipeline; }
+
+  // ──────────── EventCaptureEngine 集成 ────────────
+
+  /**
+   * 启动事件捕获引擎
+   */
+  _startEventCaptureEngine() {
+    if (this._eventCaptureEngine) return;
+
+    this._eventCaptureEngine = new EventCaptureEngine({
+      platform: process.platform,
+      useNative: false, // 当前使用 polling fallback，native addon 就绪后切换
+    });
+
+    // 将捕获事件转发到 EventBus（保持与现有 OSEventSource 兼容）
+    this._eventCaptureEngine.on("event", (event) => {
+      this._hub.eventBus.emit(
+        {
+          type: "capture_app_switch",
+          app: event.app,
+          title: event.title,
+          prevApp: event.prevApp,
+          platform: event.platform,
+          timestamp: event.timestamp,
+        },
+        null,
+      );
+    });
+
+    this._eventCaptureEngine.start().catch((err) => {
+      log.warn(`EventCaptureEngine 启动失败: ${err.message}`);
+    });
+
+    log.log("EventCaptureEngine 已启动 (fallback mode)");
+  }
+
+  /**
+   * 停止事件捕获引擎
+   */
+  _stopEventCaptureEngine() {
+    if (this._eventCaptureEngine) {
+      this._eventCaptureEngine.stop().catch(() => {});
+      this._eventCaptureEngine = null;
+    }
+  }
 
   /**
    * 执行主动动作：触发 Agent 会话
