@@ -69,10 +69,10 @@ export function createTTSRoute(engine) {
     } catch (err) {
       log?.error?.("TTS synthesis failed:", err.message);
 
-      if (err.message.includes("MIMO_API_KEY")) {
+      if (err.message.includes("API key not configured") || err.message.includes("not configured")) {
         return c.json({
-          error: "Mimo API key not configured",
-          suggestion: "Add MIMO_API_KEY to your .env file",
+          error: "Mimo TTS not configured",
+          suggestion: "Please configure MiMo TTS in Settings → Providers → Xiaomi MiMo TTS.",
         }, 401);
       }
 
