@@ -118,14 +118,15 @@ describe("UserContextTracker", () => {
       expect(snap.recentFiles[0].event).toBe("add");
     });
 
-    it("同路径文件去重（保留最新的）", () => {
+    it("同路径文件保留完整操作序列", () => {
       tracker.start();
       bus.emit({ type: "file_system_changed", path: "/tmp/file.js", event: "add", timestamp: 1000 }, null);
       bus.emit({ type: "file_system_changed", path: "/tmp/file.js", event: "change", timestamp: 2000 }, null);
 
       const snap = tracker.getContextSnapshot();
-      expect(snap.recentFiles.length).toBe(1);
-      expect(snap.recentFiles[0].event).toBe("change");
+      expect(snap.recentFiles.length).toBe(2);
+      expect(snap.recentFiles[0].event).toBe("add");
+      expect(snap.recentFiles[1].event).toBe("change");
     });
 
     it("超过最大文件记录数时裁剪", () => {

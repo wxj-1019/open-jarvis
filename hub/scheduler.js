@@ -17,6 +17,7 @@ import { FreshCompactMaintainer } from "./fresh-compact-maintainer.js";
 import { ProactiveRuleEngine } from "../lib/proactive/proactive-rule-engine.js";
 import { DeepContextPipeline } from "../lib/context/deep-context-pipeline.js";
 import { EventCaptureEngine } from "../lib/events/event-capture-engine.js";
+import { BrowserContextAdapter } from "../lib/context/browser-context-adapter.js";
 import { createModuleLogger } from "../lib/debug-log.js";
 import { WORKSPACE_OUTPUT_ROOT_DIRNAME } from "../shared/workspace-output.js";
 
@@ -63,6 +64,7 @@ export class Scheduler {
     this._deepContextPipeline = null; // 在 start() 中初始化
     this._richContextUnsubscriber = null;
     this._eventCaptureEngine = null; // 事件驱动捕获引擎（Phase 1）
+    this._browserContextAdapter = null; // 浏览器扩展上下文（Phase 4）
   }
 
   /** @returns {import('../core/engine.js').HanaEngine} */
@@ -89,9 +91,11 @@ export class Scheduler {
     this._startRuleEngine();
     this._startDeepContextPipeline();
     this._startEventCaptureEngine();
+    this._startBrowserContextAdapter();
   }
 
   async stop() {
+    this._stopBrowserContextAdapter();
     this._stopEventCaptureEngine();
     this._stopDeepContextPipeline();
     this._stopRuleEngine();
@@ -589,6 +593,38 @@ export class Scheduler {
       this._eventCaptureEngine = null;
     }
   }
+
+  // ──────────── BrowserContextAdapter 集成 ────────────
+
+  /**
+   * 启动浏览器扩展上下文适配器
+   */
+  _startBrowserContextAdapter() {
+    if (this._browserContextAdapter) return;
+
+    this._browserContextAdapter = new BrowserContextAdapter();
+    this._browserContextAdapter.on("context", (context) => {
+      this._hub.eventBus.emit({
+        type: "browser_context_changed",
+        ...context,
+      }, null);
+    });
+    this._browserContextAdapter.start();
+
+    log.log("BrowserContextAdapter 已启动");
+  }
+
+  /**
+   * 停止浏览器扩展上下文适配器
+   */
+  _stopBrowserContextAdapter() {
+    if (this._browserContextAdapter) {
+      this._browserContextAdapter.stop();
+      this._browserContextAdapter = null;
+    }
+  }
+
+  // ──────────── Proactive Action ────────────
 
   /**
    * 执行主动动作：触发 Agent 会话

@@ -1,0 +1,9 @@
+{
+  "name": "com.openjarvis.context_bridge",
+  "description": "OpenJarvis Browser Context Bridge",
+  "path": "host.js",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://*/"
+  ]
+}
