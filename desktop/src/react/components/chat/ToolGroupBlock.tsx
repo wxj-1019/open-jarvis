@@ -8,6 +8,7 @@ import { extractToolDetail } from '../../utils/message-parser';
 import type { ToolDetail } from '../../utils/message-parser';
 import type { ToolCall } from '../../stores/chat-types';
 import { getEmojiStylePreset, getSavedEmojiStyle } from '../../../shared/emoji-styles';
+import { ToolCallCard, type ToolCallCardData } from './ToolCallCard';
 
 type ToolPhase = 'running' | 'done' | 'failed';
 
@@ -90,9 +91,13 @@ export const ToolGroupBlock = memo(function ToolGroupBlock({ tools: rawTools, co
         </div>
       )}
       <div className={`${styles.toolGroupContent}${collapsed && !isSingle ? ` ${styles.toolGroupContentCollapsed}` : ''}`}>
-        {tools.map((tool, i) => (
-          <ToolIndicator key={`${tool.name}-${i}`} tool={tool} agentName={agentName} />
-        ))}
+        {tools.map((tool, i) => {
+          const hasCard = tool.details?.card;
+          if (hasCard && tool.details) {
+            return <ToolCallCard key={`${tool.name}-${i}`} data={tool.details.card as ToolCallCardData} />;
+          }
+          return <ToolIndicator key={`${tool.name}-${i}`} tool={tool} agentName={agentName} />;
+        })}
       </div>
     </div>
   );

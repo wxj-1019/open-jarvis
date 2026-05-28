@@ -30,7 +30,9 @@ function createOSEventSource(bus, workspaces) {
     agentWorkspaces: workspaces || new Map(),
     options: {
       debounceMs: 50,
-      pollIntervalMs: 50,
+      fastPollMs: 50,
+      slowPollMs: 50,
+      stableThreshold: 3,
     },
   });
 }
@@ -57,8 +59,7 @@ describe("OSEventSource", () => {
   describe("start / stop", () => {
     it("启动后 _running 为 true 且创建 file watcher 和 polling timer", async () => {
       mockActiveWindow.mockResolvedValue(null);
-      source.start();
-      // _startFileWatching 是 async 的，需要等待初始化完成
+      await source.start();
       await wait(100);
       expect(source._running).toBe(true);
       expect(source._fileWatcher).not.toBeNull();
@@ -67,30 +68,29 @@ describe("OSEventSource", () => {
 
     it("stop 后 _running 为 false 且清理所有资源", async () => {
       mockActiveWindow.mockResolvedValue(null);
-      source.start();
+      await source.start();
       await source.stop();
       expect(source._running).toBe(false);
       expect(source._fileWatcher).toBeNull();
       expect(source._focusTimer).toBeNull();
     });
 
-    it("start 幂等 — 重复调用不改变状态", () => {
+    it("start 幂等 — 重复调用不改变状态", async () => {
       mockActiveWindow.mockResolvedValue(null);
-      source.start();
+      await source.start();
       const watcher = source._fileWatcher;
       const timer = source._focusTimer;
-      source.start();
-      // 幂等：_running 仍为 true，file watcher 和 timer 不变
+      await source.start();
       expect(source._running).toBe(true);
       expect(source._fileWatcher).toBe(watcher);
       expect(source._focusTimer).toBe(timer);
     });
 
-    it("无 workspaces 时不创建 file watcher", () => {
+    it("无 workspaces 时不创建 file watcher", async () => {
       const emptySource = createOSEventSource(bus, new Map());
-      emptySource.start();
+      await emptySource.start();
       expect(emptySource._fileWatcher).toBeNull();
-      emptySource.stop();
+      await emptySource.stop();
     });
   });
 
@@ -104,7 +104,7 @@ describe("OSEventSource", () => {
         title: "index.js - open-jarvis",
         platform: "win32",
       });
-      source.start();
+      await source.start();
       await wait(100);
 
       expect(events.length).toBe(1);
@@ -123,8 +123,8 @@ describe("OSEventSource", () => {
 
       const win = { owner: { name: "Explorer.EXE" }, title: "Downloads", platform: "win32" };
       mockActiveWindow.mockResolvedValue(win);
-      source.start();
-      await wait(200); // 多个轮询周期
+      await source.start();
+      await wait(200);
 
       expect(events.length).toBe(1);
     });
@@ -134,7 +134,7 @@ describe("OSEventSource", () => {
       bus.subscribe((evt) => events.push(evt), { types: ["window_focus_changed"] });
 
       mockActiveWindow.mockResolvedValue(null);
-      source.start();
+      await source.start();
       await wait(100);
 
       expect(events.length).toBe(0);
@@ -145,10 +145,9 @@ describe("OSEventSource", () => {
       bus.subscribe((evt) => events.push(evt), { types: ["window_focus_changed"] });
 
       mockActiveWindow.mockRejectedValueOnce(new Error("permission denied"));
-      source.start();
+      await source.start();
       await wait(100);
 
-      // 第一轮失败，reset mock 为正常值
       mockActiveWindow.mockReset();
       mockActiveWindow.mockResolvedValue({
         owner: { name: "Notepad" },
@@ -166,7 +165,7 @@ describe("OSEventSource", () => {
       bus.subscribe((evt) => events.push(evt), { types: ["window_focus_changed"] });
 
       mockActiveWindow.mockResolvedValue({ owner: null, title: "", platform: "linux" });
-      source.start();
+      await source.start();
       await wait(100);
 
       expect(events[0].app).toBe("unknown");
@@ -260,11 +259,78 @@ describe("OSEventSource", () => {
         title: "bash",
         platform: "linux",
       });
-      source.start();
+      await source.start();
       await wait(100);
 
       expect(windowEvents.length).toBeGreaterThanOrEqual(1);
       expect(fileEvents.length).toBe(0);
+    });
+  });
+
+  describe("adaptive polling", () => {
+    it("uses fast interval on change, slow when stable", async () => {
+      const events = [];
+      bus.subscribe((evt) => events.push(evt), { types: ["window_focus_changed"] });
+
+      mockActiveWindow.mockResolvedValue({
+        owner: { name: "App1" }, title: "Win1", platform: "win32",
+      });
+      const adaptiveSource = new OSEventSource({
+        eventBus: bus,
+        agentWorkspaces: new Map(),
+        options: { fastPollMs: 50, slowPollMs: 200, stableThreshold: 3 },
+      });
+      await adaptiveSource.start();
+      await wait(100);
+      expect(adaptiveSource._currentPollMs).toBe(50);
+
+      mockActiveWindow.mockResolvedValue({
+        owner: { name: "App1" }, title: "Win1", platform: "win32",
+      });
+      await wait(800);
+      expect(adaptiveSource._currentPollMs).toBe(200);
+      await adaptiveSource.stop();
+    });
+  });
+
+  describe("stale window reset", () => {
+    it("re-emits event after stale timeout on same window", async () => {
+      const events = [];
+      bus.subscribe((evt) => events.push(evt), { types: ["window_focus_changed"] });
+
+      const win = { owner: { name: "App" }, title: "Same", platform: "win32" };
+      mockActiveWindow.mockResolvedValue(win);
+      const staleSource = new OSEventSource({
+        eventBus: bus,
+        agentWorkspaces: new Map(),
+        options: { fastPollMs: 50, slowPollMs: 50, stableThreshold: 2, staleWindowMs: 150 },
+      });
+      await staleSource.start();
+      await wait(100);
+      const countBefore = events.length;
+      expect(countBefore).toBe(1);
+
+      await wait(300);
+      expect(events.length).toBeGreaterThan(countBefore);
+      expect(events[events.length - 1].app).toBe("App");
+      await staleSource.stop();
+    });
+  });
+
+  describe("circuit breaker", () => {
+    it("stops polling after max consecutive errors", async () => {
+      mockActiveWindow.mockRejectedValue(new Error("native addon crashed"));
+      const circuitSource = new OSEventSource({
+        eventBus: bus,
+        agentWorkspaces: new Map(),
+        options: { fastPollMs: 50, slowPollMs: 50, stableThreshold: 2, maxConsecutiveErrors: 3 },
+      });
+      await circuitSource.start();
+      await wait(500);
+
+      expect(circuitSource._windowFocusAvailable).toBe(false);
+      expect(circuitSource._focusTimer).toBeNull();
+      await circuitSource.stop();
     });
   });
 });

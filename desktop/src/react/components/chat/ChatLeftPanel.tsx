@@ -13,6 +13,7 @@ import type { McpState, McpConnector } from '../../settings/tabs/mcp/types';
 import styles from './ChatLeftPanel.module.css';
 import { PhosphorIcon } from '../../ui/PhosphorIcon';
 import { Lightning, Plugs, PlugsConnected, ArrowsClockwise, Gear } from '@phosphor-icons/react';
+import { openSettingsModal as openSettingsModalAction } from '../../stores/settings-modal-actions';
 
 const EMPTY_MCP_STATE: McpState = {
   enabled: false,
@@ -49,6 +50,35 @@ async function loadCwdSkills(deskBasePath: string): Promise<CwdSkillInfo[]> {
   } catch {
     return [];
   }
+}
+
+/* ── Agent Summary ── */
+function AgentSummary({ skillCount, connectorCount }: {
+  skillCount: number; connectorCount: number;
+}) {
+  const agents = useStore(s => s.agents);
+  const agentId = useStore(s => s.currentAgentId);
+  const name = agents?.find(a => a.id === agentId)?.name ?? agentId ?? 'Agent';
+  return (
+    <div className={styles.agentSummary}>
+      <div className={styles.agentSummaryName}>🤖 {name}</div>
+      <div className={styles.agentSummaryMeta}>
+        {skillCount + connectorCount} abilities{skillCount > 0 && ` · ${skillCount} Skills`}
+      </div>
+    </div>
+  );
+}
+
+/* ── Quick Actions ── */
+function QuickActions({ onCapabilities, onSettings }: {
+  onCapabilities?: () => void; onSettings?: () => void;
+}) {
+  return (
+    <div className={styles.quickActions}>
+      {onCapabilities && <button className={styles.quickActionBtn} onClick={onCapabilities}>⚡ Capabilities</button>}
+      {onSettings && <button className={styles.quickActionBtn} onClick={onSettings}>⚙ Settings</button>}
+    </div>
+  );
 }
 
 /* ── MCP 连接器状态图标 ── */
@@ -142,8 +172,17 @@ function SkillPanelContent({ skills, onOpenSkill }: { skills: CwdSkillInfo[]; on
               onClick={() => onOpenSkill?.(skill)}
               style={onOpenSkill ? { cursor: 'pointer' } : undefined}
             >
-              <span className={styles.skillDot} />
-              <span className={styles.skillName}>{skill.name}</span>
+              <span className={styles.skillIcon}>
+                <PhosphorIcon icon={Lightning} size={14} />
+              </span>
+              <div className={styles.skillInfo}>
+                <span className={styles.skillName}>{skill.name}</span>
+                {skill.description && (
+                  <span className={styles.skillDesc}>
+                    {skill.description.slice(0, 60)}{skill.description.length > 60 ? '\u2026' : ''}
+                  </span>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -161,12 +200,12 @@ export function ChatLeftPanel() {
   const [loading, setLoading] = useState(false);
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loadedRef = useRef(false);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   const currentAgentId = useStore(s => s.currentAgentId);
   const deskBasePath = useStore(s => s.deskBasePath);
   const welcomeVisible = useStore(s => s.welcomeVisible);
   const currentSessionPath = useStore(s => s.currentSessionPath);
-  const openSettingsModal = useStore(s => s.openSettingsModal);
 
   // 只有在有会话且不在欢迎页时才显示
   const shouldShow = !welcomeVisible && !!currentSessionPath;
@@ -200,6 +239,19 @@ export function ChatLeftPanel() {
     };
   }, []);
 
+  // 点击外部关闭面板
+  useEffect(() => {
+    if (!pinned) return;
+    const handler = (e: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        setPinned(false);
+        setExpanded(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [pinned]);
+
   const handleMouseEnter = useCallback(() => {
     if (!shouldShow || pinned) return;
     if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
@@ -232,8 +284,8 @@ export function ChatLeftPanel() {
   }, [loadData]);
 
   const handleOpenMcpSettings = useCallback(() => {
-    openSettingsModal('mcp');
-  }, [openSettingsModal]);
+    openSettingsModalAction('mcp');
+  }, []);
 
   const handleOpenSkill = useCallback((skill: CwdSkillInfo) => {
     window.platform?.openSkillViewer?.({
@@ -250,6 +302,7 @@ export function ChatLeftPanel() {
 
   return (
     <div
+      ref={panelRef}
       className={`${styles.leftPanel} ${expanded ? styles.expanded : ''} ${pinned ? styles.pinned : ''}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -272,6 +325,7 @@ export function ChatLeftPanel() {
 
       {/* 展开状态：显示内容 */}
       <div className={styles.panelContent}>
+        <AgentSummary skillCount={skills.length} connectorCount={mcpState.connectors?.length || 0} />
         <div className={styles.panelHeader}>
           <span>{t('chatLeftPanel.title')}</span>
           <div className={styles.headerActions}>
@@ -310,6 +364,8 @@ export function ChatLeftPanel() {
         <div className={styles.panelSection}>
           <SkillPanelContent skills={skills} onOpenSkill={handleOpenSkill} />
         </div>
+
+        <QuickActions onSettings={() => openSettingsModalAction('mcp')} />
       </div>
     </div>
   );

@@ -881,6 +881,7 @@ async function _spawnServerOnce(serverInfoPath) {
     pid: null,
     startedAt: new Date().toISOString(),
   };
+  const _isDevMode = !fs.existsSync(bundledServer) && !fs.existsSync(bundledServer + ".exe");
   serverProcess = spawn(serverBin, serverArgs, {
     detached: true,
     windowsHide: true,
@@ -903,20 +904,24 @@ async function _spawnServerOnce(serverInfoPath) {
     }
   });
 
-  // 捕获 stdout/stderr 到 buffer（打包后 console 不可见，崩溃时需要这些信息）
+  const _stdoutFd = process.stdout.fd ?? 1;
+  const _stderrFd = process.stderr.fd ?? 2;
+  const _writeToTerminal = (fd, text) => {
+    try { fs.writeSync(fd, text); } catch {}
+  };
   serverProcess.stdout?.on("data", (chunk) => {
     const text = redactMainLogText(chunk.toString());
     _lastServerProgressAtMs = Date.now();
-    try { process.stdout.write(text); } catch {}
     _serverLogs.push(text);
     if (_serverLogs.length > 500) _serverLogs.splice(0, _serverLogs.length - 500);
+    _writeToTerminal(_stdoutFd, text);
   });
   serverProcess.stderr?.on("data", (chunk) => {
     const text = redactMainLogText(chunk.toString());
     _lastServerProgressAtMs = Date.now();
-    try { process.stderr.write(text); } catch {}
     _serverLogs.push("[stderr] " + text);
     if (_serverLogs.length > 500) _serverLogs.splice(0, _serverLogs.length - 500);
+    _writeToTerminal(_stderrFd, text);
   });
 
   // 等待 server ready（通过轮询 server-info.json）

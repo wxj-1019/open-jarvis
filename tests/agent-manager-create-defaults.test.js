@@ -33,12 +33,6 @@ vi.mock("../core/agent.js", () => ({
       fs.writeFileSync(cfgPath, YAML.dump(merged));
       this.config = merged;
     };
-    this.setGetOwnerIds = vi.fn();
-    this.setCallbacks = vi.fn();
-    this.setOnInstallCallback = vi.fn();
-    this.setNotifyHandler = vi.fn();
-    this.setDescriptionRefreshHandler = vi.fn();
-    this.setDmSentHandler = vi.fn();
     this.initialize = vi.fn();
     this.dispose = vi.fn();
   }),

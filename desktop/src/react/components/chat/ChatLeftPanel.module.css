@@ -23,8 +23,10 @@
 
 /* 展开状态 */
 .leftPanel.expanded {
-  width: 200px;
-  background: var(--bg-card, var(--bg, #faf8f5));
+  width: 260px;
+  background: var(--bg-card, rgba(250, 248, 245, 0.92));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   box-shadow: 2px 0 16px rgba(0, 0, 0, 0.08);
   border-right: 1px solid var(--overlay-light, rgba(0, 0, 0, 0.06));
 }
@@ -87,7 +89,7 @@
 .panelContent {
   display: flex;
   flex-direction: column;
-  width: 200px;
+  width: 260px;
   height: 100%;
   padding: 10px 10px 10px 12px;
   overflow-y: auto;
@@ -185,7 +187,7 @@
 .sectionContent {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .sectionHeader {
@@ -193,10 +195,12 @@
   align-items: center;
   gap: 5px;
   font-size: 0.72rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-secondary, #666);
   padding: 2px 0;
   margin-bottom: 2px;
+  border-left: 2px solid var(--accent, #537D96);
+  padding-left: 6px;
 }
 
 /* ── 空状态 ── */
@@ -215,8 +219,8 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 4px;
-  border-radius: 4px;
+  padding: 5px 6px;
+  border-radius: 5px;
   font-size: 0.72rem;
   transition: background 0.1s ease;
 }
@@ -270,10 +274,10 @@
 
 .skillItem {
   display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 2px 4px;
-  border-radius: 3px;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 5px 6px;
+  border-radius: 5px;
   font-size: 0.72rem;
   transition: background 0.1s ease;
   cursor: default;
@@ -299,6 +303,76 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--text, #333);
+}
+
+.skillIcon {
+  flex-shrink: 0;
+  color: var(--accent);
+  margin-top: 1px;
+}
+
+.skillInfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.skillDesc {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Agent Summary ── */
+.agentSummary {
+  padding: 4px 0 10px;
+  border-bottom: 1px solid var(--overlay-light);
+  flex-shrink: 0;
+}
+
+.agentSummaryName {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.agentSummaryMeta {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ── Quick Actions ── */
+.quickActions {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid var(--overlay-light);
+}
+
+.quickActionBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 5px;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 0.73rem;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.quickActionBtn:hover {
+  background: var(--hover-bg);
+  color: var(--accent);
 }
 
 /* ── 滚动条美化 ── */

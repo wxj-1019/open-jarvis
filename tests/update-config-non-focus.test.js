@@ -111,8 +111,7 @@ describe("updateConfig with agentId", () => {
         savePreferences: (next) => { prefs = { ...next }; },
       }),
     });
-    focusAgent.setUtilityModel = vi.fn();
-    focusAgent.setMemoryModel = vi.fn();
+    focusAgent.initialize = vi.fn();
     const coord = new ConfigCoordinator(deps);
 
     coord.setSharedModels({
@@ -120,8 +119,10 @@ describe("updateConfig with agentId", () => {
       utility_large: { id: "deepseek-v4-pro", provider: "deepseek" },
     });
 
-    expect(focusAgent.setUtilityModel).toHaveBeenCalledWith({ id: "deepseek-v4-flash", provider: "deepseek" });
-    expect(focusAgent.setMemoryModel).toHaveBeenCalledWith({ id: "deepseek-v4-pro", provider: "deepseek" });
+    expect(focusAgent.initialize).toHaveBeenCalledWith(expect.objectContaining({
+      utilityModel: { id: "deepseek-v4-flash", provider: "deepseek" },
+      memoryModel: { id: "deepseek-v4-pro", provider: "deepseek" },
+    }));
   });
 
   it("resolveUtilityConfig 传入 agentId 时使用目标 agent 配置", () => {
@@ -168,18 +169,20 @@ describe("updateConfig with agentId", () => {
         savePreferences: (next) => { prefs = { ...next }; },
       }),
     });
-    focusAgent.setUtilityModel = vi.fn();
-    focusAgent.setMemoryModel = vi.fn();
-    targetAgent.setUtilityModel = vi.fn();
-    targetAgent.setMemoryModel = vi.fn();
+    focusAgent.initialize = vi.fn();
+    targetAgent.initialize = vi.fn();
     const coord = new ConfigCoordinator(deps);
 
     coord.setSharedModels({ utility: null, utility_large: null });
 
-    expect(focusAgent.setUtilityModel).toHaveBeenCalledWith({ id: "focus-chat", provider: "openai" });
-    expect(focusAgent.setMemoryModel).toHaveBeenCalledWith({ id: "focus-chat", provider: "openai" });
-    expect(targetAgent.setUtilityModel).toHaveBeenCalledWith({ id: "target-chat", provider: "deepseek" });
-    expect(targetAgent.setMemoryModel).toHaveBeenCalledWith({ id: "target-chat", provider: "deepseek" });
+    expect(focusAgent.initialize).toHaveBeenCalledWith(expect.objectContaining({
+      utilityModel: { id: "focus-chat", provider: "openai" },
+      memoryModel: { id: "focus-chat", provider: "openai" },
+    }));
+    expect(targetAgent.initialize).toHaveBeenCalledWith(expect.objectContaining({
+      utilityModel: { id: "target-chat", provider: "deepseek" },
+      memoryModel: { id: "target-chat", provider: "deepseek" },
+    }));
   });
 
   it("setSharedModels stores vision without mutating utility or memory runtime state", () => {
@@ -192,8 +195,7 @@ describe("updateConfig with agentId", () => {
         savePreferences: (next) => { prefs = { ...next }; },
       }),
     });
-    focusAgent.setUtilityModel = vi.fn();
-    focusAgent.setMemoryModel = vi.fn();
+    focusAgent.initialize = vi.fn();
     const coord = new ConfigCoordinator(deps);
 
     coord.setSharedModels({
@@ -201,8 +203,12 @@ describe("updateConfig with agentId", () => {
     });
 
     expect(prefs.vision_model).toEqual({ id: "gpt-4o", provider: "openai" });
-    expect(focusAgent.setUtilityModel).not.toHaveBeenCalledWith({ id: "gpt-4o", provider: "openai" });
-    expect(focusAgent.setMemoryModel).not.toHaveBeenCalledWith({ id: "gpt-4o", provider: "openai" });
+    expect(focusAgent.initialize).not.toHaveBeenCalledWith(expect.objectContaining({
+      utilityModel: { id: "gpt-4o", provider: "openai" },
+    }));
+    expect(focusAgent.initialize).not.toHaveBeenCalledWith(expect.objectContaining({
+      memoryModel: { id: "gpt-4o", provider: "openai" },
+    }));
   });
 
   it("getSharedModels exposes auxiliary vision as disabled by default", () => {
@@ -252,8 +258,7 @@ describe("updateConfig with agentId", () => {
         savePreferences: (next) => { prefs = { ...next }; },
       }),
     });
-    focusAgent.setUtilityModel = vi.fn();
-    focusAgent.setMemoryModel = vi.fn();
+    focusAgent.initialize = vi.fn();
     const coord = new ConfigCoordinator(deps);
 
     coord.setSharedModels({ vision_enabled: true });
@@ -261,8 +266,7 @@ describe("updateConfig with agentId", () => {
     expect(coord.getSharedModels()).toEqual(expect.objectContaining({
       vision_enabled: true,
     }));
-    expect(focusAgent.setUtilityModel).not.toHaveBeenCalled();
-    expect(focusAgent.setMemoryModel).not.toHaveBeenCalled();
+    expect(focusAgent.initialize).not.toHaveBeenCalled();
 
     coord.setSharedModels({ vision_enabled: false });
     expect(prefs).not.toHaveProperty("vision_auxiliary_enabled");
