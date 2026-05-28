@@ -726,6 +726,16 @@ export class Agent {
    */
   initialize(options) {
     if (!options || typeof options !== 'object') return;
+    const knownKeys = new Set([
+      'callbacks', 'getOwnerIds', 'onInstallCallback', 'notifyHandler',
+      'descriptionRefreshHandler', 'dmSentHandler', 'channelPostHandler',
+      'utilityModel', 'memoryModel'
+    ]);
+    for (const key of Object.keys(options)) {
+      if (!knownKeys.has(key)) {
+        console.warn(`Agent.initialize(): unknown option "${key}" — possible typo`);
+      }
+    }
     if (options.callbacks !== undefined) this._cb = options.callbacks;
     if (options.getOwnerIds !== undefined) this._getOwnerIds = options.getOwnerIds;
     if (options.onInstallCallback !== undefined) this._onInstallCallback = options.onInstallCallback;

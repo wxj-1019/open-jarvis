@@ -1,0 +1,33 @@
+.toolCard {
+  border: 1px solid var(--overlay-light, #e5e5e5);
+  border-radius: 8px;
+  margin: 4px 0;
+  overflow: hidden;
+  background: var(--bg-card, #faf8f5);
+  transition: border-color 0.15s;
+}
+.toolCard:hover { border-color: var(--accent, #537D96); }
+.errorCard { border-color: #e57373; background: rgba(229, 115, 115, 0.05); }
+
+.cardHeader {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 10px; cursor: pointer; user-select: none;
+  font-size: 0.8rem; font-weight: 500;
+}
+.cardHeader:hover { background: var(--hover-bg, rgba(83,125,150,0.06)); }
+.cardTitle { flex: 1; }
+
+.errorIcon { color: #e57373; }
+.errorBody { padding: 8px 10px; font-size: 0.75rem; color: #e57373; white-space: pre-wrap; }
+
+.cardBody { padding: 0 10px 8px; }
+.cardDesc { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 6px; }
+.cardSection { margin-bottom: 6px; }
+.cardSectionTitle { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
+.cardJson { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.7rem; background: var(--bg-code, #f5f5f5); padding: 6px 8px; border-radius: 4px; overflow-x: auto; max-height: 200px; overflow-y: auto; }
+.cardResult { font-size: 0.75rem; white-space: pre-wrap; max-height: 150px; overflow-y: auto; }
+.expandBtn { background: none; border: none; color: var(--accent); font-size: 0.7rem; cursor: pointer; padding: 2px 0; }
+
+.cardFooter { display: flex; gap: 12px; padding-top: 6px; border-top: 1px solid var(--overlay-light); }
+.cardMeta { display: flex; align-items: center; gap: 4px; font-size: 0.68rem; color: var(--text-muted); }
+.successIcon { color: #4caf50; }

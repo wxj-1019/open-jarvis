@@ -230,8 +230,10 @@ export class ConfigCoordinator {
   _syncSharedModelsToAgent(agent, sharedModels) {
     if (!agent) return;
     const chatModel = agent.config?.models?.chat || null;
-    agent.setUtilityModel?.(sharedModels.utility || agent.config?.models?.utility || chatModel);
-    agent.setMemoryModel?.(sharedModels.utility_large || agent.config?.models?.utility_large || chatModel);
+    agent.initialize?.({
+      utilityModel: sharedModels.utility || agent.config?.models?.utility || chatModel,
+      memoryModel: sharedModels.utility_large || agent.config?.models?.utility_large || chatModel,
+    });
   }
 
   // ── Search Config ──

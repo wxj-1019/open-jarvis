@@ -1,5 +1,5 @@
 import type { ActivePanel } from '../../types';
-import { Plus, Gear, CaretLeft, Link, ChartLine, Clock, Globe } from '@phosphor-icons/react';
+import { Plus, Gear, CaretLeft, Link, ChartLine, Clock, Globe, Lightning } from '@phosphor-icons/react';
 import { PhosphorIcon } from '../../ui/PhosphorIcon';
 import { useStore } from '../../stores';
 import { useAnyBrowserRunning } from '../../stores/browser-slice';
@@ -82,6 +82,10 @@ export function ChatSidebar({
                 <PhosphorIcon icon={Clock} size={14} />
                 <span>{t('automation.title')}</span>
                 <AutomationBadge />
+              </button>
+              <button className="sidebar-activity-bar" id="capabilitiesBar" onClick={() => onTogglePanel?.('capabilities')}>
+                <PhosphorIcon icon={Lightning} size={14} />
+                <span>Capabilities</span>
               </button>
               <button className={`sidebar-activity-bar browser-bg-bar${browserRunning ? '' : ' hidden'}`} id="browserBgBar" title={t('browser.backgroundHint')} onClick={() => window.platform?.openBrowserViewer?.()}>
                 <PhosphorIcon icon={Globe} size={14} className="browser-bg-globe" />

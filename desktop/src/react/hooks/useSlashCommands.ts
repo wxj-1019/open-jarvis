@@ -3,6 +3,7 @@ import type { Editor } from '@tiptap/core';
 import { useStore } from '../stores';
 import { useI18n } from './use-i18n';
 import { useSkillSlashItems } from './use-slash-items';
+import { useMcpSlashItems } from './use-mcp-slash-items';
 import { loadDeskFiles, toggleJianSidebar } from '../stores/desk-actions';
 import { sendAsUser } from './useMessageSend';
 import {
@@ -67,10 +68,11 @@ export function useSlashCommands({
   }, [editor, setSlashMenuOpen]);
 
   const skillItems = useSkillSlashItems({ enabled: surface !== 'mobile' });
+  const mcpToolItems = useMcpSlashItems({ enabled: true });
 
   const slashCommands = useMemo(
-    () => [...buildSlashCommands(t, diaryFn, xingFn, compactFn), ...skillItems],
-    [diaryFn, xingFn, compactFn, t, skillItems],
+    () => [...buildSlashCommands(t, diaryFn, xingFn, compactFn), ...skillItems, ...mcpToolItems],
+    [diaryFn, xingFn, compactFn, t, skillItems, mcpToolItems],
   );
 
   const filteredCommands = useMemo(() => {
@@ -102,6 +104,14 @@ export function useSlashCommands({
     slashDismissedTextRef.current = null;
     if (item.type === 'builtin') {
       item.execute();
+      return;
+    }
+    if (item.type === 'mcp-tool') {
+      const tag = `@mcp:${item.connectorId}/${item.toolName}`;
+      if (editor) {
+        editor.commands.insertContent(tag + ' ');
+      }
+      setSlashMenuOpen(false);
       return;
     }
     if (!editor) return;

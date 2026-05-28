@@ -9,7 +9,7 @@ import { getWebSocket } from '../../services/websocket';
 import { useStore } from '../../stores';
 import type { ComponentType } from 'react';
 import type { IconProps } from '@phosphor-icons/react';
-import { BookOpen, Diamond, ArrowsIn, Stop, Plus, ArrowsClockwise } from '@phosphor-icons/react';
+import { BookOpen, Diamond, ArrowsIn, Stop, Plus, ArrowsClockwise, PlugsConnected } from '@phosphor-icons/react';
 
 // ── Xing Prompt ──
 
@@ -43,7 +43,10 @@ export interface SlashItem {
   description: string;
   busyLabel: string;
   icon: ComponentType<IconProps>;
-  type: 'builtin' | 'skill';
+  type: 'builtin' | 'skill' | 'mcp-tool';
+  connectorId?: string;
+  toolName?: string;
+  connectorLabel?: string;
   execute: () => Promise<void> | void;
 }
 

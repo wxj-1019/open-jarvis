@@ -9,6 +9,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { X, CaretRight, CaretDown, FileText, Code, File } from '@phosphor-icons/react';
 import { PhosphorIcon } from '../ui/PhosphorIcon';
 import { useStore } from '../stores';
+import { openSettingsModal } from '../stores/settings-modal-actions';
 import { hanaFetch } from '../hooks/use-hana-fetch';
 
 import { renderMarkdownPreview } from '../utils/markdown';
@@ -184,10 +185,58 @@ export function SkillViewerOverlay() {
           </div>
         </div>
 
+        {/* Footer info bar */}
+        <div className="sv-footer-bar">
+          <div className="sv-footer-meta">
+            <span className="sv-footer-item">
+              📁 <span className="sv-footer-label">{data.installed ? 'Installed' : 'Built-in'}</span>
+            </span>
+            {data.baseDir && (
+              <span className="sv-footer-item" title={data.baseDir}>
+                📄 <span className="sv-footer-path">{data.baseDir}</span>
+              </span>
+            )}
+            <span className="sv-footer-item">
+              🔤 Trigger: <code className="sv-footer-trigger">/{data.name}</code>
+            </span>
+          </div>
+          {!data.installed && (
+            <button className="sv-btn sv-btn-footer-action" onClick={() => openSettingsModal('skills')}>
+              ⚙ Configure in Settings
+            </button>
+          )}
+        </div>
+
         {/* Toast */}
         {toast && <div className="sv-toast show">{toast}</div>}
     </Overlay>
   );
+}
+
+// ── Footer CSS ──
+
+const footerStyles = `
+  .sv-footer-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 12px; border-top: 1px solid var(--overlay-light, #e5e5e5);
+    background: var(--bg-card, #faf8f5);
+    font-size: 0.72rem; color: var(--text-secondary);
+  }
+  .sv-footer-meta { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .sv-footer-item { display: flex; align-items: center; gap: 4px; }
+  .sv-footer-label { font-weight: 500; }
+  .sv-footer-path { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.68rem; color: var(--text-muted); }
+  .sv-footer-trigger { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.7rem; background: var(--bg-code, #f5f5f5); padding: 1px 4px; border-radius: 3px; }
+  .sv-btn-footer-action { background: none; border: 1px solid var(--accent, #537D96); color: var(--accent); padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; }
+  .sv-btn-footer-action:hover { background: var(--accent, #537D96); color: #fff; }
+`;
+
+// Inject styles once
+if (typeof document !== 'undefined' && !document.getElementById('sv-footer-styles')) {
+  const styleEl = document.createElement('style');
+  styleEl.id = 'sv-footer-styles';
+  styleEl.textContent = footerStyles;
+  document.head.appendChild(styleEl);
 }
 
 // ── 文件树节点 ──
