@@ -25,21 +25,21 @@ import {
   normalizeUiScale,
   resolveEffectiveUiScale,
 } from '../../ui-scale';
-import componentStyles from '../components/settings-components.module.css';
-import styles from '../Settings.module.css';
+import tabStyles from '../Settings.module.css';
+import styles from './InterfaceTab.module.css';
 import registry from '../../../shared/theme-registry';
-import { EMOJI_STYLE_PRESETS, EMOJI_STYLE_IDS, getEmojiStylePreset, getSavedEmojiStyle, saveEmojiStyle } from '../../../shared/emoji-styles';
+import { EMOJI_STYLE_PRESETS, EMOJI_STYLE_IDS, getSavedEmojiStyle, saveEmojiStyle } from '../../../shared/emoji-styles';
 
 const platform = window.platform;
 const i18n = window.i18n;
 
 const THEME_NAME_KEYS: Record<string, string> = Object.fromEntries([
-  ...Object.entries(registry.THEMES).map(([id, t]: [string, any]) => [id, t.i18nName]),
+  ...Object.entries(registry.THEMES).map(([id, themeDef]: [string, { i18nName: string }]) => [id, themeDef.i18nName]),
   [registry.AUTO_OPTION.id, registry.AUTO_OPTION.i18nName],
 ]);
 
 const THEME_MODE_KEYS: Record<string, string> = Object.fromEntries([
-  ...Object.entries(registry.THEMES).map(([id, t]: [string, any]) => [id, t.i18nMode]),
+  ...Object.entries(registry.THEMES).map(([id, themeDef]: [string, { i18nMode: string }]) => [id, themeDef.i18nMode]),
   [registry.AUTO_OPTION.id, registry.AUTO_OPTION.i18nMode],
 ]);
 
@@ -64,7 +64,7 @@ function readAppearancePrefs(): AppearancePrefs {
   };
 }
 
-const EDITOR_FONT_SIZE_ROWS: Array<{
+const EDITOR_BODY_ROWS: Array<{
   key: MarkdownTypographyKey;
   label: string;
   hint: string;
@@ -72,6 +72,15 @@ const EDITOR_FONT_SIZE_ROWS: Array<{
   max: number;
 }> = [
   { key: 'bodyFontSize', label: 'settings.editor.markdownBodyFontSize', hint: 'settings.editor.markdownBodyFontSizeHint', min: 12, max: 24 },
+];
+
+const EDITOR_HEADING_ROWS: Array<{
+  key: MarkdownTypographyKey;
+  label: string;
+  hint: string;
+  min: number;
+  max: number;
+}> = [
   { key: 'heading1FontSize', label: 'settings.editor.markdownHeading1FontSize', hint: 'settings.editor.markdownHeading1FontSizeHint', min: 16, max: 40 },
   { key: 'heading2FontSize', label: 'settings.editor.markdownHeading2FontSize', hint: 'settings.editor.markdownHeading2FontSizeHint', min: 15, max: 34 },
   { key: 'heading3FontSize', label: 'settings.editor.markdownHeading3FontSize', hint: 'settings.editor.markdownHeading3FontSizeHint', min: 14, max: 30 },
@@ -80,12 +89,88 @@ const EDITOR_FONT_SIZE_ROWS: Array<{
   { key: 'heading6FontSize', label: 'settings.editor.markdownHeading6FontSize', hint: 'settings.editor.markdownHeading6FontSizeHint', min: 12, max: 24 },
 ];
 
+function EditorTypographyRows({
+  rows,
+  typography,
+  onSave,
+}: {
+  rows: typeof EDITOR_BODY_ROWS;
+  typography: ReturnType<typeof normalizeEditorTypography>;
+  onSave: (patch: Partial<EditorMarkdownTypography>) => void;
+}) {
+  return (
+    <div className={styles.editorGrid}>
+      {rows.map(row => (
+        <SettingsRow
+          key={row.key}
+          label={t(row.label)}
+          hint={t(row.hint)}
+          control={
+            <NumberInput
+              value={typography.markdown[row.key]}
+              onChange={(value) => onSave({ [row.key]: value })}
+              unit="px"
+              min={row.min}
+              max={row.max}
+              commitOnBlur
+            />
+          }
+        />
+      ))}
+    </div>
+  );
+}
+
 export function InterfaceTab() {
   const settingsConfig = useSettingsStore(s => s.settingsConfig);
   const platformName = useSettingsStore(s => s.platformName);
   const [appearancePrefs, setAppearancePrefs] = useState<AppearancePrefs>(() => readAppearancePrefs());
   const refreshAppearancePrefs = useCallback(() => {
     setAppearancePrefs(readAppearancePrefs());
+  }, []);
+  const applyThemeSafely = useCallback((theme: string) => {
+    const applyFallback = () => {
+      const { stored, concrete } = registry.resolveSavedTheme(
+        theme,
+        window.matchMedia('(prefers-color-scheme: dark)').matches,
+      );
+      window.localStorage.setItem(registry.STORAGE_KEY, stored);
+      document.documentElement.setAttribute('data-theme', concrete);
+      const themeSheet = document.getElementById('themeSheet') as HTMLLinkElement | null;
+      const entry = registry.THEMES[concrete];
+      if (themeSheet && entry?.cssPath) themeSheet.href = entry.cssPath;
+    };
+
+    try {
+      if (typeof window.setTheme === 'function') {
+        window.setTheme(theme);
+        return;
+      }
+    } catch (err) {
+      console.warn('[settings] window.setTheme failed, using fallback:', err);
+    }
+
+    try {
+      if (typeof window.applyTheme === 'function') {
+        window.applyTheme(theme);
+        const { stored } = registry.resolveSavedTheme(
+          theme,
+          window.matchMedia('(prefers-color-scheme: dark)').matches,
+        );
+        // 确保选中态来源(localStorage)与本次点击一致
+        window.localStorage.setItem(registry.STORAGE_KEY, stored);
+        return;
+      }
+    } catch (err) {
+      console.warn('[settings] window.applyTheme fallback failed:', err);
+    }
+
+    try {
+      applyFallback();
+      return;
+    } catch (err) {
+      console.warn('[settings] theme fallback apply failed:', err);
+    }
   }, []);
   const syncAppearancePrefs = useCallback((patch: Record<string, unknown>) => {
     persistAppearancePreferences(patch).catch((err) => {
@@ -99,9 +184,9 @@ export function InterfaceTab() {
     paperTextureBlocked,
     leavesOverlayEnabled,
   } = appearancePrefs;
-  
+
   const [emojiStyle, setEmojiStyle] = useState(() => getSavedEmojiStyle());
-  
+
   const saveEmojiStyleHandler = useCallback((styleId: string) => {
     const success = saveEmojiStyle(styleId);
     if (success) {
@@ -119,7 +204,6 @@ export function InterfaceTab() {
   );
   const [contextPrivacy, setContextPrivacy] = useState<string>('standard');
 
-  // 加载当前隐私级别
   useEffect(() => {
     let cancelled = false;
     hanaFetch('/api/deep-context/privacy')
@@ -226,7 +310,6 @@ export function InterfaceTab() {
     : locale.startsWith('ko') ? 'ko'
     : 'en';
 
-  // 时区
   const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const commonTz = [
     'Asia/Shanghai', 'Asia/Tokyo', 'Asia/Seoul', 'Asia/Singapore',
@@ -242,271 +325,288 @@ export function InterfaceTab() {
   const tzOptions = commonTz.map(tz => {
     try {
       const offset = new Intl.DateTimeFormat('en', { timeZone: tz, timeZoneName: 'shortOffset' })
-        .formatToParts(new Date()).find((p: any) => p.type === 'timeZoneName')?.value || '';
+        .formatToParts(new Date()).find((p) => p.type === 'timeZoneName')?.value || '';
       return { value: tz, label: `${tz.replace(/_/g, ' ')}  (${offset})` };
     } catch { return { value: tz, label: tz.replace(/_/g, ' ') }; }
   });
 
+  const privacyLevels = ['minimal', 'standard', 'full'] as const;
+
   return (
-    <div className={`${styles['settings-tab-content']} ${styles['active']}`} data-tab="interface">
-      <SettingsSection title={t('settings.appearance.theme')} variant="flush">
-        <div className={styles['theme-options']}>
-          {VALID_THEMES.map(theme => (
-            <button
-              key={theme}
-              className={`${styles['theme-card']}${currentTheme === theme ? ' ' + styles['active'] : ''}`}
-              data-theme={theme}
-              onClick={() => {
-                window.setTheme?.(theme);
-                platform?.settingsChanged?.('theme-changed', { theme });
-                syncAppearancePrefs({ theme });
-                refreshAppearancePrefs();
-              }}
-            >
-              <div className={styles['theme-card-name']}>{t(THEME_NAME_KEYS[theme])}</div>
-              <div className={styles['theme-card-mode']}>{t(THEME_MODE_KEYS[theme])}</div>
-            </button>
-          ))}
-        </div>
-      </SettingsSection>
+    <div className={`${tabStyles['settings-tab-content']} ${tabStyles['active']}`} data-tab="interface">
+      <div className={styles.root}>
+        <p className={styles.intro}>{t('settings.interface.pageDesc')}</p>
 
-      <SettingsSection title={t('settings.appearance.title')}>
-        <SettingsRow
-          label={t('settings.appearance.serifFont')}
-          hint={t('settings.appearance.serifFontHint')}
-          control={
-            <Toggle
-              on={serifEnabled}
-              onChange={(next) => {
-                window.setSerifFont?.(next);
-                platform?.settingsChanged?.('font-changed', { serif: next });
-                syncAppearancePrefs({ serif: next });
-                refreshAppearancePrefs();
-              }}
-            />
-          }
-        />
-        <SettingsRow
-          label={t('settings.appearance.paperTexture')}
-          hint={paperTextureBlocked
-            ? t('settings.appearance.paperTextureDarkDisabledHint')
-            : t('settings.appearance.paperTextureHint')}
-          control={
-            <Toggle
-              on={paperTextureBlocked ? false : paperTextureEnabled}
-              disabled={paperTextureBlocked}
-              onChange={(next) => {
-                window.setPaperTexture?.(next);
-                platform?.settingsChanged?.('paper-texture-changed', { enabled: next });
-                syncAppearancePrefs({ paperTexture: next });
-                refreshAppearancePrefs();
-              }}
-            />
-          }
-        />
-        <SettingsRow
-          label={t('settings.appearance.leavesOverlay')}
-          hint={t('settings.appearance.leavesOverlayHint')}
-          control={
-            <Toggle
-              on={leavesOverlayEnabled}
-              onChange={(next) => {
-                localStorage.setItem('hana-leaves-overlay', next ? '1' : '0');
-                window.dispatchEvent(new CustomEvent('hana-settings', {
-                  detail: { type: 'leaves-overlay-changed', enabled: next },
-                }));
-                platform?.settingsChanged?.('leaves-overlay-changed', { enabled: next });
-                syncAppearancePrefs({ leavesOverlay: next });
-                refreshAppearancePrefs();
-              }}
-            />
-          }
-        />
-        
-        <div className={styles['emoji-style-divider']} />
-        
-        <div className={styles['emoji-style-section']}>
-          <h3 className={styles['emoji-style-section-title']}>{t('emojiStyle.title')}</h3>
-          <p className={styles['emoji-style-section-desc']}>{t('emojiStyle.description')}</p>
-          <div className={styles['emoji-style-grid']}>
-            {EMOJI_STYLE_IDS.map(styleId => {
-              const preset = EMOJI_STYLE_PRESETS[styleId];
-              const isActive = emojiStyle === styleId;
-              return (
+        <SettingsSection title={t('settings.appearance.theme')} variant="flush">
+          <SettingsSection.Note>{t('settings.interface.themeSectionNote')}</SettingsSection.Note>
+          <div className={styles.themeShell}>
+            <div className={tabStyles['theme-options']}>
+              {VALID_THEMES.map(theme => (
                 <button
-                  key={styleId}
-                  role="radio"
-                  aria-checked={isActive}
-                  aria-label={t(preset.name)}
-                  className={`${styles['emoji-style-card']}${isActive ? ` ${styles['active']}` : ''}`}
-                  onClick={() => saveEmojiStyleHandler(styleId)}
-                >
-                  <div className={styles['emoji-style-preview']}>{preset.preview}</div>
-                  <div className={styles['emoji-style-name']}>{t(preset.name)}</div>
-                  <div className={styles['emoji-style-desc']}>{t(preset.description)}</div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </SettingsSection>
-
-      <SettingsSection title={t('settings.interface.system')}>
-        <SettingsRow
-          label={t('settings.interface.uiScale')}
-          hint={t('settings.interface.uiScaleHint', {
-            preference: uiScalePercent,
-            effective: effectiveUiScalePercent,
-            shortcut: getUiZoomShortcutLabel(platformName),
-          })}
-          control={
-            <div
-              className={componentStyles.numberInputRow}
-              data-ui-scale-wheel="ignore"
-            >
-              <NumberInput
-                value={uiScalePercent}
-                onChange={(value) => saveUiScale(value / 100)}
-                unit="%"
-                min={75}
-                max={150}
-                step={5}
-                commitOnBlur
-              />
-              <button
-                type="button"
-                className={styles['settings-btn-secondary']}
-                disabled={uiScale === DEFAULT_UI_SCALE}
-                onClick={() => saveUiScale(DEFAULT_UI_SCALE)}
-              >
-                {t('settings.interface.uiScaleReset')}
-              </button>
-            </div>
-          }
-        />
-        <SettingsRow
-          label={t('settings.interface.hardwareAcceleration')}
-          hint={t('settings.interface.hardwareAccelerationHint')}
-          control={
-            <Toggle
-              on={hardwareAccelerationEnabled}
-              onChange={saveHardwareAcceleration}
-            />
-          }
-        />
-      </SettingsSection>
-
-      <SettingsSection title={t('settings.interface.contextPrivacy')}>
-        <SettingsRow
-          label={t('settings.interface.contextPrivacy')}
-          hint={t('settings.interface.contextPrivacyHint')}
-          control={
-            <div className={styles['privacy-level-group']}>
-              {(['minimal', 'standard', 'full'] as const).map(level => (
-                <button
-                  key={level}
+                  key={theme}
                   type="button"
-                  className={`${styles['privacy-level-btn']}${contextPrivacy === level ? ` ${styles['active']}` : ''}`}
-                  onClick={() => saveContextPrivacy(level)}
+                  className={`${tabStyles['theme-card']}${currentTheme === theme ? ` ${tabStyles.active}` : ''}`}
+                  data-theme={theme}
+                  aria-pressed={currentTheme === theme}
+                  onClick={() => {
+                    applyThemeSafely(theme);
+                    platform?.settingsChanged?.('theme-changed', { theme });
+                    syncAppearancePrefs({ theme });
+                    refreshAppearancePrefs();
+                  }}
                 >
-                  <span className={styles['privacy-level-name']}>
-                    {t(`settings.interface.contextPrivacy${level.charAt(0).toUpperCase() + level.slice(1)}`)}
-                  </span>
-                  <span className={styles['privacy-level-desc']}>
-                    {t(`settings.interface.contextPrivacy${level.charAt(0).toUpperCase() + level.slice(1)}Desc`)}
-                  </span>
+                  <div className={tabStyles['theme-card-name']}>{t(THEME_NAME_KEYS[theme])}</div>
+                  <div className={tabStyles['theme-card-mode']}>{t(THEME_MODE_KEYS[theme])}</div>
                 </button>
               ))}
             </div>
-          }
-        />
-      </SettingsSection>
+          </div>
+        </SettingsSection>
 
-      <SettingsSection title={t('settings.editor.title')}>
-        {EDITOR_FONT_SIZE_ROWS.map(row => (
+        <SettingsSection title={t('settings.appearance.title')}>
+          <SettingsSection.Note>{t('settings.interface.appearanceSectionNote')}</SettingsSection.Note>
           <SettingsRow
-            key={row.key}
-            label={t(row.label)}
-            hint={t(row.hint)}
+            label={t('settings.appearance.serifFont')}
+            hint={t('settings.appearance.serifFontHint')}
             control={
-              <NumberInput
-                value={editorTypography.markdown[row.key]}
-                onChange={(value) => saveEditorTypography({ [row.key]: value })}
-                unit="px"
-                min={row.min}
-                max={row.max}
-                commitOnBlur
+              <Toggle
+                on={serifEnabled}
+                onChange={(next) => {
+                  window.setSerifFont?.(next);
+                  platform?.settingsChanged?.('font-changed', { serif: next });
+                  syncAppearancePrefs({ serif: next });
+                  refreshAppearancePrefs();
+                }}
               />
             }
           />
-        ))}
-        <SettingsRow
-          label={t('settings.editor.markdownLineHeight')}
-          hint={t('settings.editor.markdownLineHeightHint')}
-          control={
-            <NumberInput
-              value={editorTypography.markdown.lineHeight}
-              onChange={(value) => saveEditorTypography({ lineHeight: value })}
-              min={1.2}
-              max={2.2}
-              step={0.05}
-              precision="float"
-              commitOnBlur
-            />
-          }
-        />
-        <SettingsRow
-          label={t('settings.editor.markdownContentPadding')}
-          hint={t('settings.editor.markdownContentPaddingHint')}
-          control={
-            <NumberInput
-              value={editorTypography.markdown.contentPadding}
-              onChange={(value) => saveEditorTypography({ contentPadding: value })}
-              unit="px"
-              min={0}
-              max={64}
-              commitOnBlur
-            />
-          }
-        />
-      </SettingsSection>
+          <SettingsRow
+            label={t('settings.appearance.paperTexture')}
+            hint={paperTextureBlocked
+              ? t('settings.appearance.paperTextureDarkDisabledHint')
+              : t('settings.appearance.paperTextureHint')}
+            control={
+              <Toggle
+                on={paperTextureBlocked ? false : paperTextureEnabled}
+                disabled={paperTextureBlocked}
+                onChange={(next) => {
+                  window.setPaperTexture?.(next);
+                  platform?.settingsChanged?.('paper-texture-changed', { enabled: next });
+                  syncAppearancePrefs({ paperTexture: next });
+                  refreshAppearancePrefs();
+                }}
+              />
+            }
+          />
+          <SettingsRow
+            label={t('settings.appearance.leavesOverlay')}
+            hint={t('settings.appearance.leavesOverlayHint')}
+            control={
+              <Toggle
+                on={leavesOverlayEnabled}
+                onChange={(next) => {
+                  localStorage.setItem('hana-leaves-overlay', next ? '1' : '0');
+                  window.dispatchEvent(new CustomEvent('hana-settings', {
+                    detail: { type: 'leaves-overlay-changed', enabled: next },
+                  }));
+                  platform?.settingsChanged?.('leaves-overlay-changed', { enabled: next });
+                  syncAppearancePrefs({ leavesOverlay: next });
+                  refreshAppearancePrefs();
+                }}
+              />
+            }
+          />
 
-      <SettingsSection title={t('settings.locale.title')}>
-        <SettingsRow
-          label={t('settings.locale.language')}
-          hint={t('settings.locale.languageHint')}
-          control={
-            <SelectWidget
-              options={[
-                { value: 'zh-CN', label: '简体中文' },
-                { value: 'zh-TW', label: '繁體中文' },
-                { value: 'ja', label: '日本語' },
-                { value: 'ko', label: '한국어' },
-                { value: 'en', label: 'English' },
-              ]}
-              value={localeVal}
-              onChange={async (val) => {
-                await autoSaveConfig({ locale: val }, { silent: true });
-                await i18n?.load(val);
-                if (i18n) i18n.defaultName = useSettingsStore.getState().agentName;
-                useSettingsStore.getState().showToast(t('settings.autoSaved'), 'success');
-                useSettingsStore.setState({});
-              }}
-            />
-          }
-        />
-        <SettingsRow
-          label={t('settings.locale.timezone')}
-          hint={t('settings.locale.timezoneHint')}
-          control={
-            <SelectWidget
-              options={tzOptions}
-              value={currentTz}
-              onChange={(val) => autoSaveConfig({ timezone: val })}
-            />
-          }
-        />
-      </SettingsSection>
+          <div className={styles.emojiBlock}>
+            <SettingsSection.SubBlock title={t('emojiStyle.title')}>
+              <SettingsSection.Note>{t('emojiStyle.description')}</SettingsSection.Note>
+              <div className={styles.emojiGrid} role="radiogroup" aria-label={t('emojiStyle.title')}>
+              {EMOJI_STYLE_IDS.map(styleId => {
+                const preset = EMOJI_STYLE_PRESETS[styleId];
+                const isActive = emojiStyle === styleId;
+                return (
+                  <button
+                    key={styleId}
+                    type="button"
+                    role="radio"
+                    aria-checked={isActive}
+                    className={`${styles.emojiCard}${isActive ? ` ${styles.emojiCardActive}` : ''}`}
+                    onClick={() => saveEmojiStyleHandler(styleId)}
+                  >
+                    <div className={styles.emojiPreview}>{preset.preview}</div>
+                    <div className={styles.emojiName}>{t(preset.name)}</div>
+                    <div className={styles.emojiDesc}>{t(preset.description)}</div>
+                  </button>
+                );
+              })}
+              </div>
+            </SettingsSection.SubBlock>
+          </div>
+        </SettingsSection>
+
+        <SettingsSection title={t('settings.interface.system')}>
+          <SettingsSection.Note>{t('settings.interface.systemSectionNote')}</SettingsSection.Note>
+          <SettingsRow
+            label={t('settings.interface.uiScale')}
+            hint={t('settings.interface.uiScaleHint', {
+              preference: uiScalePercent,
+              effective: effectiveUiScalePercent,
+              shortcut: getUiZoomShortcutLabel(platformName),
+            })}
+            control={
+              <div className={styles.scaleRow} data-ui-scale-wheel="ignore">
+                <NumberInput
+                  value={uiScalePercent}
+                  onChange={(value) => saveUiScale(value / 100)}
+                  unit="%"
+                  min={75}
+                  max={150}
+                  step={5}
+                  commitOnBlur
+                />
+                <button
+                  type="button"
+                  className={tabStyles['settings-btn-secondary']}
+                  disabled={uiScale === DEFAULT_UI_SCALE}
+                  onClick={() => saveUiScale(DEFAULT_UI_SCALE)}
+                >
+                  {t('settings.interface.uiScaleReset')}
+                </button>
+              </div>
+            }
+          />
+          <SettingsRow
+            label={t('settings.interface.hardwareAcceleration')}
+            hint={t('settings.interface.hardwareAccelerationHint')}
+            control={
+              <Toggle
+                on={hardwareAccelerationEnabled}
+                onChange={saveHardwareAcceleration}
+              />
+            }
+          />
+        </SettingsSection>
+
+        <SettingsSection title={t('settings.interface.contextPrivacy')}>
+          <SettingsSection.Note>{t('settings.interface.contextPrivacySectionNote')}</SettingsSection.Note>
+          <div className={styles.privacyShell}>
+            <div className={styles.privacyGrid} role="radiogroup" aria-label={t('settings.interface.contextPrivacy')}>
+              {privacyLevels.map(level => {
+                const isActive = contextPrivacy === level;
+                const labelKey = `settings.interface.contextPrivacy${level.charAt(0).toUpperCase() + level.slice(1)}` as const;
+                const descKey = `${labelKey}Desc` as const;
+                return (
+                  <button
+                    key={level}
+                    type="button"
+                    role="radio"
+                    aria-checked={isActive}
+                    className={`${styles.privacyOption}${isActive ? ` ${styles.privacyOptionActive}` : ''}`}
+                    onClick={() => saveContextPrivacy(level)}
+                  >
+                    <span className={styles.privacyName}>{t(labelKey)}</span>
+                    <span className={styles.privacyDesc}>{t(descKey)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </SettingsSection>
+
+        <SettingsSection title={t('settings.editor.title')}>
+          <SettingsSection.Note>{t('settings.editor.sectionNote')}</SettingsSection.Note>
+
+          <div className={styles.editorGroups}>
+            <SettingsSection.SubBlock title={t('settings.editor.groupBody')}>
+              <EditorTypographyRows
+                rows={EDITOR_BODY_ROWS}
+                typography={editorTypography}
+                onSave={saveEditorTypography}
+              />
+            </SettingsSection.SubBlock>
+
+            <SettingsSection.SubBlock title={t('settings.editor.groupHeadings')}>
+              <EditorTypographyRows
+                rows={EDITOR_HEADING_ROWS}
+                typography={editorTypography}
+                onSave={saveEditorTypography}
+              />
+            </SettingsSection.SubBlock>
+
+            <SettingsSection.SubBlock title={t('settings.editor.groupLayout')}>
+              <div className={styles.layoutGrid}>
+                <SettingsRow
+                  label={t('settings.editor.markdownLineHeight')}
+                  hint={t('settings.editor.markdownLineHeightHint')}
+                  control={
+                    <NumberInput
+                      value={editorTypography.markdown.lineHeight}
+                      onChange={(value) => saveEditorTypography({ lineHeight: value })}
+                      min={1.2}
+                      max={2.2}
+                      step={0.05}
+                      precision="float"
+                      commitOnBlur
+                    />
+                  }
+                />
+                <SettingsRow
+                  label={t('settings.editor.markdownContentPadding')}
+                  hint={t('settings.editor.markdownContentPaddingHint')}
+                  control={
+                    <NumberInput
+                      value={editorTypography.markdown.contentPadding}
+                      onChange={(value) => saveEditorTypography({ contentPadding: value })}
+                      unit="px"
+                      min={0}
+                      max={64}
+                      commitOnBlur
+                    />
+                  }
+                />
+              </div>
+            </SettingsSection.SubBlock>
+          </div>
+        </SettingsSection>
+
+        <SettingsSection title={t('settings.locale.title')}>
+          <SettingsSection.Note>{t('settings.locale.sectionNote')}</SettingsSection.Note>
+          <SettingsRow
+            label={t('settings.locale.language')}
+            hint={t('settings.locale.languageHint')}
+            control={
+              <SelectWidget
+                options={[
+                  { value: 'zh-CN', label: '简体中文' },
+                  { value: 'zh-TW', label: '繁體中文' },
+                  { value: 'ja', label: '日本語' },
+                  { value: 'ko', label: '한국어' },
+                  { value: 'en', label: 'English' },
+                ]}
+                value={localeVal}
+                onChange={async (val) => {
+                  await autoSaveConfig({ locale: val }, { silent: true });
+                  await i18n?.load(val);
+                  if (i18n) i18n.defaultName = useSettingsStore.getState().agentName;
+                  useSettingsStore.getState().showToast(t('settings.autoSaved'), 'success');
+                  useSettingsStore.setState({});
+                }}
+              />
+            }
+          />
+          <SettingsRow
+            label={t('settings.locale.timezone')}
+            hint={t('settings.locale.timezoneHint')}
+            control={
+              <SelectWidget
+                options={tzOptions}
+                value={currentTz}
+                onChange={(val) => autoSaveConfig({ timezone: val })}
+              />
+            }
+          />
+        </SettingsSection>
+      </div>
     </div>
   );
 }

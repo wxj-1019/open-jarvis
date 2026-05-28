@@ -82,15 +82,13 @@
 
 /* 用户消息 — 棉花糖气泡风格 */
 .messageUser {
-    background: rgba(0, 0, 0, 0.045);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
     padding: var(--space-sm) var(--space-md);
-    /* iMessage 风格：大部分圆角 + 右下小圆角指向自己 */
-    border-radius: 18px 18px 4px 18px;
+    border-radius: 18px 18px 6px 18px;
     color: var(--text);
     font-size: 0.95rem;
     word-break: break-word;
-    /* 棉花糖蓬松阴影 */
-    box-shadow: var(--shadow-marshmallow-sm);
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.08);
 }
 
 .messageUser .userText p:last-child {
@@ -257,12 +255,11 @@
     line-height: 1.75;
     word-break: break-word;
     position: relative;
-    /* 助手消息容器增加圆角和微妙背景 */
-    background: rgba(var(--accent-rgb, 83 125 150), 0.03);
+    background: color-mix(in srgb, var(--bg-card) 82%, var(--accent) 4%);
     padding: var(--space-sm) var(--space-md);
-    border-radius: 18px 18px 18px 4px;
-    /* 棉花糖蓬松阴影 */
-    box-shadow: var(--shadow-marshmallow-sm);
+    border-radius: 18px 18px 18px 6px;
+    border: 0.5px solid color-mix(in srgb, var(--text) 8%, transparent);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 /* 助手回答正文用宋体 */
@@ -1279,7 +1276,7 @@
     margin: 0 auto;
     display: flex;
     flex-direction: column;
-    gap: var(--space-sm);
+    gap: calc(var(--space-sm) + 2px);
 }
 
 :global(.mobile-desktop-root) .sessionPanel {

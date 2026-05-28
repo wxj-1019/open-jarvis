@@ -1,0 +1,53 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.intro {
+  margin: 0 4px 20px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.subTabs {
+  display: flex;
+  gap: 0;
+  margin: 0 4px 12px;
+  border-bottom: 0.5px solid color-mix(in srgb, var(--text) 12%, transparent);
+}
+
+.subTab {
+  padding: 8px 14px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -0.5px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.subTab:hover {
+  color: var(--text);
+}
+
+.subTabActive {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+.importToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 4px 12px;
+}
+
+.importPanel {
+  margin: 0 4px 12px;
+}

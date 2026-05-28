@@ -1,0 +1,219 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.intro {
+  margin: 0 4px 20px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.statusBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 16px 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #ff3b30;
+  background: color-mix(in srgb, #ff3b30 8%, transparent);
+  border: 0.5px solid color-mix(in srgb, #ff3b30 18%, transparent);
+}
+
+.statusBannerIcon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.proxyModeGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.proxyModeBtn {
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  border: 0.5px solid color-mix(in srgb, var(--text) 12%, transparent);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.proxyModeBtn:hover {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.proxyModeBtnActive {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.proxyGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+.proxyGridWide {
+  grid-column: 1 / -1;
+}
+
+.proxyFieldLabel {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.proxyField {
+  width: 100%;
+}
+
+.checkpointPanel {
+  padding: 0 16px 12px;
+}
+
+.checkpointList {
+  display: flex;
+  flex-direction: column;
+  max-height: 280px;
+  overflow-y: auto;
+  border: 0.5px solid color-mix(in srgb, var(--text) 8%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--text) 2%, transparent);
+}
+
+.checkpointItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  position: relative;
+}
+
+.checkpointItem + .checkpointItem::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 12px;
+  right: 0;
+  height: 0.5px;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.checkpointItem:hover {
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+}
+
+.checkpointIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.checkpointMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.checkpointPath {
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.checkpointMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.checkpointMeta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.restoreBtn {
+  flex-shrink: 0;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--accent);
+  background: transparent;
+  border: 0.5px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  font-family: inherit;
+}
+
+.restoreBtn:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.empty,
+.loading {
+  padding: 20px 16px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.emptyIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  color: var(--text-muted);
+}
+
+.proxyFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  width: 100%;
+}
+
+.proxyDirtyHint {
+  flex: 1;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: left;
+}

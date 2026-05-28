@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useSettingsStore } from '../store';
 import { hanaFetch } from '../api';
@@ -7,7 +7,8 @@ import { t } from '../helpers';
 import { loadSettingsConfig } from '../actions';
 import { SettingsSection } from '../components/SettingsSection';
 import { SettingsRow } from '../components/SettingsRow';
-import styles from '../Settings.module.css';
+import tabStyles from '../Settings.module.css';
+import styles from './MeTab.module.css';
 import { PhosphorIcon } from '../../ui/PhosphorIcon';
 import { UserCircle } from '@phosphor-icons/react';
 
@@ -18,27 +19,33 @@ export function MeTab() {
   const showToast = useSettingsStore(s => s.showToast);
   const [userName, setUserName] = useState('');
   const [userProfile, setUserProfile] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const savedName = settingsConfig?.user?.name || '';
+  const savedProfile = settingsConfig?._userProfile || '';
 
   useEffect(() => {
     if (settingsConfig) {
-      setUserName(settingsConfig.user?.name || '');
-      setUserProfile(settingsConfig._userProfile || '');
+      setUserName(savedName);
+      setUserProfile(savedProfile);
     }
-  }, [settingsConfig]);
+  }, [settingsConfig, savedName, savedProfile]);
 
-  const save = async () => {
+  const isDirty = useMemo(
+    () => userName !== savedName || userProfile !== savedProfile,
+    [userName, savedName, userProfile, savedProfile],
+  );
+
+  const save = useCallback(async () => {
+    if (!isDirty || saving) return;
     const store = useSettingsStore.getState();
+    setSaving(true);
     try {
-      const partial: Record<string, any> = {};
-      if (userName && userName !== (settingsConfig?.user?.name || '')) {
+      const partial: Record<string, unknown> = {};
+      if (userName !== savedName) {
         partial.user = { name: userName };
       }
-      const profileChanged = userProfile !== (settingsConfig?._userProfile || '');
-
-      if (!Object.keys(partial).length && !profileChanged) {
-        showToast(t('settings.noChanges'), 'success');
-        return;
-      }
+      const profileChanged = userProfile !== savedProfile;
 
       const requests: Promise<Response>[] = [];
       if (Object.keys(partial).length) {
@@ -63,14 +70,19 @@ export function MeTab() {
       }
 
       showToast(t('settings.saved'), 'success');
-      if (partial?.user?.name) store.set({ userName: partial.user.name });
+      if (partial.user && typeof partial.user === 'object' && partial.user !== null && 'name' in partial.user) {
+        store.set({ userName: (partial.user as { name: string }).name });
+      }
       if (Object.keys(partial).length) invalidateConfigCache();
 
       await loadSettingsConfig();
-    } catch (err: any) {
-      showToast(t('settings.saveFailed') + ': ' + err.message, 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      showToast(`${t('settings.saveFailed')}: ${message}`, 'error');
+    } finally {
+      setSaving(false);
     }
-  };
+  }, [isDirty, saving, userName, savedName, userProfile, savedProfile, showToast]);
 
   const handleAvatarClick = () => {
     // eslint-disable-next-line no-restricted-syntax -- ephemeral file picker, not part of React tree
@@ -79,7 +91,6 @@ export function MeTab() {
     input.accept = 'image/png,image/jpeg,image/webp';
     input.addEventListener('change', () => {
       if (input.files?.[0]) {
-        // Dispatch to CropOverlay
         window.dispatchEvent(new CustomEvent('hana-open-cropper', {
           detail: { role: 'user', file: input.files[0] },
         }));
@@ -89,58 +100,75 @@ export function MeTab() {
   };
 
   return (
-    <div className={`${styles['settings-tab-content']} ${styles['active']}`} data-tab="me">
-      {/* 整页 flush：无 section 白卡，input/textarea 自己就是视觉卡片
-       * avatar + 两个字段并列，字段间靠白空间分隔 */}
-      <SettingsSection variant="flush">
-        <div className={styles['settings-avatar-center']}>
-          <div className={styles['avatar-upload']} onClick={handleAvatarClick}>
+    <div className={`${tabStyles['settings-tab-content']} ${tabStyles.active}`} data-tab="me">
+      <div className={styles.root}>
+        <p className={styles.intro}>{t('settings.me.pageDesc')}</p>
+
+        <section className={styles.avatarHero} aria-label={t('settings.me.avatarSection')}>
+          <button
+            type="button"
+            className={styles.avatarButton}
+            onClick={handleAvatarClick}
+            aria-label={t('settings.me.changeAvatar')}
+          >
             {userAvatarUrl ? (
-              <img className={styles['avatar-preview']} src={userAvatarUrl} draggable={false} />
+              <img className={styles.avatarPreview} src={userAvatarUrl} alt="" draggable={false} />
             ) : (
-              <div className={`${styles['avatar-preview']} ${styles['avatar-preview-emoji']}`}>
-                <PhosphorIcon icon={UserCircle} size={28} />
+              <div className={styles.avatarPlaceholder}>
+                <PhosphorIcon icon={UserCircle} size={40} />
               </div>
             )}
-            <div className={styles['avatar-upload-overlay']}>{t('settings.me.changeAvatar')}</div>
-          </div>
-        </div>
+            <span className={styles.avatarOverlay}>{t('settings.me.changeAvatar')}</span>
+          </button>
+          <p className={styles.avatarHint}>{t('settings.me.avatarHint')}</p>
+        </section>
 
-        <SettingsRow
-          label="名字"
-          hint={t('settings.me.userNameHint')}
-          layout="stacked"
-          control={
-            <input
-              className={styles['settings-input']}
-              type="text"
-              value={userName}
-              onChange={(e) => setUserName(e.target.value)}
-            />
-          }
-        />
-
-        <SettingsRow
-          label={t('settings.me.userProfile')}
-          hint={t('settings.me.userProfileHint')}
-          layout="stacked"
-          control={
-            <textarea
-              className={styles['settings-textarea']}
-              rows={8}
-              spellCheck={false}
-              value={userProfile}
-              onChange={(e) => setUserProfile(e.target.value)}
-            />
-          }
-        />
-      </SettingsSection>
-
-      {/* 保存按钮：tab 底部独立居中，用实心 accent 样式（页面级主动作） */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 'var(--space-md)' }}>
-        <button className={styles['settings-save-btn-sm']} onClick={save}>
-          {t('settings.save')}
-        </button>
+        <SettingsSection title={t('settings.me.profileSection')}>
+          <SettingsSection.Note>{t('settings.me.profileSectionNote')}</SettingsSection.Note>
+          <SettingsRow
+            label={t('settings.me.userName')}
+            hint={t('settings.me.userNameHint')}
+            layout="stacked"
+            control={
+              <input
+                className={tabStyles['settings-input']}
+                type="text"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                autoComplete="nickname"
+              />
+            }
+          />
+          <SettingsRow
+            label={t('settings.me.userProfile')}
+            hint={t('settings.me.userProfileHint')}
+            layout="stacked"
+            control={
+              <textarea
+                className={`${tabStyles['settings-textarea']} ${styles.profileTextarea}`}
+                rows={8}
+                spellCheck={false}
+                value={userProfile}
+                onChange={(e) => setUserProfile(e.target.value)}
+              />
+            }
+          />
+          <SettingsSection.Footer>
+            <div className={styles.footer}>
+              <span className={`${styles.footerHint}${isDirty ? ` ${styles.footerHintDirty}` : ''}`}>
+                {isDirty ? t('settings.me.unsaved') : t('settings.me.allSaved')}
+              </span>
+              <button
+                type="button"
+                className={tabStyles['settings-btn-primary']}
+                onClick={save}
+                disabled={!isDirty || saving}
+              >
+                {t('settings.save')}
+              </button>
+            </div>
+          </SettingsSection.Footer>
+        </SettingsSection>
       </div>
     </div>
   );

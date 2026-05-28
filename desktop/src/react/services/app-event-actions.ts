@@ -8,6 +8,7 @@ import { loadChannels } from '../stores/channel-actions';
 import { applyEditorTypography } from '../editor/typography';
 import { applyUiScale, normalizeUiScale, resolveEffectiveUiScale } from '../ui-scale';
 import { useSettingsStore } from '../settings/store';
+import registry from '../../shared/theme-registry';
 // @ts-expect-error — shared JS module
 import { mergeWorkspaceHistory } from '../../../../shared/workspace-history.js';
 
@@ -82,6 +83,18 @@ function handleAgentWorkspaceChanged(data: any): void {
   if (deskWasShowingDefault) {
     void activateWorkspaceDesk(nextHomeFolder);
   }
+}
+
+function applyThemeFallback(theme: unknown): void {
+  const { stored, concrete } = registry.resolveSavedTheme(
+    theme,
+    window.matchMedia('(prefers-color-scheme: dark)').matches,
+  );
+  window.localStorage.setItem(registry.STORAGE_KEY, stored);
+  document.documentElement.setAttribute('data-theme', concrete);
+  const themeSheet = document.getElementById('themeSheet') as HTMLLinkElement | null;
+  const entry = registry.THEMES[concrete];
+  if (themeSheet && entry?.cssPath) themeSheet.href = entry.cssPath;
 }
 
 export function handleAppEvent(type: string, data: any = {}, options: AppEventOptions = {}): void {
@@ -211,10 +224,20 @@ export function handleAppEvent(type: string, data: any = {}, options: AppEventOp
       handleAgentWorkspaceChanged(data);
       break;
     case 'theme-changed':
-      window.setTheme(data.theme);
+      if (typeof window.setTheme === 'function') {
+        window.setTheme(data.theme);
+      } else if (typeof window.applyTheme === 'function') {
+        window.applyTheme(data.theme);
+      } else {
+        applyThemeFallback(data.theme);
+      }
       break;
     case 'font-changed':
-      window.setSerifFont(data.serif);
+      if (typeof window.setSerifFont === 'function') {
+        window.setSerifFont(data.serif);
+      } else {
+        console.warn('[app-event] font-changed ignored: window.setSerifFont unavailable');
+      }
       break;
     case 'editor-typography-changed':
       applyEditorTypography(data.editor ?? data);
@@ -235,7 +258,11 @@ export function handleAppEvent(type: string, data: any = {}, options: AppEventOp
       }
       break;
     case 'paper-texture-changed':
-      window.setPaperTexture(data.enabled);
+      if (typeof window.setPaperTexture === 'function') {
+        window.setPaperTexture(data.enabled);
+      } else {
+        console.warn('[app-event] paper-texture-changed ignored: window.setPaperTexture unavailable');
+      }
       break;
     case 'leaves-overlay-changed':
       window.dispatchEvent(new CustomEvent('hana-settings', {

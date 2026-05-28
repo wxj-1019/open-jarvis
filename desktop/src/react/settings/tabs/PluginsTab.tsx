@@ -3,11 +3,13 @@ import { useShallow } from 'zustand/react/shallow';
 import { useSettingsStore } from '../store';
 import { hanaFetch } from '../api';
 import { t } from '../helpers';
-import styles from '../Settings.module.css';
+import tabStyles from '../Settings.module.css';
+import styles from './PluginsTab.module.css';
 import { PhosphorIcon } from '../../ui/PhosphorIcon';
-import { ArrowsClockwise, Info, UploadSimple, Gear, X } from '@phosphor-icons/react';
+import { ArrowsClockwise, Info, UploadSimple, Gear, X, PuzzlePiece } from '@phosphor-icons/react';
 import { SettingsSection } from '../components/SettingsSection';
 import { SettingsRow } from '../components/SettingsRow';
+import { Toggle } from '../widgets/Toggle';
 
 const platform = window.platform;
 
@@ -84,17 +86,14 @@ function StatusBadge({ status }: { status: PluginInfo['status'] }) {
     status === 'restricted' ? 'settings.plugins.statusRestricted' :
     'settings.plugins.statusDisabled';
 
-  const style: React.CSSProperties =
-    status === 'loaded'
-      ? { color: 'var(--success, #5a9)', background: 'rgba(90,170,153,0.1)' }
-      : status === 'failed'
-      ? { color: 'var(--danger, #b56b66)', background: 'rgba(var(--danger-rgb, 181, 107, 102), 0.1)' }
-      : status === 'restricted'
-      ? { color: 'var(--danger, #b56b66)', background: 'rgba(var(--danger-rgb, 181, 107, 102), 0.1)' }
-      : { color: 'var(--text-muted)', background: 'var(--overlay-light, rgba(0,0,0,0.06))' };
+  const statusClass =
+    status === 'loaded' ? styles.statusLoaded :
+    status === 'failed' ? styles.statusFailed :
+    status === 'restricted' ? styles.statusRestricted :
+    styles.statusDisabled;
 
   return (
-    <span className={styles['oauth-status-badge']} style={style}>
+    <span className={`${styles.statusBadge} ${statusClass}`}>
       {t(labelKey)}
     </span>
   );
@@ -105,19 +104,9 @@ function StatusBadge({ status }: { status: PluginInfo['status'] }) {
 function ContributionBadges({ contributions }: { contributions?: string[] }) {
   if (!contributions || contributions.length === 0) return null;
   return (
-    <span style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+    <span className={styles.contribWrap}>
       {contributions.map(c => (
-        <span
-          key={c}
-          className={styles['skills-source-badge']}
-          style={{
-            marginRight: 0, opacity: 1,
-            background: 'var(--overlay-light, rgba(0,0,0,0.05))',
-            padding: '1px 6px', borderRadius: 'var(--radius-sm)',
-          }}
-        >
-          {c}
-        </span>
+        <span key={c} className={styles.contribBadge}>{c}</span>
       ))}
     </span>
   );
@@ -372,88 +361,78 @@ export function PluginsTab() {
 
   const reloadButton = (
     <button
-      className={styles['settings-icon-btn']}
+      type="button"
+      className={tabStyles['settings-icon-btn']}
       title={t('settings.plugins.reload')}
       onClick={reload}
       disabled={loading}
     >
       <PhosphorIcon
         icon={ArrowsClockwise} size={14}
-        className={loading ? styles['spin'] : ''}
+        className={loading ? tabStyles['spin'] : ''}
       />
     </button>
   );
 
   const diagnosticsButton = (
     <button
-      className={styles['settings-icon-btn']}
+      type="button"
+      className={tabStyles['settings-icon-btn']}
       title={t('settings.plugins.showDiagnostics')}
       onClick={loadDiagnostics}
       disabled={diagnosticsLoading}
     >
       <PhosphorIcon
         icon={Info} size={14}
-        className={diagnosticsLoading ? styles['spin'] : ''}
+        className={diagnosticsLoading ? tabStyles['spin'] : ''}
       />
     </button>
   );
 
-  const marketplaceButton = (
-    <button
-      className={styles['settings-save-btn-sm']}
-      title={t('settings.plugins.openMarketplace')}
-      onClick={() => set({ activeTab: 'plugin-marketplace' })}
-    >
-      {t('settings.plugins.openMarketplace')}
-    </button>
-  );
-
-  const marketplaceBody = (
-    <div className={styles['skills-list-block']}>
-      <div className={styles['skills-list-item']} style={{ cursor: 'default' }}>
-        <div className={styles['skills-list-info']}>
-          <span className={styles['skills-list-name']}>{t('settings.plugins.marketplaceTitle')}</span>
-          <span className={styles['skills-list-desc']}>{t('settings.plugins.marketplaceHint')}</span>
-        </div>
-        <div className={styles['skills-list-actions']}>{marketplaceButton}</div>
-      </div>
-    </div>
-  );
-
   return (
-    <div className={`${styles['settings-tab-content']} ${styles['active']}`} data-tab="plugins">
-      <SettingsSection
-        title={t('settings.plugins.marketplaceTitle')}
-        variant="flush"
-      >
-        {marketplaceBody}
-      </SettingsSection>
+    <div className={`${tabStyles['settings-tab-content']} ${tabStyles['active']}`} data-tab="plugins">
+      <div className={styles.root}>
+        <p className={styles.intro}>{t('settings.plugins.pageDesc')}</p>
 
-      {/* 管理插件：dropzone + 列表 + 路径提示，同一 flush section；reload 按钮放 context */}
-      <SettingsSection
-        title="管理插件"
-        variant="flush"
-        context={<div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>{diagnosticsButton}{reloadButton}</div>}
-      >
-        {/* 安装区：dropzone 自带虚线边框卡 */}
-        <div
-          className={`${styles['skills-dropzone']}${dragOver ? ' ' + styles['drag-over'] : ''}`}
-          onClick={installByPicker}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={handleDrop}
+        <SettingsSection title={t('settings.plugins.marketplaceTitle')}>
+          <SettingsSection.Note>{t('settings.plugins.marketplaceHint')}</SettingsSection.Note>
+          <div className={styles.marketplaceRow}>
+            <button
+              type="button"
+              className={tabStyles['settings-btn-primary']}
+              title={t('settings.plugins.openMarketplace')}
+              onClick={() => set({ activeTab: 'plugin-marketplace' })}
+            >
+              {t('settings.plugins.openMarketplace')}
+            </button>
+          </div>
+        </SettingsSection>
+
+        <SettingsSection
+          title={t('settings.plugins.manageSection')}
+          context={<div className={styles.toolbar}>{diagnosticsButton}{reloadButton}</div>}
         >
-          <PhosphorIcon icon={UploadSimple} size={18} />
-          <span>{t('settings.plugins.dropzone')}</span>
-        </div>
+          <SettingsSection.Note>{t('settings.plugins.manageSectionNote')}</SettingsSection.Note>
+          <div
+            className={`${styles.dropzone}${dragOver ? ` ${styles.dropzoneActive}` : ''}`}
+            onClick={installByPicker}
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+          >
+            <PhosphorIcon icon={UploadSimple} size={20} />
+            <span>{t('settings.plugins.dropzone')}</span>
+          </div>
 
-        {/* 已安装列表 */}
-        {!loading && plugins.length === 0 ? (
-          <p className={`${styles['settings-muted-note']} ${styles['skills-empty']}`}>
-            {t('settings.plugins.empty')}
-          </p>
-        ) : (
-          <div className={styles['skills-list-block']}>
+          {!loading && plugins.length === 0 ? (
+            <div className={styles.empty}>
+              <span className={styles.emptyIcon}>
+                <PhosphorIcon icon={PuzzlePiece} size={20} />
+              </span>
+              <span>{t('settings.plugins.empty')}</span>
+            </div>
+          ) : (
+            <div className={tabStyles['skills-list-block']}>
             {plugins.map(plugin => {
               const dimmed = isDimmed(plugin);
               const restricted = plugin.status === 'restricted';
@@ -463,57 +442,56 @@ export function PluginsTab() {
               return (
                 <div
                   key={plugin.id}
-                  className={styles['skills-list-item']}
+                  className={tabStyles['skills-list-item']}
                   style={dimmed ? { opacity: 0.55 } : undefined}
                 >
-                  <div className={styles['skills-list-info']}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                      <span className={styles['skills-list-name']}>{plugin.name}</span>
+                  <div className={tabStyles['skills-list-info']}>
+                    <div className={styles.pluginHead}>
+                      <span className={tabStyles['skills-list-name']}>{plugin.name}</span>
                       {plugin.version && (
-                        <span className={styles['skills-list-name-hint']}>v{plugin.version}</span>
+                        <span className={tabStyles['skills-list-name-hint']}>v{plugin.version}</span>
                       )}
                       <StatusBadge status={plugin.status} />
                       <ContributionBadges contributions={plugin.contributions} />
                     </div>
                     {plugin.description && (
-                      <span className={styles['skills-list-desc']}>{plugin.description}</span>
+                      <span className={tabStyles['skills-list-desc']}>{plugin.description}</span>
                     )}
                     {plugin.status === 'failed' && plugin.error && (
-                      <span className={styles['skills-list-desc']} style={{ color: 'var(--danger, #c55)' }}>
+                      <span className={`${tabStyles['skills-list-desc']} ${styles.errorText}`}>
                         {plugin.error}
                       </span>
                     )}
                     {restricted && (
-                      <span className={styles['skills-list-desc']} style={{ color: 'var(--danger, #b56b66)' }}>
+                      <span className={`${tabStyles['skills-list-desc']} ${styles.errorText}`}>
                         {t('settings.plugins.needsFullAccess')}
                       </span>
                     )}
                   </div>
 
-                  <div className={styles['skills-list-actions']}>
+                  <div className={tabStyles['skills-list-actions']}>
                     {configurable && (
                       <button
-                        className={styles['skill-card-delete']}
+                        type="button"
+                        className={tabStyles['skill-card-delete']}
                         title={t('settings.plugins.configure', { name: plugin.name })}
                         onClick={() => loadPluginConfig(plugin)}
                       >
                         <PhosphorIcon icon={Gear} size={14} />
                       </button>
                     )}
-                    {/* Delete */}
                     <button
-                      className={styles['skill-card-delete']}
+                      type="button"
+                      className={tabStyles['skill-card-delete']}
                       title={t('settings.plugins.deleteConfirm', { name: plugin.name })}
                       onClick={() => deletePlugin(plugin)}
                     >
                       <PhosphorIcon icon={X} size={14} />
                     </button>
-
-                    {/* Enable/disable toggle */}
-                    <button
-                      className={`hana-toggle${enabled ? ' on' : ''}`}
+                    <Toggle
+                      on={enabled}
+                      onChange={(on) => togglePlugin(plugin.id, on)}
                       disabled={restricted}
-                      onClick={() => togglePlugin(plugin.id, !enabled)}
                     />
                   </div>
                 </div>
@@ -524,22 +502,17 @@ export function PluginsTab() {
 
         {/* 插件目录路径提示 */}
         {pluginUserDir && (
-          <p style={{
-            fontSize: '0.7rem',
-            color: 'var(--text-muted)',
-            marginTop: 'var(--space-sm)',
-          }}>
+          <p className={styles.pluginsDir}>
             {t('settings.plugins.pluginsDir', { path: pluginUserDir })}
           </p>
         )}
-      </SettingsSection>
+        </SettingsSection>
 
       {diagnostics && (
         <SettingsSection
           title={t('settings.plugins.diagnosticsTitle')}
-          variant="flush"
           context={
-            <span className={styles['skills-source-badge']} style={{ marginRight: 0 }}>
+            <span className={styles.contribBadge}>
               {t('settings.plugins.diagnosticsSummary', {
                 capabilities: String(diagnostics.eventBus.filter(item => item.available).length),
                 total: String(diagnostics.eventBus.length),
@@ -550,11 +523,11 @@ export function PluginsTab() {
           }
         >
           {diagnostics.plugins.length === 0 ? (
-            <p className={`${styles['settings-muted-note']} ${styles['skills-empty']}`}>
-              {t('settings.plugins.noDiagnostics')}
-            </p>
+            <div className={styles.empty}>
+              <span>{t('settings.plugins.noDiagnostics')}</span>
+            </div>
           ) : (
-            <div className={styles['skills-list-block']}>
+            <div className={tabStyles['skills-list-block']}>
               {diagnostics.plugins.map(plugin => {
                 const routeText = t('settings.plugins.diagnosticRoutes', {
                   pages: String(count(plugin.routes?.pages)),
@@ -570,26 +543,18 @@ export function PluginsTab() {
                   ? t('settings.plugins.diagnosticActivation', { state: plugin.activationState })
                   : t('settings.plugins.diagnosticActivation', { state: '-' });
                 return (
-                  <div key={plugin.id} className={styles['skills-list-item']}>
-                    <div className={styles['skills-list-info']}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                        <span className={styles['skills-list-name']}>{plugin.name || plugin.id}</span>
-                        <span className={styles['skills-list-name-hint']}>{plugin.id}</span>
-                        {plugin.status && (
-                          <span className={styles['skills-source-badge']} style={{ marginRight: 0 }}>
-                            {plugin.status}
-                          </span>
-                        )}
-                        {plugin.activationState && (
-                          <span className={styles['skills-source-badge']} style={{ marginRight: 0 }}>
-                            {plugin.activationState}
-                          </span>
-                        )}
+                  <div key={plugin.id} className={tabStyles['skills-list-item']}>
+                    <div className={tabStyles['skills-list-info']}>
+                      <div className={styles.pluginHead}>
+                        <span className={tabStyles['skills-list-name']}>{plugin.name || plugin.id}</span>
+                        <span className={tabStyles['skills-list-name-hint']}>{plugin.id}</span>
+                        {plugin.status && <span className={styles.contribBadge}>{plugin.status}</span>}
+                        {plugin.activationState && <span className={styles.contribBadge}>{plugin.activationState}</span>}
                       </div>
-                      <span className={styles['skills-list-desc']}>{activationText} · {routeText}</span>
-                      <span className={styles['skills-list-desc']}>{capabilityText}</span>
+                      <span className={tabStyles['skills-list-desc']}>{activationText} · {routeText}</span>
+                      <span className={tabStyles['skills-list-desc']}>{capabilityText}</span>
                       {(plugin.error || plugin.activationError) && (
-                        <span className={styles['skills-list-desc']} style={{ color: 'var(--danger, #c55)' }}>
+                        <span className={`${tabStyles['skills-list-desc']} ${styles.errorText}`}>
                           {plugin.error || plugin.activationError}
                         </span>
                       )}
@@ -607,11 +572,12 @@ export function PluginsTab() {
           title={t('settings.plugins.configTitle', { name: configPlugin.name })}
           context={
             <button
-              className={styles['settings-save-btn-sm']}
+              type="button"
+              className={tabStyles['settings-btn-primary']}
               disabled={configSaving || dirtyConfigKeys.size === 0}
               onClick={savePluginConfig}
             >
-              {t('settings.api.save')}
+              {t('settings.save')}
             </button>
           }
         >
@@ -620,13 +586,13 @@ export function PluginsTab() {
             const hint = property.description || (property.sensitive ? t('settings.plugins.sensitiveHint') : undefined);
             const value = configDraft[key];
             const control = property.type === 'boolean' ? (
-              <button
-                className={`hana-toggle${value === true ? ' on' : ''}`}
-                onClick={() => updateConfigDraft(key, value !== true)}
+              <Toggle
+                on={value === true}
+                onChange={(on) => updateConfigDraft(key, on)}
               />
             ) : property.enum ? (
               <select
-                className={styles['settings-input']}
+                className={tabStyles['settings-input']}
                 value={formatConfigValue(property, value)}
                 onChange={(e) => updateConfigDraft(key, parseConfigValue(property, e.target.value))}
               >
@@ -636,7 +602,7 @@ export function PluginsTab() {
               </select>
             ) : property.type === 'object' || property.type === 'array' ? (
               <textarea
-                className={styles['settings-input']}
+                className={tabStyles['settings-input']}
                 rows={4}
                 value={formatConfigValue(property, value)}
                 onChange={(e) => updateConfigDraft(key, e.target.value)}
@@ -647,7 +613,7 @@ export function PluginsTab() {
               />
             ) : (
               <input
-                className={styles['settings-input']}
+                className={tabStyles['settings-input']}
                 type={property.sensitive ? 'password' : property.type === 'number' || property.type === 'integer' ? 'number' : 'text'}
                 value={formatConfigValue(property, value)}
                 onChange={(e) => updateConfigDraft(key, parseConfigValue(property, e.target.value))}
@@ -666,29 +632,30 @@ export function PluginsTab() {
         </SettingsSection>
       )}
 
-      {/* 权限：标准白卡片 row */}
-      <SettingsSection title="权限">
-        <SettingsRow
-          label={t('settings.plugins.fullAccessToggle')}
-          hint={t('settings.plugins.fullAccessDesc')}
-          control={
-            <button
-              className={`hana-toggle${pluginAllowFullAccess ? ' on' : ''}`}
-              onClick={toggleFullAccess}
-            />
-          }
-        />
-        <SettingsRow
-          label={t('settings.plugins.devToolsToggle')}
-          hint={t('settings.plugins.devToolsDesc')}
-          control={
-            <button
-              className={`hana-toggle${pluginDevToolsEnabled ? ' on' : ''}`}
-              onClick={togglePluginDevTools}
-            />
-          }
-        />
-      </SettingsSection>
+        <SettingsSection title={t('settings.plugins.permissionsSection')}>
+          <SettingsSection.Note>{t('settings.plugins.permissionsSectionNote')}</SettingsSection.Note>
+          <SettingsRow
+            label={t('settings.plugins.fullAccessToggle')}
+            hint={t('settings.plugins.fullAccessDesc')}
+            control={
+              <Toggle
+                on={pluginAllowFullAccess}
+                onChange={(on) => { if (on !== pluginAllowFullAccess) void toggleFullAccess(); }}
+              />
+            }
+          />
+          <SettingsRow
+            label={t('settings.plugins.devToolsToggle')}
+            hint={t('settings.plugins.devToolsDesc')}
+            control={
+              <Toggle
+                on={pluginDevToolsEnabled}
+                onChange={(on) => { if (on !== pluginDevToolsEnabled) void togglePluginDevTools(); }}
+              />
+            }
+          />
+        </SettingsSection>
+      </div>
     </div>
   );
 }

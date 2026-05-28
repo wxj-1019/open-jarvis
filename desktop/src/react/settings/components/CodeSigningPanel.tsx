@@ -50,7 +50,7 @@ function formatDate(isoString: string): string {
   }
 }
 
-export function CodeSigningPanel() {
+export function CodeSigningPanel({ embedded = false }: { embedded?: boolean }) {
   const [data, setData] = useState<CodeSigningResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [verifyState, setVerifyState] = useState<VerificationState>('idle');
@@ -103,13 +103,17 @@ export function CodeSigningPanel() {
     }
   };
 
+  const rootClass = embedded ? styles.embedded : styles.container;
+
   if (loading) {
     return (
-      <div className={styles.container}>
-        <div className={styles.header}>
-          <ShieldCheck size={20} />
-          <h3>{t('settings.codeSigning.title')}</h3>
-        </div>
+      <div className={rootClass}>
+        {!embedded && (
+          <div className={styles.header}>
+            <ShieldCheck size={20} />
+            <h3>{t('settings.codeSigning.title')}</h3>
+          </div>
+        )}
         <div className={styles.loading}>
           <Spinner size={20} className={styles.spinner} />
           <span>{t('settings.codeSigning.loading')}</span>
@@ -120,11 +124,13 @@ export function CodeSigningPanel() {
 
   if (!data?.supported) {
     return (
-      <div className={styles.container}>
-        <div className={styles.header}>
-          <ShieldCheck size={20} />
-          <h3>{t('settings.codeSigning.title')}</h3>
-        </div>
+      <div className={rootClass}>
+        {!embedded && (
+          <div className={styles.header}>
+            <ShieldCheck size={20} />
+            <h3>{t('settings.codeSigning.title')}</h3>
+          </div>
+        )}
         <div className={styles.unsupported}>
           <ShieldWarning size={24} />
           <p>{t('settings.codeSigning.unsupported')}</p>
@@ -137,22 +143,21 @@ export function CodeSigningPanel() {
   const hasInvalidSignature = data.executables.some(e => e.signed === false || e.valid === false);
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <ShieldCheck size={20} />
-        <h3>{t('settings.codeSigning.title')}</h3>
-        <button
-          className={styles.refreshBtn}
-          onClick={loadStatus}
-          disabled={loading}
-        >
-          <ArrowClockwise size={14} />
-        </button>
-      </div>
-
-      <div className={styles.description}>
-        {t('settings.codeSigning.description')}
-      </div>
+    <div className={rootClass}>
+      {!embedded && (
+        <div className={styles.header}>
+          <ShieldCheck size={20} />
+          <h3>{t('settings.codeSigning.title')}</h3>
+          <button
+            type="button"
+            className={styles.refreshBtn}
+            onClick={loadStatus}
+            disabled={loading}
+          >
+            <ArrowClockwise size={14} />
+          </button>
+        </div>
+      )}
 
       <div className={styles.statusSummary}>
         {hasValidSignature && (

@@ -79,7 +79,10 @@ function buildNavItems(pluginSettingsTabs: PluginSettingsTab[], platformName?: s
     }));
   if (nativeTabs.length === 0) return tabItems.map(item => ({ ...item, label: t(item.key) }));
 
-  const items = tabItems.map(item => ({ ...item, label: t(item.key) }));
+  const nativeTabIds = new Set(nativeTabs.map(tab => tab.id));
+  const items = tabItems
+    .filter(item => !nativeTabIds.has(item.id))
+    .map(item => ({ ...item, label: t(item.key) }));
   const skillIndex = items.findIndex(item => item.id === 'skills');
   const insertAt = skillIndex === -1 ? items.length : skillIndex + 1;
   return [
@@ -109,7 +112,7 @@ export function SettingsNav({ onTabChange }: SettingsNavProps) {
             onTabChange?.(item.id);
           }}
         >
-          <PhosphorIcon icon={item.icon} size={14} />
+          <PhosphorIcon icon={item.icon} size={16} />
           <span>{item.label}</span>
         </button>
       ))}

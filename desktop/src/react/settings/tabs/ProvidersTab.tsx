@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { ChartLine } from '@phosphor-icons/react';
 import { useShallow } from 'zustand/react/shallow';
 import { useSettingsStore, type ProviderSummary } from '../store';
 import { hanaFetch } from '../api';
@@ -8,7 +9,9 @@ import { ProviderDetail } from './providers/ProviderDetail';
 import { AddCustomButton, AddProviderOverlay } from './providers/ProviderList';
 import { OtherModelsSection } from './providers/OtherModelsSection';
 import { SettingsSection } from '../components/SettingsSection';
-import styles from '../Settings.module.css';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
+import tabStyles from '../Settings.module.css';
+import styles from './ProvidersTab.module.css';
 
 export function ProvidersTab() {
   const { providersSummary, selectedProviderId, settingsConfig } = useSettingsStore(
@@ -32,7 +35,6 @@ export function ProvidersTab() {
   const setupProviderIds = providerIds.filter(id => providersSummary[id].is_configured === false);
   const selected = selectedProviderId;
 
-  // 分组：OAuth / Coding Plan / API Key
   const oauthProviders = configuredProviderIds.filter(id => providersSummary[id].supports_oauth);
   const codingPlanProviders = configuredProviderIds.filter(id => !providersSummary[id].supports_oauth && providersSummary[id].is_coding_plan);
   const registeredApiKey = configuredProviderIds.filter(id => !providersSummary[id].supports_oauth && !providersSummary[id].is_coding_plan);
@@ -60,12 +62,13 @@ export function ProvidersTab() {
     return (
       <button
         key={id}
-        className={`${styles['pv-list-item']}${selected === id  ? ' ' + styles['selected'] : ''}`}
+        type="button"
+        className={`${tabStyles['pv-list-item']}${selected === id ? ` ${tabStyles['selected']}` : ''}`}
         onClick={() => selectProvider(id)}
       >
-        <span className={`${styles['pv-status-dot']}${p.has_credentials  ? ' ' + styles['on'] : ''}`} />
-        <span className={styles['pv-list-item-name']}>{preset?.label || p.display_name || id}</span>
-        <span className={styles['pv-list-item-count']}>{modelCount}</span>
+        <span className={`${tabStyles['pv-status-dot']}${p.has_credentials ? ` ${tabStyles['on']}` : ''}`} />
+        <span className={tabStyles['pv-list-item-name']}>{preset?.label || p.display_name || id}</span>
+        <span className={tabStyles['pv-list-item-count']}>{modelCount}</span>
       </button>
     );
   };
@@ -73,11 +76,12 @@ export function ProvidersTab() {
   const renderUnregistered = (preset: typeof PROVIDER_PRESETS[0]) => (
     <button
       key={preset.value}
-      className={`${styles['pv-list-item']} ${styles['dim']}${selected === preset.value ? ' ' + styles['selected'] : ''}`}
+      type="button"
+      className={`${tabStyles['pv-list-item']} ${tabStyles['dim']}${selected === preset.value ? ` ${tabStyles['selected']}` : ''}`}
       onClick={() => selectProvider(preset.value)}
     >
-      <span className={styles['pv-status-dot']} />
-      <span className={styles['pv-list-item-name']}>{preset.label}</span>
+      <span className={tabStyles['pv-status-dot']} />
+      <span className={tabStyles['pv-list-item-name']}>{preset.label}</span>
     </button>
   );
 
@@ -86,98 +90,107 @@ export function ProvidersTab() {
     return (
       <button
         key={id}
-        className={`${styles['pv-list-item']} ${styles['dim']}${selected === id ? ' ' + styles['selected'] : ''}`}
+        type="button"
+        className={`${tabStyles['pv-list-item']} ${tabStyles['dim']}${selected === id ? ` ${tabStyles['selected']}` : ''}`}
         onClick={() => selectProvider(id)}
       >
-        <span className={styles['pv-status-dot']} />
-        <span className={styles['pv-list-item-name']}>{p.display_name || id}</span>
+        <span className={tabStyles['pv-status-dot']} />
+        <span className={tabStyles['pv-list-item-name']}>{p.display_name || id}</span>
       </button>
     );
   };
 
   return (
-    <div className={`${styles['settings-tab-content']} ${styles['active']}`} data-tab="providers">
-      {/* pv-layout：double-column 外壳（sectionBody 透明，pv-layout 保留原视觉） */}
-      <SettingsSection variant="double-column">
-        <div className={styles['pv-layout']}>
-          {/* ── 左栏 ── */}
-          <div className={styles['pv-list']}>
-            {oauthProviders.length > 0 && (
-              <>
-                <div className={styles['pv-list-group-label']}>OAuth</div>
-                {oauthProviders.map(renderRegistered)}
-              </>
+    <div className={`${tabStyles['settings-tab-content']} ${tabStyles['active']}`} data-tab="providers">
+      <div className={styles.root}>
+        <p className={styles.intro}>{t('settings.providers.pageDesc')}</p>
+
+        <SettingsSection
+          title={t('settings.providers.providersSection')}
+          variant="double-column"
+          className={styles.providerShell}
+        >
+          <SettingsSection.Note>{t('settings.providers.providersSectionNote')}</SettingsSection.Note>
+          <div className={tabStyles['pv-layout']}>
+            <div className={tabStyles['pv-list']}>
+              {oauthProviders.length > 0 && (
+                <>
+                  <div className={tabStyles['pv-list-group-label']}>{t('settings.providers.groupOAuth')}</div>
+                  {oauthProviders.map(renderRegistered)}
+                </>
+              )}
+
+              {(codingPlanProviders.length > 0 || unregisteredCodingPresets.length > 0 || registryOnlyCodingProviders.length > 0) && (
+                <>
+                  <div className={tabStyles['pv-list-group-label']}>{t('settings.providers.groupCodingPlan')}</div>
+                  {codingPlanProviders.map(renderRegistered)}
+                  {unregisteredCodingPresets.map(renderUnregistered)}
+                  {registryOnlyCodingProviders.map(renderRegistrySetup)}
+                </>
+              )}
+
+              <div className={tabStyles['pv-list-group-label']}>{t('settings.providers.groupApi')}</div>
+              {presetProviders.map(renderRegistered)}
+              {unregisteredApiPresets.map(renderUnregistered)}
+              {registryOnlyApiProviders.map(renderRegistrySetup)}
+              {customProviders.map(renderRegistered)}
+
+              <AddCustomButton onClick={() => setAddingProvider(true)} />
+            </div>
+
+            <div className={tabStyles['pv-detail']}>
+              {selected ? (() => {
+                const existing = providersSummary[selected];
+                const preset = PROVIDER_PRESETS.find(p => p.value === selected);
+                const isRegistryOnlySetup = existing?.is_configured === false;
+                const summary: ProviderSummary = existing || {
+                  type: 'api-key' as const,
+                  auth_type: 'api-key' as const,
+                  display_name: preset?.label || selected,
+                  base_url: preset?.url || '',
+                  api: preset?.api || '',
+                  api_key: '',
+                  models: [],
+                  custom_models: [],
+                  has_credentials: false,
+                  supports_oauth: false,
+                  can_delete: false,
+                };
+                return (
+                  <ProviderDetail
+                    key={selected}
+                    providerId={selected}
+                    summary={summary}
+                    providerConfig={providers[selected]}
+                    isPresetSetup={(!existing || isRegistryOnlySetup) && !!preset}
+                    presetInfo={preset}
+                    onRefresh={async () => { await loadSettingsConfig(); await loadSummary(); }}
+                  />
+                );
+              })() : (
+                <div className={styles.emptyDetail}>
+                  <span className={styles.emptyIcon}>
+                    <PhosphorIcon icon={ChartLine} size={22} />
+                  </span>
+                  <span>{t('settings.providers.selectHint')}</span>
+                </div>
+              )}
+            </div>
+
+            {addingProvider && (
+              <AddProviderOverlay
+                onDone={() => { setAddingProvider(false); loadSummary(); }}
+                onCancel={() => setAddingProvider(false)}
+              />
             )}
-
-            {(codingPlanProviders.length > 0 || unregisteredCodingPresets.length > 0 || registryOnlyCodingProviders.length > 0) && (
-              <>
-                <div className={styles['pv-list-group-label']}>Coding Plan</div>
-                {codingPlanProviders.map(renderRegistered)}
-                {unregisteredCodingPresets.map(renderUnregistered)}
-                {registryOnlyCodingProviders.map(renderRegistrySetup)}
-              </>
-            )}
-
-            <div className={styles['pv-list-group-label']}>API</div>
-            {presetProviders.map(renderRegistered)}
-            {unregisteredApiPresets.map(renderUnregistered)}
-            {registryOnlyApiProviders.map(renderRegistrySetup)}
-            {customProviders.map(renderRegistered)}
-
-            <AddCustomButton onClick={() => setAddingProvider(true)} />
           </div>
+        </SettingsSection>
 
-          {/* ── 右栏：Provider 详情 ── */}
-          <div className={styles['pv-detail']}>
-            {selected ? (() => {
-              const existing = providersSummary[selected];
-              const preset = PROVIDER_PRESETS.find(p => p.value === selected);
-              const isRegistryOnlySetup = existing?.is_configured === false;
-              const summary: ProviderSummary = existing || {
-                type: 'api-key' as const,
-                auth_type: 'api-key' as const,
-                display_name: preset?.label || selected,
-                base_url: preset?.url || '',
-                api: preset?.api || '',
-                api_key: '',
-                models: [],
-                custom_models: [],
-                has_credentials: false,
-                supports_oauth: false,
-                can_delete: false,
-              };
-              return (
-                <ProviderDetail
-                  key={selected}
-                  providerId={selected}
-                  summary={summary}
-                  providerConfig={providers[selected]}
-                  isPresetSetup={(!existing || isRegistryOnlySetup) && !!preset}
-                  presetInfo={preset}
-                  onRefresh={async () => { await loadSettingsConfig(); await loadSummary(); }}
-                />
-              );
-            })() : (
-              <div className={styles['pv-empty']}>
-                {t('settings.providers.selectHint')}
-              </div>
-            )}
-          </div>
-
-          {/* 新建 overlay 只覆盖白色卡片，不触达外部标题和 OtherModelsSection */}
-          {addingProvider && (
-            <AddProviderOverlay
-              onDone={() => { setAddingProvider(false); loadSummary(); }}
-              onCancel={() => setAddingProvider(false)}
-            />
-          )}
-        </div>
-      </SettingsSection>
-
-      {/* 全局模型分配：OtherModelsSection 内部结构保持不变，外壳标准化 */}
-      <SettingsSection title={t('settings.api.otherModelSection')}>
-        <OtherModelsSection providers={providers} />
-      </SettingsSection>
+        <SettingsSection title={t('settings.api.otherModelSection')}>
+          <SettingsSection.Note>{t('settings.providers.otherModelsSectionNote')}</SettingsSection.Note>
+          <OtherModelsSection providers={providers} />
+        </SettingsSection>
+      </div>
     </div>
   );
 }

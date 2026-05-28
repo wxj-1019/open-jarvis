@@ -6,6 +6,11 @@
   margin-bottom: 16px;
 }
 
+.embedded {
+  padding: 0 12px 12px;
+  margin: 0;
+}
+
 .header {
   display: flex;
   align-items: center;

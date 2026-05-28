@@ -8,7 +8,7 @@
 /* ─── Section ─── */
 
 .section {
-    margin-bottom: var(--space-2xl);
+    margin-bottom: 24px;
 }
 
 .section:last-child {
@@ -20,20 +20,19 @@
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 1.25rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 0.5px solid rgba(0, 0, 0, 0.06);
+    margin-bottom: 8px;
+    padding: 0 4px;
 }
 
 .sectionTitle {
-    font-size: 0.78rem;
-    font-weight: 500;
+    font-size: 12px;
+    font-weight: 400;
     color: var(--text-muted);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    text-transform: none;
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
-    opacity: 0.85;
+    opacity: 1;
 }
 
 .sectionContext {
@@ -45,31 +44,23 @@
     margin-bottom: 0;
 }
 
-/* visionOS 玻璃材质卡片 */
+/* macOS 分组列表卡片 */
 .sectionBody {
     display: flex;
     flex-direction: column;
-    background: var(--glass-thin);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
-    border: 0.5px solid var(--glass-border);
-    border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-depth-1), inset 0 1px 0 rgba(255, 255, 255, 0.5);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--bg-card);
+    border: 0.5px solid color-mix(in srgb, var(--text) 8%, transparent);
+    border-radius: 10px;
+    box-shadow: 0 0.5px 0 rgba(0, 0, 0, 0.04);
     overflow: hidden;
-}
-
-.sectionBody:hover {
-    box-shadow: var(--shadow-depth-2), inset 0 1px 0 rgba(255, 255, 255, 0.6);
-    transform: translateY(-1px);
 }
 
 .sectionFooter {
     display: flex;
     justify-content: flex-end;
-    padding: var(--space-md) var(--space-lg);
-    border-top: 0.5px solid var(--glass-border);
-    background: rgba(0, 0, 0, 0.02);
+    padding: 10px 16px;
+    border-top: 0.5px solid color-mix(in srgb, var(--text) 8%, transparent);
+    background: color-mix(in srgb, var(--text) 2%, transparent);
 }
 
 /* Hero variant */
@@ -144,16 +135,17 @@
     letter-spacing: 0.02em;
 }
 
-/* ─── Row - visionOS 风格 ─── */
+/* ─── Row - macOS 系统设置风格 ─── */
 
 .row {
-    padding: var(--space-md) var(--space-lg);
+    padding: 10px 16px;
+    min-height: 44px;
     position: relative;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background 0.12s ease;
 }
 
 .row:hover {
-    background: rgba(0, 0, 0, 0.02);
+    background: color-mix(in srgb, var(--text) 3%, transparent);
 }
 
 .row + .row::before,
@@ -162,10 +154,10 @@
     content: '';
     position: absolute;
     top: 0;
-    left: var(--space-lg);
-    right: var(--space-lg);
+    left: 16px;
+    right: 0;
     height: 0.5px;
-    background: var(--glass-border);
+    background: color-mix(in srgb, var(--text) 8%, transparent);
 }
 
 .row.rowStacked + .row::before,
@@ -195,17 +187,19 @@
 }
 
 .rowLabel {
-    font-size: 0.88rem;
+    font-size: 13px;
     color: var(--text);
-    font-weight: 500;
+    font-weight: 400;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    letter-spacing: -0.01em;
 }
 
 .rowHint {
-    font-size: 0.76rem;
+    font-size: 12px;
     color: var(--text-muted);
-    line-height: 1.5;
+    line-height: 1.45;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    letter-spacing: -0.005em;
 }
 
 .rowHintWarn {
@@ -283,17 +277,15 @@
 
 .numberInputField {
     width: 64px;
-    padding: 6px 10px;
-    border: 0.5px solid var(--glass-border);
-    border-radius: var(--radius-md);
-    background: var(--glass-ultra-thin);
-    backdrop-filter: blur(var(--glass-blur-light));
-    -webkit-backdrop-filter: blur(var(--glass-blur-light));
+    padding: 5px 10px;
+    border: 0.5px solid color-mix(in srgb, var(--text) 12%, transparent);
+    border-radius: 6px;
+    background: var(--bg);
     color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
-    font-size: 0.88rem;
+    font-size: 13px;
     text-align: right;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .numberInputFieldWide {
@@ -303,7 +295,7 @@
 .numberInputField:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--glow-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 .numberInputField:disabled {
@@ -328,19 +320,14 @@
 
 :global(html[data-theme="midnight"]) .sectionBody,
 :global(html[data-theme="midnight-contrast"]) .sectionBody {
-    background: rgba(30, 30, 40, 0.72);
-    border-color: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-:global(html[data-theme="midnight"]) .sectionBody:hover,
-:global(html[data-theme="midnight-contrast"]) .sectionBody:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    background: color-mix(in srgb, var(--bg-card) 90%, white 3%);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: none;
 }
 
 :global(html[data-theme="midnight"]) .sectionTitle,
 :global(html[data-theme="midnight-contrast"]) .sectionTitle {
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(255, 255, 255, 0.45);
 }
 
 :global(html[data-theme="midnight"]) .row:hover,

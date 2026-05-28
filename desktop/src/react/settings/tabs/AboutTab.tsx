@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, type MouseEvent } from 'react';
+import { ArrowSquareOut, ArrowsClockwise, GithubLogo } from '@phosphor-icons/react';
 import { useSettingsStore } from '../store';
 import { autoSaveConfig, t } from '../helpers';
-import { Toggle } from '../widgets/Toggle';
 import { loadSettingsConfig } from '../actions';
+import { Toggle } from '../widgets/Toggle';
 import { SettingsSection } from '../components/SettingsSection';
 import { SettingsRow } from '../components/SettingsRow';
 import { ExpandableRow } from '../components/ExpandableRow';
@@ -10,9 +11,11 @@ import { AutoUpdateStatus } from '../../components/AutoUpdateStatus';
 import { useAutoUpdateState } from '../../hooks/use-auto-update-state';
 import type { AutoLaunchStatus } from '../../types';
 import appIconUrl from '../../../icon.png';
-import styles from '../Settings.module.css';
+import tabStyles from '../Settings.module.css';
+import styles from './AboutTab.module.css';
 import { PhosphorIcon } from '../../ui/PhosphorIcon';
-import { ArrowSquareOut } from '@phosphor-icons/react';
+
+const GITHUB_URL = 'https://github.com/liliMozi';
 
 export function AboutTab() {
   const hana = window.hana;
@@ -22,8 +25,12 @@ export function AboutTab() {
   const [autoLaunchSaving, setAutoLaunchSaving] = useState(false);
   const autoUpdate = useAutoUpdateState();
   const isBeta = settingsConfig?.update_channel === 'beta';
-  // 默认 true：老用户（preferences 里没写这个字段）保持原有"自动检查"行为
   const autoCheck = settingsConfig?.auto_check_updates !== false;
+
+  const showCheckButton = !autoUpdate
+    || autoUpdate.status === 'idle'
+    || autoUpdate.status === 'latest'
+    || autoUpdate.status === 'error';
 
   useEffect(() => {
     hana?.getAppVersion?.().then((v: string) => setVersion(v || ''));
@@ -45,11 +52,11 @@ export function AboutTab() {
 
   const handleCheck = useCallback(() => {
     hana?.autoUpdateCheck?.();
-  }, []);
+  }, [hana]);
 
   const handleInstall = useCallback(async () => {
     await hana?.autoUpdateInstall?.();
-  }, []);
+  }, [hana]);
 
   const handleBetaToggle = useCallback(async (on: boolean) => {
     const channel = on ? 'beta' : 'stable';
@@ -57,7 +64,7 @@ export function AboutTab() {
     await autoSaveConfig({ update_channel: channel }, { silent: true });
     await loadSettingsConfig();
     hana?.autoUpdateCheck?.();
-  }, []);
+  }, [hana]);
 
   const handleAutoCheckToggle = useCallback(async (on: boolean) => {
     await autoSaveConfig({ auto_check_updates: on }, { silent: true });
@@ -78,79 +85,105 @@ export function AboutTab() {
     }
   }, [autoLaunch, hana]);
 
-  return (
-    <div className={`${styles['settings-tab-content']} ${styles['active']}`} data-tab="about">
-      {/* Hero：保留原 about-hero 独立视觉组件（icon + name + tagline + version + update + check 按钮） */}
-      <div className={styles['about-hero']}>
-        <img className={styles['about-icon']} src={appIconUrl} alt="Jarvis" />
-        <div className={styles['about-name']}>Jarvis</div>
-        <div className={styles['about-tagline']}>{t('settings.about.tagline')}</div>
-        {version && <div className={styles['about-version']}>v{version}</div>}
-        <AutoUpdateStatus
-          state={autoUpdate}
-          agentName={settingsConfig?.agent?.name || 'Jarvis'}
-          onInstall={handleInstall}
-        />
-        {(!autoUpdate || autoUpdate.status === 'idle' || autoUpdate.status === 'latest' || autoUpdate.status === 'error') && (
-          <button className={styles['about-check-update-btn']} onClick={handleCheck}>
-            {t('settings.about.updateCheckBtn')}
-          </button>
-        )}
-      </div>
+  const openGithub = (e: MouseEvent) => {
+    e.preventDefault();
+    hana?.openExternal?.(GITHUB_URL);
+  };
 
-      {/* Info：4 个标准 row（license / copyright / github / beta toggle） */}
-      <SettingsSection>
-        <SettingsRow
-          label={t('settings.about.license')}
-          control={<span>Apache License 2.0</span>}
-        />
-        <SettingsRow
-          label={t('settings.about.copyright')}
-          control={<span>© 2026 liliMozi</span>}
-        />
-        <SettingsRow
-          label="GitHub"
-          control={
-            <a
-              className={styles['about-link']}
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                hana?.openExternal?.('https://github.com/liliMozi');
-              }}
-            >
-              github.com/liliMozi
-              <PhosphorIcon icon={ArrowSquareOut} size={12} />
-            </a>
-          }
-        />
-        {autoLaunch?.supported && (
-          <SettingsRow
-            label={t('settings.about.launchAtLogin')}
-            control={
-              <Toggle
-                on={autoLaunch.openAtLogin}
-                onChange={handleAutoLaunchToggle}
-                label={t('settings.about.launchAtLogin')}
-                disabled={autoLaunchSaving}
+  return (
+    <div className={`${tabStyles['settings-tab-content']} ${tabStyles['active']}`} data-tab="about">
+      <div className={styles.root}>
+        <p className={styles.intro}>{t('settings.about.pageDesc')}</p>
+
+        <SettingsSection variant="flush">
+          <div className={styles.heroCard}>
+            <img className={styles.icon} src={appIconUrl} alt="Jarvis" />
+            <div className={styles.titleRow}>
+              <span className={styles.appName}>Jarvis</span>
+              {version ? <span className={styles.versionBadge}>v{version}</span> : null}
+              {isBeta ? <span className={styles.channelBadge}>{t('settings.about.betaChannel')}</span> : null}
+            </div>
+            <p className={styles.tagline}>{t('settings.about.tagline')}</p>
+
+            <div className={styles.updatePanel}>
+              <AutoUpdateStatus
+                state={autoUpdate}
+                agentName={settingsConfig?.agent?.name || 'Jarvis'}
+                onInstall={handleInstall}
               />
+              <div className={styles.updateActions}>
+                {showCheckButton && (
+                  <button
+                    type="button"
+                    className={tabStyles['settings-btn-secondary']}
+                    onClick={handleCheck}
+                  >
+                    <PhosphorIcon icon={ArrowsClockwise} size={14} />
+                    {t('settings.about.updateCheckBtn')}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </SettingsSection>
+
+        <SettingsSection title={t('settings.about.infoSection')}>
+          <SettingsRow
+            label={t('settings.about.license')}
+            control={<span className={styles.staticValue}>Apache License 2.0</span>}
+          />
+          <SettingsRow
+            label={t('settings.about.copyright')}
+            control={<span className={styles.staticValue}>© 2026 liliMozi</span>}
+          />
+          <SettingsRow
+            label="GitHub"
+            control={
+              <a className={styles.linkBtn} href={GITHUB_URL} onClick={openGithub}>
+                <PhosphorIcon icon={GithubLogo} size={14} />
+                liliMozi
+                <PhosphorIcon icon={ArrowSquareOut} size={12} />
+              </a>
             }
           />
-        )}
-        <SettingsRow
-          label={t('settings.about.autoCheckUpdates')}
-          control={<Toggle on={autoCheck} onChange={handleAutoCheckToggle} />}
-        />
-        <SettingsRow
-          label={t('settings.about.betaUpdates')}
-          control={<Toggle on={isBeta} onChange={handleBetaToggle} />}
-        />
-      </SettingsSection>
+        </SettingsSection>
 
-      {/* License 全文：ExpandableRow 直接作为 tab 末尾元素 */}
-      <ExpandableRow label={t('settings.about.licenseToggle')}>
-        <pre className={styles['about-license-text']}>{LICENSE_TEXT}</pre>
-      </ExpandableRow>
+        <SettingsSection title={t('settings.about.preferencesSection')}>
+          <SettingsSection.Note>{t('settings.about.preferencesSectionNote')}</SettingsSection.Note>
+          {autoLaunch?.supported && (
+            <SettingsRow
+              label={t('settings.about.launchAtLogin')}
+              hint={t('settings.about.launchAtLoginHint')}
+              control={
+                <Toggle
+                  on={autoLaunch.openAtLogin}
+                  onChange={handleAutoLaunchToggle}
+                  label={t('settings.about.launchAtLogin')}
+                  disabled={autoLaunchSaving}
+                />
+              }
+            />
+          )}
+          <SettingsRow
+            label={t('settings.about.autoCheckUpdates')}
+            hint={t('settings.about.autoCheckUpdatesHint')}
+            control={<Toggle on={autoCheck} onChange={handleAutoCheckToggle} />}
+          />
+          <SettingsRow
+            label={t('settings.about.betaUpdates')}
+            hint={t('settings.about.betaUpdatesHint')}
+            control={<Toggle on={isBeta} onChange={handleBetaToggle} />}
+          />
+        </SettingsSection>
+
+        <SettingsSection title={t('settings.about.legalSection')}>
+          <div className={styles.licensePanel}>
+            <ExpandableRow label={t('settings.about.licenseToggle')}>
+              <pre className={styles.licenseText}>{LICENSE_TEXT}</pre>
+            </ExpandableRow>
+          </div>
+        </SettingsSection>
+      </div>
     </div>
   );
 }

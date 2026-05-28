@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useShallow } from 'zustand/react/shallow';
 import { useSettingsStore } from '../store';
 import { hanaFetch } from '../api';
 import { t, autoSaveConfig } from '../helpers';
 import { SelectWidget } from '@/ui';
-import { browseAgent, switchToAgent, setPrimaryAgent, loadSettingsConfig, loadAgents } from '../actions';
+import { browseAgent, setPrimaryAgent, loadSettingsConfig, loadAgents } from '../actions';
 import { AgentCardStack } from './agent/AgentCardStack';
 import { YuanSelector } from './agent/YuanSelector';
 import { MemorySection } from './agent/AgentMemory';
@@ -14,7 +14,8 @@ import { CharacterCardPreviewOverlay, type CharacterCardPlan } from '../overlays
 import { SettingsSection } from '../components/SettingsSection';
 import { SettingsRow } from '../components/SettingsRow';
 import { Toggle } from '../widgets/Toggle';
-import styles from '../Settings.module.css';
+import tabStyles from '../Settings.module.css';
+import styles from './AgentTab.module.css';
 import {
   type ExpCategory, parseExperience,
   ExperienceBlock, putExperience,
@@ -49,39 +50,45 @@ export function AgentTab() {
   const [exportingCharacterCard, setExportingCharacterCard] = useState(false);
   const [exportPlan, setExportPlan] = useState<CharacterCardPlan | null>(null);
   const [exportMemory, setExportMemory] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const savedName = settingsConfig?.agent?.name || '';
+  const savedIdentity = settingsConfig?._identity || '';
+  const savedIshiki = settingsConfig?._ishiki || '';
 
   useEffect(() => {
     if (settingsConfig) {
-      setAgentName(settingsConfig.agent?.name || '');
-      setIdentity(settingsConfig._identity || '');
-      setIshiki(settingsConfig._ishiki || '');
+      setAgentName(savedName);
+      setIdentity(savedIdentity);
+      setIshiki(savedIshiki);
       setExpCategories(parseExperience(settingsConfig._experience || ''));
     }
-  }, [settingsConfig]);
+  }, [settingsConfig, savedName, savedIdentity, savedIshiki]);
+
+  const isDirty = useMemo(
+    () => agentName !== savedName || identity !== savedIdentity || ishiki !== savedIshiki,
+    [agentName, savedName, identity, savedIdentity, ishiki, savedIshiki],
+  );
 
   const currentYuan = settingsConfig?.agent?.yuan || 'hanako';
 
-  // 用 "provider/id" 复合键作为 SelectWidget 的 value，区分多 provider 下同名模型。
-  // 展示层可仍用 id/name；value/onChange payload 必须带 provider。
   const chatRaw = settingsConfig?.models?.chat;
   const currentModel = (() => {
     if (!chatRaw) return '';
     if (typeof chatRaw === 'object' && chatRaw?.id && chatRaw?.provider) {
       return `${chatRaw.provider}/${chatRaw.id}`;
     }
-    // 半成品对象或裸字符串：migration #5 之后不应出现，这里仅作渡期兜底展示
     if (typeof chatRaw === 'object' && chatRaw?.id) return chatRaw.id;
     if (typeof chatRaw === 'string') return chatRaw;
     return '';
   })();
 
-  // 从唯一信源 /api/models 获取模型列表（和聊天页一致）
   const [availableModels, setAvailableModels] = useState<Array<{ id: string; name: string; provider: string }>>([]);
   useEffect(() => {
     hanaFetch('/api/models').then(r => r.json()).then(data => {
       setAvailableModels(data.models || []);
     }).catch(() => {});
-  }, [settingsConfig]); // settingsConfig 变化时刷新
+  }, [settingsConfig]);
 
   const modelOptions = useMemo(() => {
     const opts = availableModels.map(m => ({
@@ -101,24 +108,21 @@ export function AgentTab() {
   const hasAvailableToolsField = !!settingsConfig && Object.prototype.hasOwnProperty.call(settingsConfig, 'availableTools');
   const availableTools = hasAvailableToolsField ? settingsConfig?.availableTools : undefined;
 
-  const saveAgent = async () => {
+  const saveAgent = useCallback(async () => {
+    if (!isDirty || saving) return;
+    setSaving(true);
     try {
       const agentId = getSettingsAgentId()!;
       const agentBase = `/api/agents/${agentId}`;
       const isActive = agentId === currentAgentId;
 
       const configPartial: Record<string, unknown> = {};
-      if (agentName && agentName !== (settingsConfig?.agent?.name || '')) {
+      if (agentName !== savedName) {
         configPartial.agent = { name: agentName };
       }
 
-      const identityChanged = identity !== (settingsConfig?._identity || '');
-      const ishikiChanged = ishiki !== (settingsConfig?._ishiki || '');
-
-      if (!Object.keys(configPartial).length && !identityChanged && !ishikiChanged) {
-        showToast(t('settings.noChanges'), 'success');
-        return;
-      }
+      const identityChanged = identity !== savedIdentity;
+      const ishikiChanged = ishiki !== savedIshiki;
 
       const requests: Promise<Response>[] = [];
       if (Object.keys(configPartial).length) {
@@ -157,8 +161,13 @@ export function AgentTab() {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       showToast(t('settings.saveFailed') + ': ' + msg, 'error');
+    } finally {
+      setSaving(false);
     }
-  };
+  }, [
+    isDirty, saving, agentName, savedName, identity, savedIdentity, ishiki, savedIshiki,
+    getSettingsAgentId, currentAgentId, set, showToast,
+  ]);
 
   const openAgentExportPreview = async (agentId: string) => {
     if (exportPlanningAgentId || exportingCharacterCard) return;
@@ -211,190 +220,216 @@ export function AgentTab() {
     }
   };
 
-  return (
-    <div className={`${styles['settings-tab-content']} ${styles['active']}`} data-tab="agent">
-      {/* Agent 卡片堆叠 */}
-      <section className={styles['settings-section']}>
-        <h2 className={styles['settings-section-title']}>{t('settings.agent.title')}</h2>
-        <AgentCardStack
-          agents={agents}
-          selectedId={selectedSettingsAgentId}
-          currentAgentId={currentAgentId}
-          onSelect={(id) => browseAgent(id)}
-          onAvatarClick={() => {
-            // eslint-disable-next-line no-restricted-syntax -- ephemeral file picker, not part of React tree
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/png,image/jpeg,image/webp';
-            input.addEventListener('change', () => {
-              if (input.files?.[0]) {
-                window.dispatchEvent(new CustomEvent('hana-open-cropper', {
-                  detail: { role: 'agent', file: input.files[0] },
-                }));
-              }
-            });
-            input.click();
-          }}
-          onSetPrimary={(id) => setPrimaryAgent(id)}
-          onDelete={(id) => window.dispatchEvent(new CustomEvent('hana-show-agent-delete', {
-            detail: { agentId: id },
-          }))}
-          onExport={openAgentExportPreview}
-          onAdd={() => window.dispatchEvent(new Event('hana-show-agent-create'))}
-          exportingAgentId={exportPlanningAgentId}
-        />
+  const handleAvatarClick = () => {
+    // eslint-disable-next-line no-restricted-syntax -- ephemeral file picker, not part of React tree
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/png,image/jpeg,image/webp';
+    input.addEventListener('change', () => {
+      if (input.files?.[0]) {
+        window.dispatchEvent(new CustomEvent('hana-open-cropper', {
+          detail: { role: 'agent', file: input.files[0] },
+        }));
+      }
+    });
+    input.click();
+  };
 
-        <div className={`${styles['settings-form-field']} ${styles['settings-form-field-center']}`}>
-          <input
-            className={styles['agent-name-input']}
-            type="text"
-            value={agentName}
-            placeholder={t('settings.agent.agentNameHint')}
-            onChange={(e) => setAgentName(e.target.value)}
-          />
-        </div>
-        <div className={`${styles['settings-form-field']} ${styles['settings-form-field-center']}`}>
-          <div className={styles['model-capsule']}>
-            <span className={styles['model-capsule-label']}>{t('settings.agent.chatModel')}</span>
-            <SelectWidget
-              className={styles['model-capsule-select']}
-              triggerClassName={styles['model-capsule-trigger']}
-              options={modelOptions}
-              value={currentModel}
-              onChange={async (refKey) => {
-                // refKey 是 SelectWidget 传回的 value，格式 "provider/id"
-                const slashIdx = refKey.indexOf('/');
-                if (slashIdx <= 0 || slashIdx === refKey.length - 1) {
-                  // 兜底：没有 / 的字符串是残留的老数据，此路径不应触发
-                  console.warn('[AgentTab] 模型 value 缺少 provider 前缀，已忽略', refKey);
-                  return;
-                }
-                const provider = refKey.slice(0, slashIdx);
-                const id = refKey.slice(slashIdx + 1);
-                await autoSaveConfig({ models: { chat: { id, provider } } });
-              }}
-              placeholder={t('settings.api.selectModel')}
+  return (
+    <div className={`${tabStyles['settings-tab-content']} ${tabStyles.active}`} data-tab="agent">
+      <div className={styles.root}>
+        <p className={styles.intro}>{t('settings.agent.pageDesc')}</p>
+
+        <section className={styles.heroPanel} aria-label={t('settings.agent.title')}>
+          <div className={styles.heroVisual}>
+            <AgentCardStack
+              agents={agents}
+              selectedId={selectedSettingsAgentId}
+              currentAgentId={currentAgentId}
+              onSelect={(id) => browseAgent(id)}
+              onAvatarClick={handleAvatarClick}
+              onSetPrimary={(id) => setPrimaryAgent(id)}
+              onDelete={(id) => window.dispatchEvent(new CustomEvent('hana-show-agent-delete', {
+                detail: { agentId: id },
+              }))}
+              onExport={openAgentExportPreview}
+              onAdd={() => window.dispatchEvent(new Event('hana-show-agent-create'))}
+              exportingAgentId={exportPlanningAgentId}
             />
           </div>
-          <span className={styles['settings-form-hint']}>{t('settings.agent.chatModelHint')}</span>
-          {currentModelUnavailable && (
-            <span className={styles['settings-form-hint']}>{t('settings.agent.modelUnavailableHint')}</span>
-          )}
-        </div>
-        {/* 图片模型选择器暂时隐藏，后续重新设计 */}
-      </section>
 
-      {/* 关于 Ta（保持原样，不改） */}
-      <section className={styles['settings-section']}>
-        <h2 className={styles['settings-section-title']}>{t('settings.about.title')}</h2>
-        <div className={`${styles['settings-form-field']} ${styles['settings-form-field-center']}`}>
-          <span className={styles['settings-form-hint']}>{t('settings.agent.yuanHint')}</span>
-          <YuanSelector
-            currentYuan={currentYuan}
-            onChange={async (key) => {
-              const agentId = getSettingsAgentId()!;
-              try {
-                await hanaFetch(`/api/agents/${agentId}/config`, {
-                  method: 'PUT',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ agent: { yuan: key } }),
-                });
-                if (agentId === currentAgentId) set({ agentYuan: key });
-                await loadSettingsConfig();
-                await loadAgents();
-              } catch (err) {
-                console.error('[yuan] switch failed:', err);
-              }
-            }}
-          />
-        </div>
-        <div className={styles['settings-form-field']}>
-          <label className={styles['settings-form-label']}>{t('settings.agent.identity')}</label>
-          <textarea
-            className={styles['settings-textarea']}
-            rows={3}
-            spellCheck={false}
-            value={identity}
-            onChange={(e) => setIdentity(e.target.value)}
-          />
-          <span className={styles['settings-form-hint']}>{t('settings.agent.identityHint')}</span>
-        </div>
-        <div className={styles['settings-form-field']}>
-          <label className={styles['settings-form-label']}>{t('settings.agent.ishiki')}</label>
-          <textarea
-            className={styles['settings-textarea']}
-            rows={10}
-            spellCheck={false}
-            value={ishiki}
-            onChange={(e) => setIshiki(e.target.value)}
-          />
-          <span className={styles['settings-form-hint']}>{t('settings.agent.ishikiHint')}</span>
-        </div>
-        <div className={styles['settings-form-field']} style={{ display: 'flex', justifyContent: 'center' }}>
-          <button className={styles['settings-save-btn-sm']} onClick={saveAgent}>
-            {t('settings.save')}
-          </button>
-        </div>
-      </section>
-
-      {/* 以下是本 phase 需要改造的部分：Memory / Experience / Tools */}
-
-      <MemorySection
-        hasUtilityModel={hasUtilityModel}
-        memoryEnabled={memoryEnabled}
-        currentPins={currentPins}
-      />
-
-      {/* 经验 */}
-      <SettingsSection title={t('settings.experience.title')}>
-        <SettingsRow
-          label={t('settings.experience.toggleLabel')}
-          hint={t('settings.experience.toggleHint')}
-          control={<Toggle
-            on={experienceEnabled}
-            onChange={async (on) => {
-              const saved = await autoSaveConfig({ experience: { enabled: on } }, { silent: true });
-              if (saved) await loadSettingsConfig();
-            }}
-          />}
-        />
-        <div style={{ padding: 'var(--space-sm) var(--space-md)' }}>
-          {!experienceEnabled ? (
-            <div className={styles['exp-empty']}>{t('settings.experience.paused')}</div>
-          ) : expCategories.length === 0 ? (
-            <div className={styles['exp-empty']}>{t('settings.experience.empty')}</div>
-          ) : (
-            <div className={styles['exp-list']}>
-              {expCategories.map((cat) => (
-                <ExperienceBlock
-                  key={cat.name}
-                  category={cat}
-                  onSave={(updated) => {
-                    const next = expCategories.map(c => c.name === cat.name ? updated : c);
-                    setExpCategories(next);
-                    putExperience({ getSettingsAgentId, showToast }, next);
-                  }}
-                  onDelete={() => {
-                    const next = expCategories.filter(c => c.name !== cat.name);
-                    setExpCategories(next);
-                    putExperience({ getSettingsAgentId, showToast }, next);
-                  }}
-                />
-              ))}
+          <div className={styles.heroForm}>
+            <div className={styles.heroRow}>
+              <label className={styles.heroRowLabel} htmlFor="agent-settings-name">
+                {t('settings.agent.agentNameHint')}
+              </label>
+              <input
+                id="agent-settings-name"
+                className={styles.heroInput}
+                type="text"
+                value={agentName}
+                placeholder={t('settings.agent.namePlaceholder')}
+                onChange={(e) => setAgentName(e.target.value)}
+                autoComplete="off"
+              />
             </div>
-          )}
-        </div>
-      </SettingsSection>
 
-      {/* 默认关闭 update_settings 和 dm，与后端 DEFAULT_DISABLED_TOOL_NAMES 保持同步 */}
-      <AgentToolsSection
-        availableTools={availableTools}
-        disabled={settingsConfig?.tools?.disabled ?? ["update_settings", "dm"]}
-      />
+            <div className={`${styles.heroRow} ${styles.heroRowModel}`}>
+              <label className={styles.heroRowLabel} htmlFor="agent-settings-model">
+                {t('settings.agent.chatModel')}
+              </label>
+              <div className={styles.heroRowControl}>
+                <SelectWidget
+                  className={styles.heroSelect}
+                  options={modelOptions}
+                  value={currentModel}
+                  onChange={async (refKey) => {
+                    const slashIdx = refKey.indexOf('/');
+                    if (slashIdx <= 0 || slashIdx === refKey.length - 1) {
+                      console.warn('[AgentTab] 模型 value 缺少 provider 前缀，已忽略', refKey);
+                      return;
+                    }
+                    const provider = refKey.slice(0, slashIdx);
+                    const id = refKey.slice(slashIdx + 1);
+                    await autoSaveConfig({ models: { chat: { id, provider } } });
+                  }}
+                  placeholder={t('settings.api.selectModel')}
+                />
+              </div>
+              <div className={styles.heroRowNotes}>
+                <p className={styles.heroNote}>{t('settings.agent.chatModelHint')}</p>
+                {currentModelUnavailable && (
+                  <p className={`${styles.heroNote} ${styles.heroNoteWarn}`}>
+                    {t('settings.agent.modelUnavailableHint')}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <SettingsSection title={t('settings.about.title')}>
+          <SettingsSection.Note>{t('settings.agent.yuanHint')}</SettingsSection.Note>
+          <div className={styles.yuanWrap}>
+            <YuanSelector
+              currentYuan={currentYuan}
+              onChange={async (key) => {
+                const agentId = getSettingsAgentId()!;
+                try {
+                  await hanaFetch(`/api/agents/${agentId}/config`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ agent: { yuan: key } }),
+                  });
+                  if (agentId === currentAgentId) set({ agentYuan: key });
+                  await loadSettingsConfig();
+                  await loadAgents();
+                } catch (err) {
+                  console.error('[yuan] switch failed:', err);
+                }
+              }}
+            />
+          </div>
+          <SettingsRow
+            label={t('settings.agent.identity')}
+            hint={t('settings.agent.identityHint')}
+            layout="stacked"
+            control={(
+              <textarea
+                className={`${tabStyles['settings-textarea']} ${styles.identityTextarea}`}
+                rows={3}
+                spellCheck={false}
+                value={identity}
+                onChange={(e) => setIdentity(e.target.value)}
+              />
+            )}
+          />
+          <SettingsRow
+            label={t('settings.agent.ishiki')}
+            hint={t('settings.agent.ishikiHint')}
+            layout="stacked"
+            control={(
+              <textarea
+                className={`${tabStyles['settings-textarea']} ${styles.ishikiTextarea}`}
+                rows={10}
+                spellCheck={false}
+                value={ishiki}
+                onChange={(e) => setIshiki(e.target.value)}
+              />
+            )}
+          />
+          <SettingsSection.Footer>
+            <div className={styles.footer}>
+              <span className={`${styles.footerHint}${isDirty ? ` ${styles.footerHintDirty}` : ''}`}>
+                {isDirty ? t('settings.me.unsaved') : t('settings.me.allSaved')}
+              </span>
+              <button
+                type="button"
+                className={tabStyles['settings-btn-primary']}
+                onClick={saveAgent}
+                disabled={!isDirty || saving}
+              >
+                {t('settings.save')}
+              </button>
+            </div>
+          </SettingsSection.Footer>
+        </SettingsSection>
+
+        <MemorySection
+          hasUtilityModel={hasUtilityModel}
+          memoryEnabled={memoryEnabled}
+          currentPins={currentPins}
+        />
+
+        <SettingsSection title={t('settings.experience.title')}>
+          <SettingsRow
+            label={t('settings.experience.toggleLabel')}
+            hint={t('settings.experience.toggleHint')}
+            control={<Toggle
+              on={experienceEnabled}
+              onChange={async (on) => {
+                const saved = await autoSaveConfig({ experience: { enabled: on } }, { silent: true });
+                if (saved) await loadSettingsConfig();
+              }}
+            />}
+          />
+          <div className={styles.experienceBody}>
+            {!experienceEnabled ? (
+              <div className={tabStyles['exp-empty']}>{t('settings.experience.paused')}</div>
+            ) : expCategories.length === 0 ? (
+              <div className={tabStyles['exp-empty']}>{t('settings.experience.empty')}</div>
+            ) : (
+              <div className={tabStyles['exp-list']}>
+                {expCategories.map((cat) => (
+                  <ExperienceBlock
+                    key={cat.name}
+                    category={cat}
+                    onSave={(updated) => {
+                      const next = expCategories.map(c => c.name === cat.name ? updated : c);
+                      setExpCategories(next);
+                      putExperience({ getSettingsAgentId, showToast }, next);
+                    }}
+                    onDelete={() => {
+                      const next = expCategories.filter(c => c.name !== cat.name);
+                      setExpCategories(next);
+                      putExperience({ getSettingsAgentId, showToast }, next);
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </SettingsSection>
+
+        <AgentToolsSection
+          availableTools={availableTools}
+          disabled={settingsConfig?.tools?.disabled ?? ['update_settings', 'dm']}
+        />
+      </div>
 
       {exportPlanningAgentId && createPortal((
-        <div className={styles['character-card-preview-overlay']} role="dialog" aria-modal="true">
-          <div className={styles['character-card-loading-card']}>正在生成角色卡预览</div>
+        <div className={tabStyles['character-card-preview-overlay']} role="dialog" aria-modal="true">
+          <div className={tabStyles['character-card-loading-card']}>正在生成角色卡预览</div>
         </div>
       ), document.body)}
       {exportPlan && (
@@ -413,7 +448,6 @@ export function AgentTab() {
           }}
         />
       )}
-
     </div>
   );
 }

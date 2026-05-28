@@ -14,6 +14,65 @@ import {
 } from './appearance-preferences';
 
 const themeSheet = document.getElementById('themeSheet') as HTMLLinkElement | null;
+let themeSwapVersion = 0;
+let transitionGuardEl: HTMLStyleElement | null = null;
+
+function suspendThemeTransitions(): void {
+  if (!transitionGuardEl) {
+    transitionGuardEl = document.createElement('style');
+    transitionGuardEl.setAttribute('data-theme-transition-guard', '1');
+    transitionGuardEl.textContent = `
+      *, *::before, *::after {
+        transition: none !important;
+        animation: none !important;
+      }
+    `;
+    document.head.appendChild(transitionGuardEl);
+  }
+}
+
+function resumeThemeTransitions(): void {
+  const token = transitionGuardEl;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (transitionGuardEl === token) {
+        transitionGuardEl?.remove();
+        transitionGuardEl = null;
+      }
+    });
+  });
+}
+
+function swapThemeSheetSafely(nextHref: string, onReady?: () => void): void {
+  if (!themeSheet) return;
+  if (themeSheet.getAttribute('href') === nextHref) {
+    onReady?.();
+    return;
+  }
+
+  const version = ++themeSwapVersion;
+  suspendThemeTransitions();
+  const preload = document.createElement('link');
+  preload.rel = 'stylesheet';
+  preload.href = nextHref;
+  preload.media = 'print';
+  preload.setAttribute('data-theme-preload', '1');
+  document.head.appendChild(preload);
+
+  const finalize = () => {
+    if (version !== themeSwapVersion) {
+      preload.remove();
+      return;
+    }
+    themeSheet.setAttribute('href', nextHref);
+    onReady?.();
+    resumeThemeTransitions();
+    preload.remove();
+  };
+
+  preload.addEventListener('load', finalize, { once: true });
+  preload.addEventListener('error', finalize, { once: true });
+}
 
 function systemIsDark(): boolean {
   return window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -22,8 +81,9 @@ function systemIsDark(): boolean {
 function applyConcreteTheme(concrete: string): void {
   const entry = registry.THEMES[concrete as ThemeId];
   if (!entry) return;
-  document.documentElement.setAttribute('data-theme', concrete);
-  if (themeSheet) themeSheet.href = entry.cssPath;
+  swapThemeSheetSafely(entry.cssPath, () => {
+    document.documentElement.setAttribute('data-theme', concrete);
+  });
   loadPaperTexturePreference();
   (window as unknown as { hana?: { syncWindowTheme?: (theme: string) => void } }).hana?.syncWindowTheme?.(concrete);
 }

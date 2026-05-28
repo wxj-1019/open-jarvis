@@ -54,20 +54,12 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: 
-      radial-gradient(ellipse at 20% 50%, rgba(120, 119, 198, 0.08) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 20%, rgba(255, 119, 198, 0.06) 0%, transparent 50%),
-      radial-gradient(ellipse at 40% 80%, rgba(120, 219, 255, 0.06) 0%, transparent 50%),
-      linear-gradient(135deg,
-        rgba(255, 245, 250, 0.4) 0%,
-        rgba(245, 240, 255, 0.4) 50%,
-        rgba(250, 245, 255, 0.4) 100%
-      );
+    background: var(--bg);
 }
 
 .settings-panel-modal {
-    --settings-nav-width: 200px;
-    --settings-main-x-padding: 2rem;
+    --settings-nav-width: 232px;
+    --settings-main-x-padding: 28px;
     width: 100%;
     height: 100%;
     padding-top: var(--space-sm);
@@ -134,26 +126,26 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
     flex-shrink: 0;
-    border: 1px solid transparent;
-    border-radius: var(--radius-input, 4px);
-    background: transparent;
+    border: none;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--text) 6%, transparent);
     color: var(--text-muted);
     cursor: pointer;
-    transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
+    transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
     -webkit-app-region: no-drag;
 }
 
 .settings-return-btn:hover {
-    background: var(--bg-hover);
+    background: color-mix(in srgb, var(--text) 10%, transparent);
     color: var(--text);
-    border-color: var(--overlay-light);
 }
 
 .settings-return-btn:active {
-    background: var(--overlay-light);
+    background: color-mix(in srgb, var(--text) 14%, transparent);
+    transform: scale(0.94);
 }
 
 .settings-title-group {
@@ -175,17 +167,17 @@
 }
 
 .settings-nav {
-    width: var(--settings-nav-width, 220px);
+    width: var(--settings-nav-width, 232px);
     flex-shrink: 0;
     min-height: 0;
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    padding: var(--space-md) 12px;
-    background: var(--glass-ultra-thin);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
-    border-right: 0.5px solid var(--glass-border);
+    gap: 1px;
+    padding: 8px 10px 12px;
+    background: color-mix(in srgb, var(--bg) 72%, var(--text) 3%);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border-right: 0.5px solid color-mix(in srgb, var(--text) 8%, transparent);
     overflow-x: hidden;
     overflow-y: auto;
     scrollbar-width: thin;
@@ -208,71 +200,52 @@
 .settings-nav-item {
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
     text-align: left;
-    padding: 8px 12px;
-    border-radius: var(--radius-md);
-    font-size: 0.84rem;
+    padding: 6px 10px;
+    border-radius: 7px;
+    font-size: 13px;
     color: var(--text-muted);
     background: none;
     border: none;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    letter-spacing: 0.01em;
+    transition: background 0.15s ease, color 0.15s ease;
+    letter-spacing: -0.01em;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     font-weight: 400;
     position: relative;
-    overflow: hidden;
-}
-
-.settings-nav-item::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%) scaleY(0);
-    width: 3px;
-    height: 16px;
-    background: var(--accent);
-    border-radius: var(--radius-capsule);
-    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    line-height: 1.3;
 }
 
 .settings-nav-item svg {
     flex-shrink: 0;
-    opacity: 0.6;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0.55;
+    transition: opacity 0.15s ease;
 }
 
 .settings-nav-item:hover {
-    background: rgba(0, 0, 0, 0.04);
+    background: color-mix(in srgb, var(--text) 5%, transparent);
     color: var(--text);
-    transform: translateX(2px);
 }
 
 .settings-nav-item:hover svg {
-    opacity: 0.8;
-    transform: scale(1.05);
+    opacity: 0.75;
 }
 
 .settings-nav-item:active {
-    transform: translateX(2px) scale(0.98);
+    background: color-mix(in srgb, var(--text) 8%, transparent);
 }
 
 .settings-nav-item.active {
-    background: var(--glass-bg-active);
-    color: var(--accent);
+    background: color-mix(in srgb, var(--text) 9%, transparent);
+    color: var(--text);
     font-weight: 600;
-    box-shadow: 0 2px 8px var(--glow-primary);
-}
-
-.settings-nav-item.active::before {
-    transform: translateY(-50%) scaleY(1);
+    box-shadow: none;
 }
 
 .settings-nav-item.active svg {
     opacity: 1;
-    filter: drop-shadow(0 0 4px var(--glow-primary));
+    color: var(--accent);
 }
 
 .settings-main {
@@ -282,10 +255,10 @@
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding: 0 2rem 2.5rem;
+    padding: 0 28px 32px;
     width: 100%;
     max-width: 100%;
-    animation: hana-fade-up 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: hana-fade-up 0.25s cubic-bezier(0.22, 1, 0.36, 1);
     scrollbar-width: thin;
     scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
 }
@@ -353,14 +326,14 @@
 }
 
 .settings-title {
-    font-size: 1.1rem;
+    font-size: 13px;
     font-weight: 600;
-    color: var(--text);
+    color: var(--text-muted);
     letter-spacing: -0.01em;
     line-height: 1;
     margin: 0;
     -webkit-app-region: no-drag;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
 }
 
 :global(.settings-loading-mask) {
@@ -391,25 +364,25 @@
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
 }
 
-/* Tab 顶部大标题 - visionOS 风格 */
+/* Tab 顶部大标题 - macOS 系统设置风格 */
 .settings-tab-title {
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
-    font-size: 1.35rem;
-    font-weight: 600;
+    font-size: 22px;
+    font-weight: 700;
     color: var(--text);
-    margin: 0 0 1.5rem 0;
-    letter-spacing: -0.015em;
-    line-height: 1.3;
+    margin: 0 0 20px 0;
+    letter-spacing: -0.022em;
+    line-height: 1.2;
 }
 
 .settings-header-tab-title {
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
-    font-size: 1.35rem;
-    font-weight: 600;
+    font-size: 22px;
+    font-weight: 700;
     color: var(--text);
     line-height: 1;
     margin: 0;
-    letter-spacing: -0.015em;
+    letter-spacing: -0.022em;
     white-space: nowrap;
     -webkit-app-region: no-drag;
 }
@@ -1873,25 +1846,24 @@
     }
 }
 
-/* Text input */
+/* Text input - macOS 风格 */
 .settings-input {
-    font-family: inherit;
-    font-size: 0.82rem;
-    line-height: 1.5;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    font-size: 13px;
+    line-height: 1.4;
     color: var(--text);
-    background: var(--bg-card, rgba(255, 255, 255, 0.9));
-    border: 0.5px solid rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    padding: 0.5rem 0.7rem;
+    background: var(--bg);
+    border: 0.5px solid color-mix(in srgb, var(--text) 12%, transparent);
+    border-radius: 6px;
+    padding: 6px 10px;
     outline: none;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
     width: 100%;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .settings-input:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 .settings-input::placeholder {
@@ -2772,25 +2744,25 @@
  * 分层优先 border，不用 shadow（对齐 DESIGN.md 已校准规则）
  * border + radius 与 .settings-input 对齐 */
 .settings-textarea {
-    font-family: inherit;
-    font-size: 0.82rem;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    font-size: 13px;
     color: var(--text);
-    background-color: var(--bg-card, rgba(255, 255, 255, 0.9));
-    border: 0.5px solid rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    padding: 0.55rem 0.7rem;
+    background-color: var(--bg);
+    border: 0.5px solid color-mix(in srgb, var(--text) 12%, transparent);
+    border-radius: 6px;
+    padding: 8px 10px;
     outline: none;
     resize: vertical;
     width: 100%;
     min-height: 120px;
     max-height: 400px;
-    line-height: 1.65;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    line-height: 1.55;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .settings-textarea:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 .settings-textarea::placeholder {
@@ -3065,25 +3037,26 @@
 }
 
 .settings-btn-primary {
-    padding: 0.35rem 0.85rem;
-    font-family: inherit;
-    font-size: 0.78rem;
+    padding: 5px 14px;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    font-size: 13px;
     font-weight: 500;
     color: white;
     background: var(--accent);
     border: none;
-    border-radius: 7px;
+    border-radius: 6px;
     cursor: pointer;
-    transition: background 0.15s ease, opacity 0.15s ease;
-    letter-spacing: 0.01em;
+    transition: filter 0.15s ease, transform 0.15s ease, opacity 0.15s ease;
+    letter-spacing: -0.01em;
 }
 
 .settings-btn-primary:hover {
-    filter: brightness(1.08);
+    filter: brightness(1.06);
 }
 
 .settings-btn-primary:active {
-    filter: brightness(0.95);
+    filter: brightness(0.94);
+    transform: scale(0.97);
 }
 
 .settings-btn-primary:disabled {
@@ -3092,22 +3065,27 @@
 }
 
 .settings-btn-secondary {
-    padding: 0.35rem 0.85rem;
-    font-family: inherit;
-    font-size: 0.78rem;
-    font-weight: 500;
-    color: var(--text-muted);
-    background: rgba(0, 0, 0, 0.04);
-    border: 0.5px solid rgba(0, 0, 0, 0.08);
-    border-radius: 7px;
+    padding: 5px 14px;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text);
+    background: color-mix(in srgb, var(--text) 5%, transparent);
+    border: 0.5px solid color-mix(in srgb, var(--text) 10%, transparent);
+    border-radius: 6px;
     cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease;
+    transition: background 0.15s ease, transform 0.15s ease;
     white-space: nowrap;
+    letter-spacing: -0.01em;
 }
 
 .settings-btn-secondary:hover {
-    background: rgba(0, 0, 0, 0.07);
-    color: var(--text);
+    background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.settings-btn-secondary:active {
+    background: color-mix(in srgb, var(--text) 12%, transparent);
+    transform: scale(0.97);
 }
 
 .settings-btn-primary.hidden {
@@ -6702,28 +6680,25 @@ a.about-link:hover {
 
 :global(html[data-theme="midnight"]) :global(.settings-panel),
 :global(html[data-theme="midnight-contrast"]) :global(.settings-panel) {
-    background: linear-gradient(135deg,
-      rgba(30, 30, 40, 0.6) 0%,
-      rgba(25, 25, 35, 0.6) 50%,
-      rgba(30, 28, 38, 0.6) 100%
-    );
+    background: var(--bg);
 }
 
 /* 导航栏 */
 :global(html[data-theme="midnight"]) .settings-nav,
 :global(html[data-theme="midnight-contrast"]) .settings-nav {
-    background: rgba(30, 30, 40, 0.72);
-    border-right-color: rgba(255, 255, 255, 0.06);
+    background: color-mix(in srgb, var(--bg) 80%, white 4%);
+    border-right-color: rgba(255, 255, 255, 0.08);
 }
 
 :global(html[data-theme="midnight"]) .settings-nav-item:hover,
 :global(html[data-theme="midnight-contrast"]) .settings-nav-item:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.07);
 }
 
 :global(html[data-theme="midnight"]) .settings-nav-item.active,
 :global(html[data-theme="midnight-contrast"]) .settings-nav-item.active {
-    background: rgba(10, 132, 255, 0.18);
+    background: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.95);
 }
 
 /* 卡片容器 */

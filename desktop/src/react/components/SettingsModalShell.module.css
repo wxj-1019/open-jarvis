@@ -1,7 +1,7 @@
 .overlay {
   --settings-modal-open-dur: var(--duration-slow);
   --settings-modal-close-dur: var(--duration-fast);
-  --settings-modal-scale: 0.96;
+  --settings-modal-scale: 0.97;
   --settings-modal-ease: cubic-bezier(0.22, 1, 0.36, 1);
   position: fixed;
   inset: 0;
@@ -10,9 +10,7 @@
   align-items: center;
   justify-content: center;
   padding: var(--space-lg);
-  background:
-    radial-gradient(circle at 50% 42%, rgba(248, 245, 237, 0.1), rgba(20, 18, 14, 0.16) 62%, rgba(20, 18, 14, 0.24)),
-    rgba(20, 18, 14, 0.2);
+  background: rgba(0, 0, 0, 0.18);
   opacity: 0;
   backdrop-filter: blur(0);
   -webkit-backdrop-filter: blur(0);
@@ -25,8 +23,8 @@
 
 .overlay.open {
   opacity: 1;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
 }
 
 .overlay.closing {
@@ -45,11 +43,12 @@
   overflow: hidden;
   background: var(--bg);
   color: var(--text);
-  border: 1px solid var(--overlay-light);
-  border-radius: var(--radius-lg, 4px);
+  border: 0.5px solid color-mix(in srgb, var(--text) 10%, transparent);
+  border-radius: 14px;
   box-shadow:
-    0 26px 70px rgba(20, 18, 14, 0.18),
-    0 8px 24px rgba(20, 18, 14, 0.12);
+    0 0 0 0.5px rgba(0, 0, 0, 0.04),
+    0 24px 80px rgba(0, 0, 0, 0.14),
+    0 8px 24px rgba(0, 0, 0, 0.08);
   opacity: 0;
   transform: scale(var(--settings-modal-scale));
   transform-origin: center;
@@ -86,6 +85,7 @@
     width: calc(100vw - var(--space-sm) - var(--space-sm));
     height: calc(100vh - var(--space-sm) - var(--space-sm));
     min-height: 0;
+    border-radius: 12px;
   }
 }
 

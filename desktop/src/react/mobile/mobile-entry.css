@@ -516,7 +516,7 @@ html[data-platform="linux"] .tb-toggle-right {
 .chat-area {
     flex: 1;
     overflow-y: auto;
-    padding: 48px var(--space-lg) 10rem;
+  padding: 48px var(--space-lg) 10rem;
     scroll-behavior: smooth;
 }
 
@@ -730,7 +730,7 @@ html[data-platform="linux"] .tb-toggle-right {
     bottom: 0;
     left: 0;
     z-index: 5;
-    padding: 0 var(--space-lg) var(--space-lg);
+  padding: 0 var(--space-lg) var(--space-lg);
     background: transparent;
     pointer-events: none;
 }

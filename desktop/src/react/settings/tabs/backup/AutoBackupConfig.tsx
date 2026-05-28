@@ -2,16 +2,25 @@ import { useState, useEffect } from 'react';
 import { hanaFetch } from '../../api';
 import { t } from '../../helpers';
 import { useSettingsStore } from '../../store';
+import { Toggle } from '../../widgets/Toggle';
+import { SettingsRow } from '../../components/SettingsRow';
+import { SettingsSection } from '../../components/SettingsSection';
+import { NumberInput } from '../../components/NumberInput';
+import tabStyles from '../../Settings.module.css';
+import styles from './BackupTab.module.css';
 import type { BackupConfig } from './backup-types';
 
+const DEFAULT_CONFIG: BackupConfig = {
+  enabled: false,
+  frequency: 'weekly',
+  time: '02:00',
+  retainCount: 10,
+};
+
 export function AutoBackupConfig() {
-  const [config, setConfig] = useState<BackupConfig>({
-    enabled: false,
-    frequency: 'weekly',
-    time: '02:00',
-    retainCount: 10,
-  });
+  const [config, setConfig] = useState<BackupConfig>(DEFAULT_CONFIG);
   const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const showToast = useSettingsStore(s => s.showToast);
 
   useEffect(() => {
@@ -20,7 +29,8 @@ export function AutoBackupConfig() {
       .then(data => {
         if (data.config) setConfig(data.config);
       })
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => setLoaded(true));
   }, []);
 
   const handleSave = async () => {
@@ -34,82 +44,84 @@ export function AutoBackupConfig() {
       const result = await res.json();
       if (result.success) {
         showToast(t('settings.backup.configSaved'), 'success');
+      } else {
+        showToast(result.error || t('settings.saveFailed'), 'error');
       }
-    } catch (err: any) {
-      showToast(err.message || 'Save failed', 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : t('settings.saveFailed');
+      showToast(message, 'error');
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-        <input
-          type="checkbox"
-          checked={config.enabled}
-          onChange={(e) => setConfig({ ...config, enabled: e.target.checked })}
-        />
-        {t('settings.backup.enableAutoBackup')}
-      </label>
+    <>
+      <SettingsRow
+        label={t('settings.backup.enableAutoBackup')}
+        hint={t('settings.backup.enableAutoBackupDesc')}
+        control={
+          <Toggle
+            on={loaded ? config.enabled : undefined}
+            onChange={(enabled) => setConfig({ ...config, enabled })}
+          />
+        }
+      />
 
       {config.enabled && (
-        <>
-          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-            <label style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted, #666)' }}>{t('settings.backup.frequency')}</span>
+        <div className={styles.autoFields}>
+          <SettingsRow
+            label={t('settings.backup.frequency')}
+            control={
               <select
+                className={`${tabStyles['settings-input']} ${styles.fieldFull}`}
                 value={config.frequency}
-                onChange={(e) => setConfig({ ...config, frequency: e.target.value as any })}
-                style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border, #e1e4e8)', background: 'var(--surface-2, #fff)', color: 'var(--text, #1a1a1a)' }}
+                onChange={(e) => setConfig({ ...config, frequency: e.target.value as BackupConfig['frequency'] })}
               >
                 <option value="daily">{t('settings.backup.daily')}</option>
                 <option value="weekly">{t('settings.backup.weekly')}</option>
                 <option value="monthly">{t('settings.backup.monthly')}</option>
               </select>
-            </label>
-
-            <label style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted, #666)' }}>{t('settings.backup.time')}</span>
+            }
+          />
+          <SettingsRow
+            label={t('settings.backup.time')}
+            control={
               <input
                 type="time"
+                className={`${tabStyles['settings-input']} ${styles.fieldFull}`}
                 value={config.time}
                 onChange={(e) => setConfig({ ...config, time: e.target.value })}
-                style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border, #e1e4e8)', background: 'var(--surface-2, #fff)', color: 'var(--text, #1a1a1a)' }}
               />
-            </label>
-
-            <label style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted, #666)' }}>{t('settings.backup.retainCount')}</span>
-              <input
-                type="number"
+            }
+          />
+          <SettingsRow
+            label={t('settings.backup.retainCount')}
+            hint={t('settings.backup.retainCountDesc')}
+            control={
+              <NumberInput
                 value={config.retainCount}
-                onChange={(e) => setConfig({ ...config, retainCount: Number(e.target.value) })}
-                style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border, #e1e4e8)', background: 'var(--surface-2, #fff)', color: 'var(--text, #1a1a1a)', width: '80px' }}
-                min="1"
-                max="50"
+                min={1}
+                max={50}
+                onChange={(retainCount) => setConfig({ ...config, retainCount })}
               />
-            </label>
-          </div>
-
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '6px',
-              border: 'none',
-              background: saving ? 'var(--text-muted, #666)' : 'var(--accent, #4a9eff)',
-              color: '#fff',
-              cursor: saving ? 'not-allowed' : 'pointer',
-              opacity: saving ? 0.5 : 1,
-              alignSelf: 'flex-start',
-            }}
-          >
-            {saving ? '...' : 'Save'}
-          </button>
-        </>
+            }
+          />
+        </div>
       )}
-    </div>
+
+      {config.enabled && (
+        <SettingsSection.Footer>
+          <button
+            type="button"
+            className={tabStyles['settings-btn-primary']}
+            onClick={handleSave}
+            disabled={saving || !loaded}
+          >
+            {saving ? '...' : t('settings.save')}
+          </button>
+        </SettingsSection.Footer>
+      )}
+    </>
   );
 }

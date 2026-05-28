@@ -3,7 +3,8 @@ import { t, autoSaveConfig } from '../../helpers';
 import { Toggle } from '../../widgets/Toggle';
 import { loadSettingsConfig } from '../../actions';
 import { SettingsSection } from '../../components/SettingsSection';
-import styles from '../../Settings.module.css';
+import skillStyles from '../SkillsTab.module.css';
+import { SettingsRow } from '../../components/SettingsRow';
 
 interface LearnConfig {
   enabled?: boolean;
@@ -47,64 +48,60 @@ export function SkillCapabilities({ learnCfg }: SkillCapabilitiesProps) {
   return (
     <>
       <SettingsSection title={t('settings.toolCaps.title')}>
-        <div className={styles['capability-row']}>
-          <div className={styles['capability-row-label']}>
-            <span className={styles['capability-row-name']}>{t('settings.skills.learnCreate')}</span>
-            <span className={styles['capability-row-desc']}>{t('settings.skills.learnCreateDesc')}</span>
-          </div>
-          <Toggle
-            on={learnEnabled}
-            onChange={async (on) => {
-              if (!on && githubEnabled) {
-                await autoSaveConfig(
-                  { capabilities: { learn_skills: { enabled: false, allow_github_fetch: false } } },
-                  { silent: true },
-                );
-              } else {
-                await autoSaveConfig(
-                  { capabilities: { learn_skills: { enabled: on } } },
-                  { silent: true },
-                );
-              }
-              await loadSettingsConfig();
-            }}
-          />
-        </div>
-        {learnEnabled && (
-          <div className={`${styles['capability-row']} ${styles['capability-row-nested']}`}>
-            <div className={styles['capability-row-label']}>
-              <span className={styles['capability-row-name']}>{t('settings.skills.fetchRemote')}</span>
-              <span className={`${styles['capability-row-desc']} ${styles['warn']}`}>{t('settings.skills.fetchRemoteDesc')}</span>
-            </div>
+        <SettingsSection.Note>{t('settings.skills.capabilitiesSectionNote')}</SettingsSection.Note>
+        <SettingsRow
+          label={t('settings.skills.learnCreate')}
+          hint={t('settings.skills.learnCreateDesc')}
+          control={
             <Toggle
-              on={githubEnabled}
-              onChange={handleGithubToggle}
-            />
-          </div>
-        )}
-        {learnEnabled && (
-          <div className={`${styles['capability-row']} ${styles['capability-row-nested']}`}>
-            <div className={styles['capability-row-label']}>
-              <span className={styles['capability-row-name']}>{t('settings.skills.safetyReview')}</span>
-              <span className={styles['capability-row-desc']}>{t('settings.skills.safetyReviewDesc')}</span>
-            </div>
-            <Toggle
-              on={safetyReviewEnabled}
+              on={learnEnabled}
               onChange={async (on) => {
-                if (!on) {
-                  setShowSafetyWarning(true);
-                } else {
+                if (!on && githubEnabled) {
                   await autoSaveConfig(
-                    { capabilities: { learn_skills: { safety_review: true } } },
+                    { capabilities: { learn_skills: { enabled: false, allow_github_fetch: false } } },
                     { silent: true },
                   );
-                  await loadSettingsConfig();
+                } else {
+                  await autoSaveConfig(
+                    { capabilities: { learn_skills: { enabled: on } } },
+                    { silent: true },
+                  );
                 }
+                await loadSettingsConfig();
               }}
             />
-          </div>
+          }
+        />
+        {learnEnabled && (
+          <SettingsRow
+            label={t('settings.skills.fetchRemote')}
+            hint={t('settings.skills.fetchRemoteDesc')}
+            control={<Toggle on={githubEnabled} onChange={handleGithubToggle} />}
+          />
         )}
-        <p className={styles['settings-inline-note']} style={{ padding: 'var(--space-sm) var(--space-md)', margin: 0 }}>{t('settings.skills.learnHint')}</p>
+        {learnEnabled && (
+          <SettingsRow
+            label={t('settings.skills.safetyReview')}
+            hint={t('settings.skills.safetyReviewDesc')}
+            control={
+              <Toggle
+                on={safetyReviewEnabled}
+                onChange={async (on) => {
+                  if (!on) {
+                    setShowSafetyWarning(true);
+                  } else {
+                    await autoSaveConfig(
+                      { capabilities: { learn_skills: { safety_review: true } } },
+                      { silent: true },
+                    );
+                    await loadSettingsConfig();
+                  }
+                }}
+              />
+            }
+          />
+        )}
+        <p className={skillStyles.learnHint}>{t('settings.skills.learnHint')}</p>
       </SettingsSection>
 
       {showGithubWarning && (
