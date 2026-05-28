@@ -24,13 +24,28 @@ export function createProductivityRoute(engine, hub) {
     };
   }
 
+  /**
+   * 验证日期字符串是否有效
+   * @param {string|undefined} dateStr
+   * @returns {Date|null}
+   */
+  function parseDate(dateStr) {
+    if (!dateStr) return new Date();
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) {
+      return null; // 无效日期
+    }
+    return date;
+  }
+
   // ── GET /api/productivity/daily ──
   route.get("/daily", async (c) => {
     const { analyzer } = getComponents();
     if (!analyzer) return c.json({ error: "productivity analyzer not available" }, 503);
 
     try {
-      const date = c.req.query("date") ? new Date(c.req.query("date")) : new Date();
+      const date = parseDate(c.req.query("date"));
+      if (!date) return c.json({ error: "invalid date format" }, 400);
       const report = await analyzer.generateDailyReport(date);
       return c.json(report);
     } catch (err) {
@@ -44,7 +59,8 @@ export function createProductivityRoute(engine, hub) {
     if (!analyzer) return c.json({ error: "productivity analyzer not available" }, 503);
 
     try {
-      const weekStart = c.req.query("weekStart") ? new Date(c.req.query("weekStart")) : new Date();
+      const weekStart = parseDate(c.req.query("weekStart"));
+      if (!weekStart) return c.json({ error: "invalid date format" }, 400);
       const report = await analyzer.generateWeeklyReport(weekStart);
       return c.json(report);
     } catch (err) {
@@ -60,7 +76,8 @@ export function createProductivityRoute(engine, hub) {
     }
 
     try {
-      const date = c.req.query("date") ? new Date(c.req.query("date")) : new Date();
+      const date = parseDate(c.req.query("date"));
+      if (!date) return c.json({ error: "invalid date format" }, 400);
       const report = await analyzer.generateDailyReport(date);
       const suggestions = suggestionEngine.generateSuggestions(report, date);
 

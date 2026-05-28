@@ -695,6 +695,16 @@ export class Scheduler {
   _startPatternLearning() {
     if (this._patternMiner) return; // 幂等
 
+    // 用于回滚的临时变量
+    let windowEventsStore = null;
+    let patternMiner = null;
+    let taskPredictor = null;
+    let ruleSuggestionEngine = null;
+    let usageStats = null;
+    let productivityAnalyzer = null;
+    let suggestionEngine = null;
+    let patternLearningTimer = null;
+
     try {
       // 尝试初始化 WindowEventsStore（依赖 better-sqlite3 数据库实例）
       // 如果数据库不可用则跳过，不阻塞 Scheduler 启动
@@ -704,28 +714,45 @@ export class Scheduler {
         return;
       }
 
-      this._windowEventsStore = new WindowEventsStore(db);
-      this._windowEventsStore.init();
+      // 逐步初始化，任何步骤失败都可以回滚
+      windowEventsStore = new WindowEventsStore(db);
+      windowEventsStore.init();
 
-      this._patternMiner = new PatternMiner();
-      this._taskPredictor = new TaskPredictor();
-      this._ruleSuggestionEngine = new RuleSuggestionEngine();
-      this._usageStats = new UsageStatistics({ store: this._windowEventsStore });
+      patternMiner = new PatternMiner();
+      taskPredictor = new TaskPredictor();
+      ruleSuggestionEngine = new RuleSuggestionEngine();
+      usageStats = new UsageStatistics({ store: windowEventsStore });
 
       // Phase 6: Productivity analysis
-      this._productivityAnalyzer = new ProductivityAnalyzer({ store: this._windowEventsStore });
-      this._suggestionEngine = new AgentSuggestionEngine();
+      productivityAnalyzer = new ProductivityAnalyzer({ store: windowEventsStore });
+      suggestionEngine = new AgentSuggestionEngine();
 
       // 每小时运行一次模式分析
-      this._patternLearningTimer = setInterval(() => {
+      patternLearningTimer = setInterval(() => {
         this._runPatternAnalysis().catch((err) => {
           log.warn(`Pattern analysis failed: ${err.message}`);
         });
       }, 3600000);
 
+      // 所有初始化成功后才赋值到实例
+      this._windowEventsStore = windowEventsStore;
+      this._patternMiner = patternMiner;
+      this._taskPredictor = taskPredictor;
+      this._ruleSuggestionEngine = ruleSuggestionEngine;
+      this._usageStats = usageStats;
+      this._productivityAnalyzer = productivityAnalyzer;
+      this._suggestionEngine = suggestionEngine;
+      this._patternLearningTimer = patternLearningTimer;
+
       log.log("Pattern Learning 已启动 (hourly)");
     } catch (err) {
       log.warn(`Pattern Learning 启动失败: ${err.message}`);
+      
+      // 回滚：清理已创建的资源
+      if (patternLearningTimer) {
+        clearInterval(patternLearningTimer);
+      }
+      // 其他组件没有显式的 stop/cleanup 方法，依赖 GC 回收
     }
   }
 
