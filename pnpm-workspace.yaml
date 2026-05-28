@@ -4,3 +4,6 @@ packages:
 onlyBuiltDependencies:
   - sharp
   - better-sqlite3
+  - get-windows
+  - esbuild
+  - node-pty
