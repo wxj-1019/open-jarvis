@@ -22,6 +22,7 @@ import { createSubagentPreviewSlice, type SubagentPreviewSlice } from './subagen
 import { createComputerOverlaySlice, type ComputerOverlaySlice } from './computer-overlay-slice';
 import { createScreenshotSlice, type ScreenshotSlice } from './screenshot-slice';
 import { createGuiWhitelistSlice, type GuiWhitelistSlice } from './gui-whitelist-slice';
+import { createPageModeSlice, type PageModeSlice } from './page-mode-slice';
 
 export type StoreState = ConnectionSlice &
   SessionSlice &
@@ -45,7 +46,8 @@ export type StoreState = ConnectionSlice &
   SubagentPreviewSlice &
   ComputerOverlaySlice &
   ScreenshotSlice &
-  GuiWhitelistSlice;
+  GuiWhitelistSlice &
+  PageModeSlice;
 
 export const useStore = create<StoreState>()((set, _get, _api) => ({
   ...createConnectionSlice(set, _get),
@@ -70,7 +72,8 @@ export const useStore = create<StoreState>()((set, _get, _api) => ({
   ...createSubagentPreviewSlice(set),
   ...createComputerOverlaySlice(set),
   ...createScreenshotSlice(set),
-  ...createGuiWhitelistSlice(),
+  ...createGuiWhitelistSlice(set, _get, _api),
+  ...createPageModeSlice(set, _get, _api),
 }));
 
 // Re-export slice types
@@ -98,4 +101,5 @@ export type {
   ComputerOverlaySlice,
   ScreenshotSlice,
   GuiWhitelistSlice,
+  PageModeSlice,
 };
