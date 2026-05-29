@@ -1246,6 +1246,78 @@
     }
 }
 
+/* VoiceChatButton 组件样式 */
+.voice-chat-container {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.voice-chat-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.65rem;
+    font-family: inherit;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--duration-slow) var(--ease-out);
+    -webkit-app-region: no-drag;
+}
+
+.voice-chat-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.voice-chat-label {
+    white-space: nowrap;
+}
+
+.voice-chat-duration {
+    font-size: 0.65rem;
+    font-family: monospace;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.voice-chat-pause-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    color: var(--text-muted);
+    background: var(--bg-card);
+    border: 1px solid rgba(var(--accent-rgb), 0.12);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--duration-slow) var(--ease-out);
+    -webkit-app-region: no-drag;
+}
+
+.voice-chat-pause-btn:hover {
+    color: var(--accent);
+    border-color: rgba(var(--accent-rgb), 0.25);
+}
+
+/* 图标脉冲动画（listening/speaking 状态） */
+.voice-icon-pulse {
+    display: inline-flex;
+    animation: hana-continuous-pulse 1.5s ease-in-out infinite;
+}
+
+/* 图标旋转动画（processing 状态） */
+.voice-icon-spin {
+    display: inline-flex;
+    animation: hana-spin 1s linear infinite;
+}
+
 /* 输入框容器（双行布局） */
 .input-wrapper {
     position: relative;
