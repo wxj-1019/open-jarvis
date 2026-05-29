@@ -2588,6 +2588,30 @@
   "preview.openInNewWindow": "在新窗口查看",
   "preview.openInNewWindowUnsupported": "此类型不支持新窗口查看",
   "preview.markdownEditorStatus": "选中 {selected} 字 · 共 {total} 字",
+  "capabilities": {
+    "title": "能力面板",
+    "skills": "技能",
+    "connectors": "连接器",
+    "noSkills": "暂无技能",
+    "noSkillsDesc": "在工作台中添加技能文件夹",
+    "noConnectors": "暂无活跃连接器",
+    "noConnectorsDesc": "在设置中配置 MCP 连接器",
+    "tools": "工具",
+    "statusRunning": "运行中",
+    "statusStopped": "已停止",
+    "viewSkill": "查看技能",
+    "goToSettings": "前往设置"
+  },
+  "pageMode": {
+    "chat": "文字对话",
+    "voice": "语音对话",
+    "chatDesc": "与 AI 进行文字交流",
+    "voiceDesc": "与 AI 进行语音对话",
+    "switching": "切换中...",
+    "paused": "语音对话已暂停",
+    "pausedDesc": "切换回语音模式可继续对话",
+    "resume": "继续对话"
+  },
   "emojiStyle": {
     "title": "工具图标风格",
     "description": "选择工具调用时显示的 emoji 风格",

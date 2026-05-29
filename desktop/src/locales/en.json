@@ -2594,6 +2594,30 @@
   "preview.openInNewWindow": "Open in new window",
   "preview.openInNewWindowUnsupported": "Not supported for this type",
   "preview.markdownEditorStatus": "Selected {selected} chars · Total {total} chars",
+  "capabilities": {
+    "title": "Capabilities",
+    "skills": "Skills",
+    "connectors": "Connectors",
+    "noSkills": "No skills yet",
+    "noSkillsDesc": "Add skill folders in your workspace",
+    "noConnectors": "No active connectors",
+    "noConnectorsDesc": "Configure MCP connectors in Settings",
+    "tools": "tools",
+    "statusRunning": "Running",
+    "statusStopped": "Stopped",
+    "viewSkill": "View skill",
+    "goToSettings": "Go to Settings"
+  },
+  "pageMode": {
+    "chat": "Text Chat",
+    "voice": "Voice Chat",
+    "chatDesc": "Communicate with AI via text",
+    "voiceDesc": "Communicate with AI via voice",
+    "switching": "Switching...",
+    "paused": "Voice conversation paused",
+    "pausedDesc": "Switch back to voice mode to continue",
+    "resume": "Resume conversation"
+  },
   "emojiStyle": {
     "title": "Tool Icon Style",
     "description": "Choose the emoji style shown during tool calls",
