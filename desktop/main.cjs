@@ -907,7 +907,18 @@ async function _spawnServerOnce(serverInfoPath) {
   const _stdoutFd = process.stdout.fd ?? 1;
   const _stderrFd = process.stderr.fd ?? 2;
   const _writeToTerminal = (fd, text) => {
-    try { fs.writeSync(fd, text); } catch {}
+    try {
+      // 优先使用 fd 直接写入，如果失败则回退到 console.log
+      if (typeof fd === 'number') {
+        fs.writeSync(fd, text);
+      } else {
+        // Electron GUI 模式下 process.stdout.fd 可能为 undefined
+        console.log(text);
+      }
+    } catch {
+      // 最终回退
+      console.log(text);
+    }
   };
   serverProcess.stdout?.on("data", (chunk) => {
     const text = redactMainLogText(chunk.toString());
@@ -3491,6 +3502,95 @@ wrapIpcBestEffortHandler("speak-text", (_event, text, opts) => {
     if (!win.isDestroyed()) {
       win.webContents.send("speak-request", text, opts);
     }
+  }
+});
+
+// ── 语音对话循环 IPC ──
+const voiceConversationState = { loop: null, vad: null };
+
+wrapIpcBestEffortHandler("voice:start", async (_event, opts) => {
+  const { VADService } = await import("../../lib/speech/vad-service.js");
+  const { VoiceConversationLoop } = await import("../../lib/speech/voice-conversation-loop.js");
+
+  const vad = new VADService(opts?.vadOpts);
+  const loop = new VoiceConversationLoop(
+    {
+      vadService: vad,
+      sttEngine: {
+        startListening: async () => {
+          return [];
+        },
+      },
+      ttsEngine: {
+        speak: async (text) => {
+          for (const win of BrowserWindow.getAllWindows()) {
+            if (!win.isDestroyed()) {
+              win.webContents.send("voice:ttsSpeak", text);
+            }
+          }
+        },
+      },
+      onUserText: async (text) => {
+        for (const win of BrowserWindow.getAllWindows()) {
+          if (!win.isDestroyed()) {
+            win.webContents.send("voice:userText", text);
+          }
+        }
+        return "";
+      },
+    },
+    opts?.loopOpts
+  );
+
+  loop.on("statechange", (state) => {
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (!win.isDestroyed()) {
+        win.webContents.send("voice:stateChange", state);
+      }
+    }
+  });
+
+  loop.on("recognized", (text) => {
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (!win.isDestroyed()) {
+        win.webContents.send("voice:recognized", text);
+      }
+    }
+  });
+
+  loop.on("aiText", (text) => {
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (!win.isDestroyed()) {
+        win.webContents.send("voice:aiText", text);
+      }
+    }
+  });
+
+  voiceConversationState.loop = loop;
+  voiceConversationState.vad = vad;
+
+  await loop.start();
+});
+
+wrapIpcBestEffortHandler("voice:stop", async () => {
+  if (voiceConversationState.loop) {
+    await voiceConversationState.loop.stop();
+    voiceConversationState.loop = null;
+    voiceConversationState.vad = null;
+  }
+});
+
+wrapIpcBestEffortHandler("voice:pause", () => {
+  voiceConversationState.loop?.pause();
+});
+
+wrapIpcBestEffortHandler("voice:resume", () => {
+  voiceConversationState.loop?.resume();
+});
+
+wrapIpcOn("voice:audioEnergy", (_event, rms) => {
+  if (voiceConversationState.vad) {
+    voiceConversationState.vad.processAudio(rms);
   }
 });
 

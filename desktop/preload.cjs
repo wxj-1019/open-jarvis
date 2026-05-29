@@ -141,4 +141,35 @@ contextBridge.exposeInMainWorld("hana", {
     ipcRenderer.on("speak-request", handler);
     return () => ipcRenderer.removeListener("speak-request", handler);
   },
+  // 语音对话循环
+  startVoiceConversation: (opts) => ipcRenderer.invoke("voice:start", opts),
+  stopVoiceConversation: () => ipcRenderer.invoke("voice:stop"),
+  pauseVoiceConversation: () => ipcRenderer.invoke("voice:pause"),
+  resumeVoiceConversation: () => ipcRenderer.invoke("voice:resume"),
+  sendAudioEnergy: (rms) => ipcRenderer.send("voice:audioEnergy", rms),
+  onVoiceStateChange: (cb) => {
+    const handler = (_, state) => cb(state);
+    ipcRenderer.on("voice:stateChange", handler);
+    return () => ipcRenderer.removeListener("voice:stateChange", handler);
+  },
+  onVoiceRecognized: (cb) => {
+    const handler = (_, text) => cb(text);
+    ipcRenderer.on("voice:recognized", handler);
+    return () => ipcRenderer.removeListener("voice:recognized", handler);
+  },
+  onVoiceUserText: (cb) => {
+    const handler = (_, text) => cb(text);
+    ipcRenderer.on("voice:userText", handler);
+    return () => ipcRenderer.removeListener("voice:userText", handler);
+  },
+  onVoiceAiText: (cb) => {
+    const handler = (_, text) => cb(text);
+    ipcRenderer.on("voice:aiText", handler);
+    return () => ipcRenderer.removeListener("voice:aiText", handler);
+  },
+  onVoiceTtsSpeak: (cb) => {
+    const handler = (_, text) => cb(text);
+    ipcRenderer.on("voice:ttsSpeak", handler);
+    return () => ipcRenderer.removeListener("voice:ttsSpeak", handler);
+  },
 });
