@@ -358,4 +358,112 @@ describe("VADService", () => {
 
     vi.useRealTimers();
   });
+
+  // ── reset ──
+
+  it("reset clears timers and resets to SILENCE when running", () => {
+    vi.useFakeTimers();
+
+    vad.start();
+    const loud = new Float32Array(1000).fill(0.5);
+
+    vad.onAudioData(loud);
+    vi.advanceTimersByTime(200);
+
+    vad.reset();
+
+    expect(vad.getState()).toBe(VAD_STATE.SILENCE);
+    expect(vad._speechStarted).toBe(false);
+
+    vi.useRealTimers();
+  });
+
+  it("reset from SPEECH state transitions back to SILENCE", () => {
+    vi.useFakeTimers();
+
+    vad.start();
+    const loud = new Float32Array(1000).fill(0.5);
+
+    vad.onAudioData(loud);
+    vi.advanceTimersByTime(350);
+    vad.onAudioData(loud);
+    expect(vad.getState()).toBe(VAD_STATE.SPEECH);
+
+    vad.reset();
+
+    expect(vad.getState()).toBe(VAD_STATE.SILENCE);
+    expect(vad._speechStarted).toBe(false);
+
+    vi.useRealTimers();
+  });
+
+  it("reset is no-op when not running (stays UNKNOWN)", () => {
+    vad.reset();
+    expect(vad.getState()).toBe(VAD_STATE.UNKNOWN);
+  });
+
+  it("reset emits statechange when transitioning from SPEECH to SILENCE", () => {
+    vi.useFakeTimers();
+
+    const spy = vi.fn();
+    vad.on("statechange", spy);
+
+    vad.start();
+    const loud = new Float32Array(1000).fill(0.5);
+
+    vad.onAudioData(loud);
+    vi.advanceTimersByTime(350);
+    vad.onAudioData(loud);
+    expect(vad.getState()).toBe(VAD_STATE.SPEECH);
+
+    spy.mockClear();
+    vad.reset();
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy.mock.calls[0][0]).toEqual({
+      state: VAD_STATE.SILENCE,
+      prev: VAD_STATE.SPEECH,
+    });
+
+    vi.useRealTimers();
+  });
+
+  // ── processAudio ──
+
+  it("processAudio accepts RMS value directly", () => {
+    vi.useFakeTimers();
+
+    vad.start();
+    vad.processAudio(0.5);
+    vi.advanceTimersByTime(350);
+    vad.processAudio(0.5);
+
+    expect(vad.getState()).toBe(VAD_STATE.SPEECH);
+
+    vi.useRealTimers();
+  });
+
+  it("processAudio with low RMS triggers silence", () => {
+    vad.start();
+    vad.processAudio(0.001);
+    expect(vad.getState()).toBe(VAD_STATE.SILENCE);
+  });
+
+  it("processAudio is no-op when not running", () => {
+    vad.processAudio(0.5);
+    expect(vad.getState()).toBe(VAD_STATE.UNKNOWN);
+  });
+
+  it("processAudio respects silenceThreshold", () => {
+    const custom = new VADService({ silenceThreshold: 0.1 });
+    custom.start();
+
+    custom.processAudio(0.05);
+    expect(custom.getState()).toBe(VAD_STATE.SILENCE);
+
+    custom.processAudio(0.15);
+    expect(custom._speechTimer).not.toBeNull();
+
+    custom.stop();
+  });
 });
