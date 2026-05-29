@@ -382,14 +382,94 @@ describe("VoiceConversationLoop", () => {
 
     await loop.start();
 
-    // 快速触发两次
     deps.vadService.emit("speechend", new Float32Array([0.1]));
     deps.vadService.emit("speechend", new Float32Array([0.2]));
 
     await vi.runAllTimersAsync();
 
-    // Agent 应该只被调用一次
     expect(deps.onUserText).toHaveBeenCalledTimes(1);
+
+    await loop.stop();
+  });
+
+  // ── 构造函数验证 ──
+
+  it("缺少 deps 对象时抛出错误", () => {
+    expect(() => new VoiceConversationLoop(null)).toThrow(
+      "VoiceConversationLoop requires a deps object"
+    );
+    expect(() => new VoiceConversationLoop(undefined)).toThrow(
+      "VoiceConversationLoop requires a deps object"
+    );
+    expect(() => new VoiceConversationLoop({})).toThrow(
+      "VoiceConversationLoop requires deps.vadService"
+    );
+  });
+
+  it("缺少必需依赖时抛出错误", () => {
+    expect(
+      () => new VoiceConversationLoop({ sttEngine: {}, ttsEngine: {}, onUserText: async () => "" })
+    ).toThrow("VoiceConversationLoop requires deps.vadService");
+
+    expect(
+      () => new VoiceConversationLoop({ vadService: {}, ttsEngine: {}, onUserText: async () => "" })
+    ).toThrow("VoiceConversationLoop requires deps.sttEngine");
+
+    expect(
+      () => new VoiceConversationLoop({ vadService: {}, sttEngine: {}, onUserText: async () => "" })
+    ).toThrow("VoiceConversationLoop requires deps.ttsEngine");
+
+    expect(
+      () => new VoiceConversationLoop({ vadService: {}, sttEngine: {}, ttsEngine: {} })
+    ).toThrow("VoiceConversationLoop requires deps.onUserText to be a function");
+  });
+
+  // ── 优雅取消 ──
+
+  it("stop() 在处理中时优雅取消剩余步骤", async () => {
+    deps = createMockDeps();
+    let resolveAgent;
+    deps.onUserText = vi.fn(async (text) => {
+      return new Promise((resolve) => {
+        resolveAgent = () => resolve(`delayed response to: ${text}`);
+      });
+    });
+    loop = new VoiceConversationLoop(deps);
+
+    const states = [];
+    loop.on("statechange", (state) => states.push(state));
+
+    await loop.start();
+
+    deps.vadService.emit("speechend", new Float32Array([0.1]));
+
+    await vi.runAllTicks();
+
+    expect(loop.getState()).toBe(LOOP_STATE.PROCESSING);
+
+    await loop.stop();
+
+    resolveAgent();
+
+    await vi.runAllTimersAsync();
+
+    expect(deps.ttsEngine.speak).not.toHaveBeenCalled();
+    expect(loop.getState()).toBe(LOOP_STATE.IDLE);
+  });
+
+  it("resume() 重置 stopping 标志并恢复对话", async () => {
+    deps = createMockDeps();
+    loop = new VoiceConversationLoop(deps);
+
+    await loop.start();
+    loop.pause();
+    
+    expect(loop.getState()).toBe(LOOP_STATE.PAUSED);
+
+    loop.resume();
+
+    expect(loop.getState()).toBe(LOOP_STATE.IDLE);
+    expect(deps.vadService.start).toHaveBeenCalledTimes(2);
 
     await loop.stop();
   });
