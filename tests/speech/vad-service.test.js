@@ -13,6 +13,7 @@ describe("VADService", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vad?.stop();
   });
 
@@ -179,7 +180,6 @@ describe("VADService", () => {
 
     expect(vad.getState()).toBe(VAD_STATE.SPEECH);
 
-    vi.useRealTimers();
     vad.stop();
   });
 
@@ -205,7 +205,6 @@ describe("VADService", () => {
 
     expect(vad.getState()).toBe(VAD_STATE.SILENCE);
 
-    vi.useRealTimers();
     vad.stop();
   });
 
@@ -226,7 +225,6 @@ describe("VADService", () => {
 
     expect(spy).toHaveBeenCalledTimes(1);
 
-    vi.useRealTimers();
     vad.stop();
   });
 
@@ -253,7 +251,6 @@ describe("VADService", () => {
 
     expect(spy).toHaveBeenCalledTimes(1);
 
-    vi.useRealTimers();
     vad.stop();
   });
 
@@ -280,7 +277,6 @@ describe("VADService", () => {
 
     expect(spy).toHaveBeenCalledTimes(1);
 
-    vi.useRealTimers();
     vad.stop();
   });
 
@@ -338,8 +334,6 @@ describe("VADService", () => {
 
     // stop 后状态应该是 UNKNOWN
     expect(vad.getState()).toBe(VAD_STATE.UNKNOWN);
-
-    vi.useRealTimers();
   });
 
   it("resets silence timer on stop", () => {
@@ -355,8 +349,6 @@ describe("VADService", () => {
 
     vad.stop();
     expect(vad.getState()).toBe(VAD_STATE.UNKNOWN);
-
-    vi.useRealTimers();
   });
 
   // ── reset ──
@@ -374,8 +366,6 @@ describe("VADService", () => {
 
     expect(vad.getState()).toBe(VAD_STATE.SILENCE);
     expect(vad._speechStarted).toBe(false);
-
-    vi.useRealTimers();
   });
 
   it("reset from SPEECH state transitions back to SILENCE", () => {
@@ -393,8 +383,6 @@ describe("VADService", () => {
 
     expect(vad.getState()).toBe(VAD_STATE.SILENCE);
     expect(vad._speechStarted).toBe(false);
-
-    vi.useRealTimers();
   });
 
   it("reset is no-op when not running (stays UNKNOWN)", () => {
@@ -424,8 +412,6 @@ describe("VADService", () => {
       state: VAD_STATE.SILENCE,
       prev: VAD_STATE.SPEECH,
     });
-
-    vi.useRealTimers();
   });
 
   // ── processAudio ──
@@ -439,8 +425,6 @@ describe("VADService", () => {
     vad.processAudio(0.5);
 
     expect(vad.getState()).toBe(VAD_STATE.SPEECH);
-
-    vi.useRealTimers();
   });
 
   it("processAudio with low RMS triggers silence", () => {
