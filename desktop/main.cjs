@@ -3511,13 +3511,28 @@ const voiceConversationState = { loop: null, vad: null };
 wrapIpcBestEffortHandler("voice:start", async (_event, opts) => {
   const { VADService } = await import("../../lib/speech/vad-service.js");
   const { VoiceConversationLoop } = await import("../../lib/speech/voice-conversation-loop.js");
+  const { WhisperSTTAdapter } = await import("../../lib/speech/whisper-stt-adapter.js");
+  const { VoiceAgentRouter } = await import("../../lib/voice/voice-agent-router.js");
 
   const vad = new VADService(opts?.vadOpts);
+  const whisperAdapter = new WhisperSTTAdapter({
+    serverUrl: process.env.WHISPER_SERVER_URL || "http://localhost:7860",
+    language: opts?.language || "zh-CN",
+  });
+
+  // 创建 VoiceAgentRouter 实例，路由到 Hub/Agent 系统
+  const agentRouter = new VoiceAgentRouter({
+    engine: globalThis.engine,
+    hub: globalThis.hub,
+  });
+
   const loop = new VoiceConversationLoop(
     {
       vadService: vad,
+      whisperSTTAdapter: whisperAdapter,
       sttEngine: {
         startListening: async () => {
+          // Fallback: 如果未提供 audio Blob，回退到 Web Speech API
           return [];
         },
       },
@@ -3531,12 +3546,18 @@ wrapIpcBestEffortHandler("voice:start", async (_event, opts) => {
         },
       },
       onUserText: async (text) => {
-        for (const win of BrowserWindow.getAllWindows()) {
-          if (!win.isDestroyed()) {
-            win.webContents.send("voice:userText", text);
-          }
-        }
-        return "";
+        // 路由到 Hub/Agent 系统获取回复
+        const response = await agentRouter.route(text, {
+          onDelta: (delta, captured) => {
+            // 可选：流式推送给前端显示
+            for (const win of BrowserWindow.getAllWindows()) {
+              if (!win.isDestroyed()) {
+                win.webContents.send("voice:aiTextDelta", delta, captured);
+              }
+            }
+          },
+        });
+        return response?.text || "";
       },
     },
     opts?.loopOpts
@@ -3592,6 +3613,18 @@ wrapIpcOn("voice:audioEnergy", (_event, rms) => {
   if (voiceConversationState.vad) {
     voiceConversationState.vad.processAudio(rms);
   }
+});
+
+// 接收前端发送的音频片段用于 Whisper STT
+wrapIpcBestEffortHandler("voice:audioBlob", async (_event, audioBlob) => {
+  const { loop, vad } = voiceConversationState;
+  if (!loop || !vad) {
+    return;
+  }
+
+  // 触发 VAD 的 speechend 并附带音频数据
+  // VoiceConversationLoop 会检测到 audioBlob 并调用 whisperSTTAdapter
+  vad.emit("speechend", audioBlob);
 });
 
 // ── 窗口控制 IPC（Windows/Linux 自绘标题栏用）──

@@ -147,6 +147,7 @@ contextBridge.exposeInMainWorld("hana", {
   pauseVoiceConversation: () => ipcRenderer.invoke("voice:pause"),
   resumeVoiceConversation: () => ipcRenderer.invoke("voice:resume"),
   sendAudioEnergy: (rms) => ipcRenderer.send("voice:audioEnergy", rms),
+  sendVoiceAudioBlob: (audioBlob) => ipcRenderer.invoke("voice:audioBlob", audioBlob),
   onVoiceStateChange: (cb) => {
     const handler = (_, state) => cb(state);
     ipcRenderer.on("voice:stateChange", handler);

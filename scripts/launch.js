@@ -55,5 +55,16 @@ switch (mode) {
 // 导致 require('electron') 拿不到内置 API。spawn 前清掉。
 delete process.env.ELECTRON_RUN_AS_NODE;
 
-const child = spawn(bin, args, { stdio: "inherit", env: process.env });
+const child = spawn(bin, args, {
+  stdio: "inherit",
+  env: process.env,
+  // Windows: 强制分配控制台窗口
+  ...(process.platform === "win32" ? { windowsHide: false } : {}),
+});
 child.on("exit", (code) => process.exit(code ?? 1));
+
+// Windows: 如果当前进程没有连接到 TTY，提示用户
+if (process.platform === "win32" && !process.stdout.isTTY) {
+  console.warn("[launch.js] 注意: 当前终端可能不支持直接查看 Electron 输出");
+  console.warn("[launch.js] 日志已写入: ~/.hanako-dev/logs/ 目录");
+}

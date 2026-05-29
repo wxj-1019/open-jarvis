@@ -7,6 +7,7 @@ import { ThinkingLevelButton } from './ThinkingLevelButton';
 import { ModelSelector } from './ModelSelector';
 import { SendButton } from './SendButton';
 import { VoiceButton } from './VoiceButton';
+import { VoiceChatButton } from './VoiceChatButton';
 import type { ThinkingLevel } from '../../stores/model-slice';
 import type { Model } from '../../types';
 import type { SessionModel } from '../../stores/chat-types';
@@ -36,6 +37,8 @@ interface Props {
   onStop: () => void;
   /** 语音识别文本回调 */
   onVoiceRecognized?: (text: string) => void;
+  /** 是否启用连续语音对话模式 */
+  voiceChatMode?: boolean;
 }
 
 /** 编辑器下方的工具按钮行 + 发送控制 */
@@ -45,7 +48,7 @@ export const InputControlBar = memo(function InputControlBar(props: Props) {
     permissionMode, onPermissionModeChange, planModeLocked,
     showThinking, thinkingLevel, onThinkingChange, modelXhigh,
     models, sessionModel, isStreaming, hasInput, canSend, onSend, onSteer, onStop,
-    onVoiceRecognized,
+    onVoiceRecognized, voiceChatMode = false,
   } = props;
 
   return (
@@ -68,7 +71,9 @@ export const InputControlBar = memo(function InputControlBar(props: Props) {
         </button>
         <PlanModeButton mode={permissionMode} onChange={onPermissionModeChange} locked={planModeLocked} />
         <ContextRing />
-        {onVoiceRecognized && (
+        {voiceChatMode ? (
+          <VoiceChatButton />
+        ) : onVoiceRecognized && (
           <VoiceButton onRecognized={onVoiceRecognized} isStreaming={isStreaming} />
         )}
       </div>
