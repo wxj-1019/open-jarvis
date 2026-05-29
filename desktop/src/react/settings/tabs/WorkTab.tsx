@@ -8,7 +8,8 @@ import { AgentSelect } from './bridge/AgentSelect';
 import { SettingsSection } from '../components/SettingsSection';
 import { SettingsRow } from '../components/SettingsRow';
 import { NumberInput } from '../components/NumberInput';
-import styles from '../Settings.module.css';
+import tabStyles from '../Settings.module.css';
+import styles from './WorkTab.module.css';
 import { PhosphorIcon } from '../../ui/PhosphorIcon';
 import { Folder, X } from '@phosphor-icons/react';
 import { DEFAULT_HEARTBEAT_INTERVAL_MINUTES } from '../../../../../shared/default-workspace-constants.js';
@@ -25,11 +26,9 @@ export function WorkTab() {
   );
   const showToast = useSettingsStore(s => s.showToast);
 
-  // ── Global toggles：直接从 store 派生，单一数据源，避免挂载时 flicker ──
   const heartbeatMaster = settingsConfig?.desk?.heartbeat_master !== false;
   const cronAutoApprove = settingsConfig?.desk?.cron_auto_approve !== false;
 
-  // ── Agent selector (作为 section context，表达"当前配置哪个 agent") ──
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(currentAgentId);
   const selectedAgentIdRef = useRef(selectedAgentId);
   selectedAgentIdRef.current = selectedAgentId;
@@ -39,9 +38,7 @@ export function WorkTab() {
     if (currentAgentId) setSelectedAgentId(currentAgentId);
   }, [currentAgentId]);
 
-  // ── Per-agent 远程快照：null = 未加载。切 agent 时重置，避免残留上一个 agent 的值 ──
   const [agentDesk, setAgentDesk] = useState<AgentDeskConfig | null>(null);
-  // hbInterval 是 draft：用户编辑后点"保存"才落盘，必须独立于 agentDesk
   const [hbIntervalDraft, setHbIntervalDraft] = useState<number | null>(null);
 
   useEffect(() => {
@@ -75,7 +72,7 @@ export function WorkTab() {
     await autoSaveConfig({ desk: { cron_auto_approve: on } });
   };
 
-  const saveAgentConfig = async (agentId: string, patch: Record<string, any>): Promise<boolean> => {
+  const saveAgentConfig = async (agentId: string, patch: Record<string, unknown>): Promise<boolean> => {
     if (!agentId) return false;
     try {
       const res = await hanaFetch(`/api/agents/${agentId}/config`, {
@@ -89,8 +86,9 @@ export function WorkTab() {
         showToast(t('settings.autoSaved'), 'success');
       }
       return true;
-    } catch (err: any) {
-      showToast(t('settings.saveFailed') + ': ' + err.message, 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      showToast(t('settings.saveFailed') + ': ' + message, 'error');
       return false;
     }
   };
@@ -152,82 +150,102 @@ export function WorkTab() {
   };
 
   return (
-    <div className={`${styles['settings-tab-content']} ${styles['active']}`} data-tab="work">
-      {/* ── Global section（对所有 agent 生效的总开关） ── */}
-      <SettingsSection title={t('settings.work.title')}>
-        <SettingsRow
-          label={t('settings.work.heartbeatMaster')}
-          hint={t('settings.work.heartbeatMasterDesc')}
-          control={<Toggle on={heartbeatMaster} onChange={toggleHeartbeatMaster} />}
-        />
-        <SettingsRow
-          label={t('settings.work.cronAutoApprove')}
-          hint={t('settings.work.cronAutoApproveDesc')}
-          control={<Toggle on={cronAutoApprove} onChange={toggleCronAutoApprove} />}
-        />
-      </SettingsSection>
+    <div className={`${tabStyles['settings-tab-content']} ${tabStyles['active']}`} data-tab="work">
+      <div className={styles.root}>
+        <p className={styles.intro}>{t('settings.work.pageDesc')}</p>
 
-      {/* ── Per-agent section（AgentSelect 作为 context，section 内所有配置针对该 agent） ── */}
-      <SettingsSection
-        title="Agent 工作书桌设置"
-        context={<AgentSelect value={selectedAgentId} onChange={setSelectedAgentId} />}
-      >
-        {agentDesk && (
-          <>
-            <SettingsRow
-              label={t('settings.work.heartbeatEnabled')}
-              control={<Toggle on={agentDesk.heartbeat_enabled} onChange={togglePerAgentHeartbeat} />}
-            />
-            <SettingsRow
-              label={t('settings.work.homeFolder')}
-              hint={t('settings.work.homeFolderDesc')}
-              layout="stacked"
-              control={
-                <div className={styles['settings-folder-picker']}>
-                  <input
-                    type="text"
-                    className={`${styles['settings-input']} ${styles['settings-folder-input']}`}
-                    readOnly
-                    value={agentDesk.home_folder}
-                    placeholder={t('settings.work.homeFolderPlaceholder')}
-                    onClick={pickHomeFolder}
-                  />
-                  <button className={styles['settings-folder-browse']} onClick={pickHomeFolder}>
-                    <PhosphorIcon icon={Folder} size={14} />
-                  </button>
-                  {agentDesk.home_folder && (
+        <SettingsSection title={t('settings.work.title')}>
+          <SettingsSection.Note>{t('settings.work.globalSectionNote')}</SettingsSection.Note>
+          <SettingsRow
+            label={t('settings.work.heartbeatMaster')}
+            hint={t('settings.work.heartbeatMasterDesc')}
+            control={<Toggle on={heartbeatMaster} onChange={toggleHeartbeatMaster} />}
+          />
+          <SettingsRow
+            label={t('settings.work.cronAutoApprove')}
+            hint={t('settings.work.cronAutoApproveDesc')}
+            control={<Toggle on={cronAutoApprove} onChange={toggleCronAutoApprove} />}
+          />
+        </SettingsSection>
+
+        <SettingsSection
+          title={t('settings.work.agentSectionTitle')}
+          context={<AgentSelect value={selectedAgentId} onChange={setSelectedAgentId} />}
+        >
+          <SettingsSection.Note>{t('settings.work.agentSectionNote')}</SettingsSection.Note>
+          {!selectedAgentId ? (
+            <p className={styles.noAgentHint}>{t('settings.work.selectAgentFirst')}</p>
+          ) : !agentDesk ? (
+            <p className={styles.loadingHint}>{t('settings.work.loadingAgent')}</p>
+          ) : (
+            <>
+              <SettingsRow
+                label={t('settings.work.heartbeatEnabled')}
+                hint={t('settings.work.heartbeatDesc')}
+                control={<Toggle on={agentDesk.heartbeat_enabled} onChange={togglePerAgentHeartbeat} />}
+              />
+              <SettingsRow
+                label={t('settings.work.homeFolder')}
+                hint={t('settings.work.homeFolderDesc')}
+                layout="stacked"
+                control={
+                  <div className={tabStyles['settings-folder-picker']}>
+                    <input
+                      type="text"
+                      className={`${tabStyles['settings-input']} ${tabStyles['settings-folder-input']}`}
+                      readOnly
+                      value={agentDesk.home_folder}
+                      placeholder={t('settings.work.homeFolderPlaceholder')}
+                      onClick={pickHomeFolder}
+                    />
                     <button
-                      className={styles['settings-folder-clear']}
-                      onClick={clearHomeFolder}
-                      title={t('settings.work.homeFolderClear')}
+                      type="button"
+                      className={tabStyles['settings-folder-browse']}
+                      onClick={pickHomeFolder}
+                      title={t('settings.work.homeFolderBrowse')}
                     >
-                      <PhosphorIcon icon={X} size={12} />
+                      <PhosphorIcon icon={Folder} size={14} />
                     </button>
-                  )}
-                </div>
-              }
-            />
-            <SettingsRow
-              label={t('settings.work.heartbeatInterval')}
-              control={
-                <>
-                  <NumberInput
-                    value={hbIntervalDraft ?? agentDesk.heartbeat_interval}
-                    onChange={setHbIntervalDraft}
-                    unit={t('settings.work.heartbeatUnit')}
-                    min={1}
-                    max={120}
-                    disabled={!agentDesk.heartbeat_enabled}
-                  />
-                  <button className={styles['settings-save-btn-ghost']} onClick={saveInterval}>
-                    {t('settings.save')}
-                  </button>
-                </>
-              }
-            />
-          </>
-        )}
-      </SettingsSection>
+                    {agentDesk.home_folder ? (
+                      <button
+                        type="button"
+                        className={tabStyles['settings-folder-clear']}
+                        onClick={clearHomeFolder}
+                        title={t('settings.work.homeFolderClear')}
+                      >
+                        <PhosphorIcon icon={X} size={12} />
+                      </button>
+                    ) : null}
+                  </div>
+                }
+              />
+              <SettingsRow
+                label={t('settings.work.heartbeatInterval')}
+                control={
+                  <div className={styles.intervalControl}>
+                    <NumberInput
+                      value={hbIntervalDraft ?? agentDesk.heartbeat_interval}
+                      onChange={setHbIntervalDraft}
+                      unit={t('settings.work.heartbeatUnit')}
+                      min={1}
+                      max={120}
+                      disabled={!agentDesk.heartbeat_enabled}
+                    />
+                    <button
+                      type="button"
+                      className={tabStyles['settings-btn-secondary']}
+                      onClick={saveInterval}
+                      disabled={!agentDesk.heartbeat_enabled}
+                    >
+                      {t('settings.save')}
+                    </button>
+                  </div>
+                }
+              />
+            </>
+          )}
+        </SettingsSection>
+      </div>
     </div>
   );
 }

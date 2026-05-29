@@ -1,0 +1,361 @@
+/* FloatingCapabilitiesPanel 悬浮窗样式 */
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.panel {
+  width: 480px;
+  max-height: 80vh;
+  background: var(--glass-bg, rgba(255, 255, 255, 0.95));
+  backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 16px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.headerIcon {
+  color: var(--accent, #537D96);
+}
+
+.headerTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text, #1a1a1a);
+}
+
+.closeBtn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  color: var(--text-muted, #666);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeBtn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: var(--text, #1a1a1a);
+}
+
+.body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.section {
+  margin-bottom: 12px;
+}
+
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.sectionHeader {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: none;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.sectionHeader:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.chevron {
+  color: var(--text-muted, #666);
+  transition: transform 0.2s ease;
+}
+
+.sectionIcon {
+  color: var(--accent, #537D96);
+}
+
+.sectionTitle {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text, #1a1a1a);
+}
+
+.badge {
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--accent, #537D96);
+  color: white;
+  border-radius: 12px;
+  min-width: 24px;
+  text-align: center;
+}
+
+.sectionList {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 4px;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--text-muted, #666);
+}
+
+.emptyIcon {
+  opacity: 0.3;
+}
+
+.emptyState p {
+  margin: 0;
+  font-size: 13px;
+}
+
+/* Skill Row */
+.skillRow {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.skillRow:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: var(--accent, #537D96);
+  box-shadow: 0 2px 8px rgba(83, 125, 150, 0.1);
+  transform: translateX(2px);
+}
+
+.skillIcon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--accent, #537D96) 12%, transparent);
+  color: var(--accent, #537D96);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.skillInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.skillName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text, #1a1a1a);
+}
+
+.skillDesc {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-secondary, #666);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.skillFooter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.trigger {
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 11px;
+  padding: 3px 6px;
+  background: color-mix(in srgb, var(--accent, #537D96) 10%, transparent);
+  color: var(--accent, #537D96);
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.viewIcon {
+  color: var(--text-muted, #666);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.skillRow:hover .viewIcon {
+  opacity: 1;
+}
+
+/* Connector Row */
+.connectorRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 10px;
+  transition: all 0.15s ease;
+}
+
+.connectorRow:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.connectorStatus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  flex-shrink: 0;
+}
+
+.statusDot {
+  fill: currentColor;
+}
+
+.statusRunning {
+  color: #4caf50;
+}
+
+.statusStopped {
+  color: #999;
+}
+
+.connectorInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.connectorName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text, #1a1a1a);
+}
+
+.connectorTools {
+  font-size: 11px;
+  color: var(--text-muted, #666);
+}
+
+/* Scrollbar */
+.body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.body::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+}
+
+.body::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .panel {
+    width: 100%;
+    max-height: 90vh;
+    border-radius: 16px 16px 0 0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+
+  .overlay {
+    align-items: flex-end;
+  }
+}

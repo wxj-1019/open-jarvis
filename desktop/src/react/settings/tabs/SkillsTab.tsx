@@ -9,8 +9,9 @@ import { LearnedSkillsBlock } from './skills/LearnedSkillsBlock';
 import { AgentSelect } from './bridge/AgentSelect';
 import { SettingsSection } from '../components/SettingsSection';
 import { PhosphorIcon } from '../../ui/PhosphorIcon';
-import { UploadSimple, Plus } from '@phosphor-icons/react';
-import styles from '../Settings.module.css';
+import { UploadSimple, Plus, Wrench, ArrowsClockwise } from '@phosphor-icons/react';
+import tabStyles from '../Settings.module.css';
+import styles from './SkillsTab.module.css';
 
 const platform = window.platform;
 
@@ -37,6 +38,8 @@ export function SkillsTab() {
   const [skillsList, setSkillsList] = useState<SkillInfo[]>([]);
   const [skillBundles, setSkillBundles] = useState<SkillBundleInfo[]>([]);
   const [bundleDialog, setBundleDialog] = useState<BundleDialogState | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [reloading, setReloading] = useState(false);
 
   useEffect(() => {
     if (skillsViewAgentId) return;
@@ -216,8 +219,10 @@ export function SkillsTab() {
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       const skipped = Array.isArray(data.warnings) ? data.warnings.length : 0;
-      const suffix = skipped > 0 ? `，跳过 ${skipped} 个缺失 Skill` : '';
-      showToast(`已导出 ${data.fileName || bundle.name}${suffix}`, 'success');
+      const suffix = skipped > 0
+        ? t('settings.skills.exportSkippedSuffix', { n: skipped })
+        : '';
+      showToast(t('settings.skills.exportSuccess', { name: data.fileName || bundle.name }) + suffix, 'success');
       if (data.filePath) {
         window.platform?.showInFinder?.(data.filePath);
       }
@@ -399,9 +404,19 @@ export function SkillsTab() {
     }
   };
 
+  const reloadAll = async () => {
+    setReloading(true);
+    try {
+      await Promise.all([loadSkills(), loadExternalPaths()]);
+      showToast(t('settings.skills.reloaded'), 'success');
+    } finally {
+      setReloading(false);
+    }
+  };
+
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
-    (e.currentTarget as HTMLElement).classList.remove(styles['drag-over']);
+    setDragOver(false);
     const file = e.dataTransfer.files[0];
     if (!file) return;
     const filePath = platform?.getFilePath?.(file) || (file as File & { path?: string })?.path;
@@ -449,23 +464,44 @@ export function SkillsTab() {
   );
 
   return (
-    <div className={`${styles['settings-tab-content']} ${styles['active']}`} data-tab="skills">
+    <div className={`${tabStyles['settings-tab-content']} ${tabStyles['active']}`} data-tab="skills">
+      <div className={styles.root}>
+        <p className={styles.intro}>{t('settings.skills.pageDesc')}</p>
 
-      {/* Section 1: 管理技能 — Dropzone 虚线卡 + skill list 实线卡都自带视觉，flush 不再套白卡 */}
-      <SettingsSection title={t('settings.skills.manageTitle')} variant="flush">
+      <SettingsSection
+        title={t('settings.skills.manageTitle')}
+        variant="flush"
+        context={
+          <button
+            type="button"
+            className={tabStyles['settings-icon-btn']}
+            title={t('settings.skills.reload')}
+            onClick={reloadAll}
+            disabled={reloading}
+          >
+            <PhosphorIcon icon={ArrowsClockwise} size={14} className={reloading ? tabStyles['spin'] : ''} />
+          </button>
+        }
+      >
+        <SettingsSection.Note>{t('settings.skills.manageSectionNote')}</SettingsSection.Note>
         <div
-          className={styles['skills-dropzone']}
+          className={`${styles.dropzone}${dragOver ? ` ${styles.dropzoneActive}` : ''}`}
           onClick={installSkill}
-          onDragOver={(e) => { e.preventDefault(); (e.currentTarget as HTMLElement).classList.add(styles['drag-over']); }}
-          onDragLeave={(e) => (e.currentTarget as HTMLElement).classList.remove(styles['drag-over'])}
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
         >
-          <PhosphorIcon icon={UploadSimple} size={18} />
+          <PhosphorIcon icon={UploadSimple} size={20} />
           <span>{t('settings.skills.dropzone')}</span>
         </div>
 
         {userSkills.length === 0 && skillBundles.length === 0 ? (
-          <p className={`${styles['settings-muted-note']} ${styles['skills-empty']}`}>{t('settings.skills.noUser')}</p>
+          <div className={styles.empty}>
+            <span className={styles.emptyIcon}>
+              <PhosphorIcon icon={Wrench} size={22} />
+            </span>
+            <span>{t('settings.skills.noUser')}</span>
+          </div>
         ) : (
           <SkillBundleTree
             mode="manage"
@@ -500,10 +536,16 @@ export function SkillsTab() {
           />
         }
       >
-        {userSkills.length === 0 && skillBundles.length === 0 ? (
-          <p className={styles['agent-skill-empty']} style={{ padding: 'var(--space-md)', margin: 0 }}>
-            {t('settings.skills.noUser')}
-          </p>
+        <SettingsSection.Note>{t('settings.skills.agentSectionNote')}</SettingsSection.Note>
+        {!skillsViewAgentId ? (
+          <p className={styles.noAgentHint}>{t('settings.skills.selectAgentFirst')}</p>
+        ) : userSkills.length === 0 && skillBundles.length === 0 ? (
+          <div className={styles.empty}>
+            <span className={styles.emptyIcon}>
+              <PhosphorIcon icon={Wrench} size={22} />
+            </span>
+            <span>{t('settings.skills.noUser')}</span>
+          </div>
         ) : (
           <SkillBundleTree
             mode="agent"
@@ -519,26 +561,24 @@ export function SkillsTab() {
 
       {/* Section 3B: 自学 Skill（per-Agent 资产，同受 AgentSelect 影响） */}
       <SettingsSection title={t('settings.skills.learnedSkillsTitle')}>
+        <SettingsSection.Note>{t('settings.skills.learnedSectionNote')}</SettingsSection.Note>
+        {!skillsViewAgentId ? (
+          <p className={styles.noAgentHint}>{t('settings.skills.selectAgentFirst')}</p>
+        ) : (
         <LearnedSkillsBlock
           learnedSkills={learnedSkills}
           nameHints={nameHints}
           onDelete={deleteSkill}
           onToggle={toggleSkill}
         />
+        )}
       </SettingsSection>
 
       {/* Section 4: 外部兼容
        * flush：CompatPathDrawer 自带卡片视觉，外壳不再套白卡 */}
       <SettingsSection title={t('settings.skills.compatTitle')} variant="flush">
-        <p style={{
-          fontSize: '0.7rem',
-          color: 'var(--text-muted)',
-          lineHeight: 1.4,
-          margin: '0 0 var(--space-md)',
-        }}>
-          {t('settings.skills.compatDesc')}
-        </p>
-        <div className={styles['compat-paths-group']}>
+        <p className={styles.compatDesc}>{t('settings.skills.compatDesc')}</p>
+        <div className={tabStyles['compat-paths-group']}>
           {discoveredPaths.map(d => (
             <CompatPathDrawer
               key={d.dirPath}
@@ -565,7 +605,7 @@ export function SkillsTab() {
               onRemove={removeExternalPath}
             />
           ))}
-          <button className={styles['compat-add-path']} onClick={addExternalPath}>
+          <button type="button" className={tabStyles['compat-add-path']} onClick={addExternalPath}>
             <PhosphorIcon icon={Plus} size={14} />
             <span>{t('settings.skills.compatAddPath')}</span>
           </button>
@@ -574,48 +614,48 @@ export function SkillsTab() {
 
       {bundleDialog ? (
         <div
-          className={styles['skill-bundle-dialog-backdrop']}
+          className={tabStyles['skill-bundle-dialog-backdrop']}
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setBundleDialog(null);
           }}
         >
           <form
-            className={styles['skill-bundle-dialog']}
+            className={tabStyles['skill-bundle-dialog']}
             role="dialog"
             aria-modal="true"
             aria-label={
               bundleDialog.type === 'create'
-                ? '新建 Bundle'
+                ? t('settings.skills.bundleCreateTitle')
                 : bundleDialog.type === 'rename'
-                  ? '重命名 Bundle'
-                  : '打散 Bundle'
+                  ? t('settings.skills.bundleRenameTitle')
+                  : t('settings.skills.bundleDeleteTitle')
             }
             onSubmit={submitBundleDialog}
           >
-            <div className={styles['skill-bundle-dialog-header']}>
+            <div className={tabStyles['skill-bundle-dialog-header']}>
               <h3>
                 {bundleDialog.type === 'create'
-                  ? '新建 Bundle'
+                  ? t('settings.skills.bundleCreateTitle')
                   : bundleDialog.type === 'rename'
-                    ? '重命名 Bundle'
-                    : '打散 Bundle'}
+                    ? t('settings.skills.bundleRenameTitle')
+                    : t('settings.skills.bundleDeleteTitle')}
               </h3>
               <button
                 type="button"
-                title="取消"
-                aria-label="取消"
+                title={t('common.cancel')}
+                aria-label={t('common.cancel')}
                 onClick={() => setBundleDialog(null)}
               >
                 ×
               </button>
             </div>
             {bundleDialog.type === 'delete' ? (
-              <p className={styles['skill-bundle-dialog-text']}>
-                打散 {bundleDialog.bundle.name}？Skill 会保留在公共库里，并显示为散装 Skill。
+              <p className={tabStyles['skill-bundle-dialog-text']}>
+                {t('settings.skills.bundleDeleteText', { name: bundleDialog.bundle.name })}
               </p>
             ) : (
-              <label className={styles['skill-bundle-dialog-field']}>
-                <span>Bundle 名字</span>
+              <label className={tabStyles['skill-bundle-dialog-field']}>
+                <span>{t('settings.skills.bundleNameLabel')}</span>
                 <input
                   value={bundleDialog.name}
                   autoFocus
@@ -626,22 +666,23 @@ export function SkillsTab() {
                 />
               </label>
             )}
-            <div className={styles['skill-bundle-dialog-actions']}>
+            <div className={tabStyles['skill-bundle-dialog-actions']}>
               <button type="button" onClick={() => setBundleDialog(null)}>
-                取消
+                {t('common.cancel')}
               </button>
-              <button type="submit" className={styles['skill-bundle-dialog-primary']}>
+              <button type="submit" className={tabStyles['skill-bundle-dialog-primary']}>
                 {bundleDialog.type === 'create'
-                  ? '创建'
+                  ? t('settings.skills.bundleCreateBtn')
                   : bundleDialog.type === 'rename'
-                    ? '保存'
-                    : '打散'}
+                    ? t('common.save')
+                    : t('settings.skills.bundleDissolveBtn')}
               </button>
             </div>
           </form>
         </div>
       ) : null}
 
+      </div>
     </div>
   );
 }

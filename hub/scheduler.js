@@ -16,7 +16,16 @@ import { createFreshCompactDailyScheduler } from "../lib/fresh-compact/daily-sch
 import { FreshCompactMaintainer } from "./fresh-compact-maintainer.js";
 import { ProactiveRuleEngine } from "../lib/proactive/proactive-rule-engine.js";
 import { DeepContextPipeline } from "../lib/context/deep-context-pipeline.js";
+import { EventCaptureEngine } from "../lib/events/event-capture-engine.js";
+import { BrowserContextAdapter } from "../lib/context/browser-context-adapter.js";
 import { createModuleLogger } from "../lib/debug-log.js";
+import { UsageStatistics } from "../lib/context/usage-statistics.js";
+import { PatternMiner } from "../lib/context/pattern-miner.js";
+import { TaskPredictor } from "../lib/context/task-predictor.js";
+import { RuleSuggestionEngine } from "../lib/context/rule-suggestion-engine.js";
+import { WindowEventsStore } from "../lib/db/window-events-store.js";
+import { ProductivityAnalyzer } from "../lib/context/productivity-analyzer.js";
+import { AgentSuggestionEngine } from "../lib/context/agent-suggestion-engine.js";
 import { WORKSPACE_OUTPUT_ROOT_DIRNAME } from "../shared/workspace-output.js";
 
 const log = createModuleLogger("scheduler");
@@ -61,6 +70,16 @@ export class Scheduler {
     this._ruleEngine = null; // 在 start() 中初始化（依赖 userContextTracker）
     this._deepContextPipeline = null; // 在 start() 中初始化
     this._richContextUnsubscriber = null;
+    this._eventCaptureEngine = null; // 事件驱动捕获引擎（Phase 1）
+    this._browserContextAdapter = null; // 浏览器扩展上下文（Phase 4）
+    this._usageStats = null; // 使用统计（Phase 5）
+    this._patternMiner = null; // 模式挖掘（Phase 5）
+    this._taskPredictor = null; // 任务预测（Phase 5）
+    this._ruleSuggestionEngine = null; // 规则建议（Phase 5）
+    this._windowEventsStore = null; // 窗口事件存储（Phase 5）
+    this._patternLearningTimer = null; // 模式学习定时器（Phase 5）
+    this._productivityAnalyzer = null; // 生产力分析（Phase 6）
+    this._suggestionEngine = null; // Agent 建议引擎（Phase 6）
   }
 
   /** @returns {import('../core/engine.js').HanaEngine} */
@@ -86,9 +105,15 @@ export class Scheduler {
     this._subscribeOsEvents();
     this._startRuleEngine();
     this._startDeepContextPipeline();
+    this._startEventCaptureEngine();
+    this._startBrowserContextAdapter();
+    this._startPatternLearning();
   }
 
   async stop() {
+    this._stopBrowserContextAdapter();
+    this._stopPatternLearning();
+    this._stopEventCaptureEngine();
     this._stopDeepContextPipeline();
     this._stopRuleEngine();
     this._unsubscribeOsEvents();
@@ -102,6 +127,9 @@ export class Scheduler {
 
   /** 获取 ProactiveRuleEngine 实例 */
   get ruleEngine() { return this._ruleEngine; }
+
+  /** 获取 TaskPredictor 实例（Phase 5） */
+  get taskPredictor() { return this._taskPredictor; }
 
   /** 兼容旧 agent 生命周期调用：Studio cron 只有一个 scheduler */
   startAgentCron(agentId) { this._startStudioCron(); }
@@ -541,6 +569,83 @@ export class Scheduler {
   /** 获取 DeepContextPipeline 实例 */
   get deepContextPipeline() { return this._deepContextPipeline; }
 
+  // ──────────── EventCaptureEngine 集成 ────────────
+
+  /**
+   * 启动事件捕获引擎
+   */
+  _startEventCaptureEngine() {
+    if (this._eventCaptureEngine) return;
+
+    this._eventCaptureEngine = new EventCaptureEngine({
+      platform: process.platform,
+      useNative: false, // 当前使用 polling fallback，native addon 就绪后切换
+    });
+
+    // 将捕获事件转发到 EventBus（保持与现有 OSEventSource 兼容）
+    this._eventCaptureEngine.on("event", (event) => {
+      this._hub.eventBus.emit(
+        {
+          type: "capture_app_switch",
+          app: event.app,
+          title: event.title,
+          prevApp: event.prevApp,
+          platform: event.platform,
+          timestamp: event.timestamp,
+        },
+        null,
+      );
+    });
+
+    this._eventCaptureEngine.start().catch((err) => {
+      log.warn(`EventCaptureEngine 启动失败: ${err.message}`);
+    });
+
+    log.log("EventCaptureEngine 已启动 (fallback mode)");
+  }
+
+  /**
+   * 停止事件捕获引擎
+   */
+  _stopEventCaptureEngine() {
+    if (this._eventCaptureEngine) {
+      this._eventCaptureEngine.stop().catch(() => {});
+      this._eventCaptureEngine = null;
+    }
+  }
+
+  // ──────────── BrowserContextAdapter 集成 ────────────
+
+  /**
+   * 启动浏览器扩展上下文适配器
+   */
+  _startBrowserContextAdapter() {
+    if (this._browserContextAdapter) return;
+
+    this._browserContextAdapter = new BrowserContextAdapter();
+    this._browserContextAdapter.on("context", (context) => {
+      this._hub.eventBus.emit({
+        type: "browser_context_changed",
+        ...context,
+      }, null);
+    });
+    this._browserContextAdapter.start();
+
+    log.log("BrowserContextAdapter 已启动");
+  }
+
+  /**
+   * 停止浏览器扩展上下文适配器
+   */
+  _stopBrowserContextAdapter() {
+    if (this._browserContextAdapter) {
+      this._browserContextAdapter.stop();
+      this._browserContextAdapter = null;
+    }
+  }
+
+  // ──────────── Proactive Action ────────────
+
   /**
    * 执行主动动作：触发 Agent 会话
    * @param {string} prompt
@@ -579,6 +684,142 @@ export class Scheduler {
       if (cwd && filePath.startsWith(cwd)) return agentId;
     }
     return null;
+  }
+
+  // ──────────── Pattern Learning（Phase 5）────────────
+
+  /**
+   * 启动行为模式学习
+   * 每小时运行一次模式挖掘，分析最近 7 天的窗口事件
+   */
+  _startPatternLearning() {
+    if (this._patternMiner) return; // 幂等
+
+    // 用于回滚的临时变量
+    let windowEventsStore = null;
+    let patternMiner = null;
+    let taskPredictor = null;
+    let ruleSuggestionEngine = null;
+    let usageStats = null;
+    let productivityAnalyzer = null;
+    let suggestionEngine = null;
+    let patternLearningTimer = null;
+
+    try {
+      // 尝试初始化 WindowEventsStore（依赖 better-sqlite3 数据库实例）
+      // 如果数据库不可用则跳过，不阻塞 Scheduler 启动
+      const db = this._engine.getDb?.();
+      if (!db) {
+        log.log("Pattern Learning 跳过: 数据库不可用");
+        return;
+      }
+
+      // 逐步初始化，任何步骤失败都可以回滚
+      windowEventsStore = new WindowEventsStore(db);
+      windowEventsStore.init();
+
+      patternMiner = new PatternMiner();
+      taskPredictor = new TaskPredictor();
+      ruleSuggestionEngine = new RuleSuggestionEngine();
+      usageStats = new UsageStatistics({ store: windowEventsStore });
+
+      // Phase 6: Productivity analysis
+      productivityAnalyzer = new ProductivityAnalyzer({ store: windowEventsStore });
+      suggestionEngine = new AgentSuggestionEngine();
+
+      // 每小时运行一次模式分析
+      patternLearningTimer = setInterval(() => {
+        this._runPatternAnalysis().catch((err) => {
+          log.warn(`Pattern analysis failed: ${err.message}`);
+        });
+      }, 3600000);
+
+      // 所有初始化成功后才赋值到实例
+      this._windowEventsStore = windowEventsStore;
+      this._patternMiner = patternMiner;
+      this._taskPredictor = taskPredictor;
+      this._ruleSuggestionEngine = ruleSuggestionEngine;
+      this._usageStats = usageStats;
+      this._productivityAnalyzer = productivityAnalyzer;
+      this._suggestionEngine = suggestionEngine;
+      this._patternLearningTimer = patternLearningTimer;
+
+      log.log("Pattern Learning 已启动 (hourly)");
+    } catch (err) {
+      log.warn(`Pattern Learning 启动失败: ${err.message}`);
+      
+      // 回滚：清理已创建的资源
+      if (patternLearningTimer) {
+        clearInterval(patternLearningTimer);
+      }
+      // 其他组件没有显式的 stop/cleanup 方法，依赖 GC 回收
+    }
+  }
+
+  /**
+   * 停止行为模式学习
+   */
+  _stopPatternLearning() {
+    if (this._patternLearningTimer) {
+      clearInterval(this._patternLearningTimer);
+      this._patternLearningTimer = null;
+    }
+    this._usageStats = null;
+    this._patternMiner = null;
+    this._taskPredictor = null;
+    this._ruleSuggestionEngine = null;
+    this._windowEventsStore = null;
+    this._productivityAnalyzer = null;
+    this._suggestionEngine = null;
+  }
+
+  /**
+   * 运行模式分析
+   * 1. 获取最近 7 天事件
+   * 2. 挖掘频繁模式 + 周期性模式
+   * 3. 训练预测模型
+   * 4. 生成规则建议并发射到 EventBus
+   */
+  async _runPatternAnalysis() {
+    const store = this._windowEventsStore;
+    if (!store) return;
+
+    try {
+      const now = Date.now();
+      const weekAgo = now - 7 * 86400000;
+      const events = store.queryRange(weekAgo, now);
+
+      if (events.length < 10) {
+        log.log(`Pattern analysis skipped: only ${events.length} events`);
+        return;
+      }
+
+      // 挖掘模式
+      const patterns = this._patternMiner.findFrequentPatterns(events, 2);
+      const periodicPatterns = this._patternMiner.findPeriodicPatterns(events);
+
+      // 训练预测模型
+      this._taskPredictor.train(events);
+
+      // 生成规则建议
+      const allPatterns = [...patterns, ...periodicPatterns];
+      const suggestions = this._ruleSuggestionEngine.generateSuggestions(allPatterns, 5);
+
+      // 发射到 EventBus
+      const bus = this._hub.eventBus;
+      if (bus) {
+        for (const suggestion of suggestions) {
+          bus.emit({
+            type: "rule_suggestion",
+            ...suggestion,
+          }, null);
+        }
+      }
+
+      log.log(`Pattern analysis done: ${allPatterns.length} patterns, ${suggestions.length} suggestions`);
+    } catch (err) {
+      log.warn(`Pattern analysis error: ${err.message}`);
+    }
   }
 
 }

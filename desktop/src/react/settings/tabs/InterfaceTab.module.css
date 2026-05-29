@@ -1,0 +1,257 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.intro {
+  margin: 0 4px 20px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+/* ── Theme picker ── */
+
+.themeShell {
+  padding: 4px 0 8px;
+}
+
+.themeShell :global(.theme-options) {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+  padding: 12px 16px 16px;
+}
+
+.themeShell :global(.theme-card) {
+  flex: none;
+  width: 100%;
+  min-height: 64px;
+  padding: 12px 8px;
+  border: 0.5px solid color-mix(in srgb, var(--text) 12%, transparent);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.themeShell :global(.theme-card:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+.themeShell :global(.theme-card.active) {
+  box-shadow:
+    0 1px 3px color-mix(in srgb, var(--text) 8%, transparent),
+    0 0 0 2px var(--accent);
+}
+
+.themeShell :global(.theme-card-name) {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.themeShell :global(.theme-card-mode) {
+  font-size: 11px;
+  margin-top: 4px;
+  opacity: 0.85;
+}
+
+/* ── Emoji style (nested in appearance card) ── */
+
+.emojiBlock {
+  margin-top: 4px;
+  border-top: 0.5px solid color-mix(in srgb, var(--text) 8%, transparent);
+  padding-top: 4px;
+}
+
+.emojiBlock :global(.subBlock) {
+  margin-bottom: 0;
+}
+
+.emojiBlock :global(.subBlockTitle) {
+  padding: 12px 16px 0;
+  margin: 0 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0;
+}
+
+.emojiBlock :global(.sectionNote) {
+  padding-top: 8px;
+  padding-bottom: 10px;
+}
+
+.emojiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 8px;
+  padding: 0 16px 16px;
+}
+
+.emojiCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 10px;
+  border: 0.5px solid color-mix(in srgb, var(--text) 10%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+  cursor: pointer;
+  text-align: center;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.emojiCard:hover {
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+.emojiCardActive {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.emojiPreview {
+  font-size: 28px;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.emojiName {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.emojiCardActive .emojiName {
+  color: var(--accent);
+}
+
+.emojiDesc {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Privacy levels ── */
+
+.privacyShell {
+  padding: 4px 16px 16px;
+}
+
+.privacyGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (max-width: 560px) {
+  .privacyGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.privacyOption {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 0.5px solid color-mix(in srgb, var(--text) 10%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.privacyOption:hover {
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+
+.privacyOptionActive {
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.privacyName {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.privacyOptionActive .privacyName {
+  color: var(--accent);
+}
+
+.privacyDesc {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+/* ── System / editor ── */
+
+.scaleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  width: 100%;
+}
+
+.editorGroups {
+  display: flex;
+  flex-direction: column;
+}
+
+.editorGroups :global(.subBlock) {
+  margin: 0;
+}
+
+.editorGroups :global(.subBlock) + :global(.subBlock) {
+  border-top: 0.5px solid color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.editorGroups :global(.subBlockTitle) {
+  padding: 12px 16px 8px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0;
+}
+
+.editorGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.layoutGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 520px) {
+  .editorGrid,
+  .layoutGrid {
+    grid-template-columns: 1fr;
+  }
+}

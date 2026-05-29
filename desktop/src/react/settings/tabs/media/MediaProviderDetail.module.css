@@ -1,0 +1,73 @@
+.credentialBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  border: 0.5px solid color-mix(in srgb, var(--text) 8%, transparent);
+  border-radius: 8px;
+}
+
+.credentialDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.credentialOn {
+  background: #34c759;
+}
+
+.credentialOff {
+  background: color-mix(in srgb, var(--text) 35%, transparent);
+}
+
+.defaultsBlock {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 0.5px solid color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.defaultsTitle {
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.defaultsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 520px) {
+  .defaultsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.defaultField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.defaultLabel {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.defaultBadge {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}

@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { DeviceMobile, Desktop, Devices, Globe, Key, LockKey } from '@phosphor-icons/react';
 import { hanaFetch, hanaUrl } from '../api';
 import { t } from '../helpers';
 import { useSettingsStore } from '../store';
@@ -10,7 +11,9 @@ import {
 import { Toggle } from '../widgets/Toggle';
 import { SettingsSection } from '../components/SettingsSection';
 import { SettingsRow } from '../components/SettingsRow';
-import styles from '../Settings.module.css';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
+import tabStyles from '../Settings.module.css';
+import styles from './AccessTab.module.css';
 
 type AccessMode = 'loopback' | 'lan';
 
@@ -308,9 +311,17 @@ export function AccessTab() {
   }, [loadSummary, showToast]);
 
   return (
-    <div className={`${styles['settings-tab-content']} ${styles.active}`} data-tab="access">
-      <SettingsSection title={t('settings.access.networkAccess')}>
-        <SettingsRow
+    <div className={`${tabStyles['settings-tab-content']} ${tabStyles['active']}`} data-tab="access">
+      <div className={styles.root}>
+        <p className={styles.intro}>{t('settings.access.pageDesc')}</p>
+
+        {loadingSummary && (
+          <div className={styles.loading}>{t('settings.access.loading')}</div>
+        )}
+
+        <SettingsSection title={t('settings.access.networkAccess')}>
+          <SettingsSection.Note>{t('settings.access.networkSectionNote')}</SettingsSection.Note>
+          <SettingsRow
           label={t('settings.access.lanToggle')}
           hint={t('settings.access.lanHint')}
           control={
@@ -327,7 +338,7 @@ export function AccessTab() {
           hint={t('settings.access.portHint')}
           control={
             <input
-              className={`${styles['settings-input']} ${styles['settings-port-input']}`}
+              className={`${tabStyles['settings-input']} ${tabStyles['settings-port-input']}`}
               value={port}
               inputMode="numeric"
               onChange={(event) => setPort(event.target.value)}
@@ -339,20 +350,20 @@ export function AccessTab() {
           hint={summary?.network.restartRequired ? t('settings.access.restartRequired') : t('settings.access.statusHint')}
           layout="stacked"
           control={
-            <div className={styles['access-status-grid']}>
-              <div className={styles['access-status-item']}>
+            <div className={styles.statusGrid}>
+              <div className={styles.statusCard}>
                 <span>{t('settings.access.runtimeEndpoint')}</span>
-                <strong>{runtimeEndpoint}</strong>
+                <strong>{runtimeEndpoint || '—'}</strong>
               </div>
-              <div className={styles['access-status-item']}>
+              <div className={styles.statusCard}>
                 <span>{t('settings.access.effectiveMobileUrl')}</span>
-                <strong>{effectiveMobileUrl}</strong>
+                <strong>{effectiveMobileUrl || '—'}</strong>
               </div>
-              <div className={styles['access-status-item']}>
+              <div className={styles.statusCard}>
                 <span>{t('settings.access.effectiveDesktopUrl')}</span>
-                <strong>{effectiveDesktopUrl}</strong>
+                <strong>{effectiveDesktopUrl || '—'}</strong>
               </div>
-              <div className={styles['access-status-item']}>
+              <div className={styles.statusCard}>
                 <span>{t('settings.access.lanAddresses')}</span>
                 <strong>{lanAddressText}</strong>
               </div>
@@ -363,22 +374,23 @@ export function AccessTab() {
           <SettingsSection.Warning>{t('settings.access.restartRequired')}</SettingsSection.Warning>
         )}
         <SettingsSection.Footer>
-          <button className={styles['settings-btn-primary']} type="button" onClick={saveNetwork} disabled={loadingSummary || savingNetwork || !summary}>
+          <button className={tabStyles['settings-btn-primary']} type="button" onClick={saveNetwork} disabled={loadingSummary || savingNetwork || !summary}>
             {t('settings.access.saveNetwork')}
           </button>
         </SettingsSection.Footer>
-      </SettingsSection>
+        </SettingsSection>
 
-      <SettingsSection title={t('settings.access.mobileAccess')}>
-        <SettingsRow
+        <SettingsSection title={t('settings.access.mobileAccess')}>
+          <SettingsSection.Note>{t('settings.access.mobileSectionNote')}</SettingsSection.Note>
+          <SettingsRow
           label={t('settings.access.mobileUrl')}
           hint={mode === 'lan' ? t('settings.access.mobileUrlLanHint') : t('settings.access.mobileUrlLocalHint')}
           layout="stacked"
           control={
-            <div className={styles['access-url-row']}>
-              <input className={styles['settings-input']} value={mobileUrl} readOnly />
+            <div className={styles.urlRow}>
+              <input className={tabStyles['settings-input']} value={mobileUrl} readOnly />
               <button
-                className={styles['settings-btn-secondary']}
+                className={tabStyles['settings-btn-secondary']}
                 type="button"
                 onClick={() => copyText(mobileUrl)}
                 disabled={!canCopyMobileUrl}
@@ -392,14 +404,15 @@ export function AccessTab() {
           <SettingsRow
             label={t('settings.access.qrCode')}
             hint={t('settings.access.qrCodeHint')}
-            control={<img className={styles['access-qr']} src={qrUrl} alt={t('settings.access.qrCode')} />}
+            control={<img className={styles.qr} src={qrUrl} alt={t('settings.access.qrCode')} />}
           />
         )}
         <SettingsRow
           label={t('settings.access.generateMobileKey')}
           hint={t('settings.access.mobileKeyHint')}
           control={
-            <button className={styles['settings-btn-primary']} type="button" onClick={generateMobileKey} disabled={generatingMobileKey}>
+            <button className={tabStyles['settings-btn-secondary']} type="button" onClick={generateMobileKey} disabled={generatingMobileKey}>
+              <PhosphorIcon icon={Key} size={14} />
               {t('settings.access.generateMobileKey')}
             </button>
           }
@@ -410,27 +423,28 @@ export function AccessTab() {
             hint={t('settings.access.mobileKeyOnce')}
             layout="stacked"
             control={
-              <div className={styles['access-url-row']}>
-                <input className={styles['settings-input']} value={mobileKey} readOnly />
-                <button className={styles['settings-btn-secondary']} type="button" onClick={() => copyText(mobileKey)}>
+              <div className={styles.secretBox}>
+                <input className={`${tabStyles['settings-input']} ${styles.secretInput}`} value={mobileKey} readOnly />
+                <button className={tabStyles['settings-btn-primary']} type="button" onClick={() => copyText(mobileKey)}>
                   {t('settings.access.copy')}
                 </button>
               </div>
             }
           />
         )}
-      </SettingsSection>
+        </SettingsSection>
 
-      <SettingsSection title={t('settings.access.desktopAccess')}>
-        <SettingsRow
+        <SettingsSection title={t('settings.access.desktopAccess')}>
+          <SettingsSection.Note>{t('settings.access.desktopSectionNote')}</SettingsSection.Note>
+          <SettingsRow
           label={t('settings.access.desktopUrl')}
           hint={mode === 'lan' ? t('settings.access.desktopUrlLanHint') : t('settings.access.desktopUrlLocalHint')}
           layout="stacked"
           control={
-            <div className={styles['access-url-row']}>
-              <input className={styles['settings-input']} value={desktopUrl} readOnly />
+            <div className={styles.urlRow}>
+              <input className={tabStyles['settings-input']} value={desktopUrl} readOnly />
               <button
-                className={styles['settings-btn-secondary']}
+                className={tabStyles['settings-btn-secondary']}
                 type="button"
                 onClick={() => copyText(desktopUrl)}
                 disabled={!canCopyDesktopUrl}
@@ -444,7 +458,8 @@ export function AccessTab() {
           label={t('settings.access.generateDesktopKey')}
           hint={t('settings.access.desktopKeyHint')}
           control={
-            <button className={styles['settings-btn-primary']} type="button" onClick={generateDesktopKey} disabled={generatingDesktopKey}>
+            <button className={tabStyles['settings-btn-secondary']} type="button" onClick={generateDesktopKey} disabled={generatingDesktopKey}>
+              <PhosphorIcon icon={Key} size={14} />
               {t('settings.access.generateDesktopKey')}
             </button>
           }
@@ -455,174 +470,179 @@ export function AccessTab() {
             hint={t('settings.access.desktopKeyOnce')}
             layout="stacked"
             control={
-              <div className={styles['access-url-row']}>
-                <input className={styles['settings-input']} value={desktopKey} readOnly />
-                <button className={styles['settings-btn-secondary']} type="button" onClick={() => copyText(desktopKey)}>
+              <div className={styles.secretBox}>
+                <input className={`${tabStyles['settings-input']} ${styles.secretInput}`} value={desktopKey} readOnly />
+                <button className={tabStyles['settings-btn-primary']} type="button" onClick={() => copyText(desktopKey)}>
                   {t('settings.access.copy')}
                 </button>
               </div>
             }
           />
         )}
-      </SettingsSection>
+        </SettingsSection>
 
-      <SettingsSection title={t('settings.access.connectLanServer')}>
-        <SettingsRow
-          label={t('settings.access.remoteServerUrl')}
-          hint={t('settings.access.remoteServerUrlHint')}
-          layout="stacked"
-          control={
-            <label className={styles['access-field']}>
-              <span>{t('settings.access.remoteServerUrl')}</span>
+        <SettingsSection title={t('settings.access.connectLanServer')}>
+          <SettingsSection.Note>{t('settings.access.remoteSectionNote')}</SettingsSection.Note>
+          <SettingsRow
+            label={t('settings.access.remoteServerUrl')}
+            hint={t('settings.access.remoteServerUrlHint')}
+            layout="stacked"
+            control={
               <input
                 aria-label={t('settings.access.remoteServerUrl')}
-                className={styles['settings-input']}
+                className={`${tabStyles['settings-input']} ${styles.fieldInput}`}
                 value={remoteServerUrl}
                 placeholder="http://192.168.31.75:14500"
                 onChange={(event) => setRemoteServerUrl(event.target.value)}
               />
-            </label>
-          }
-        />
-        <SettingsRow
-          label={t('settings.access.remoteServerKey')}
-          hint={t('settings.access.remoteServerKeyHint')}
-          layout="stacked"
-          control={
-            <label className={styles['access-field']}>
-              <span>{t('settings.access.remoteServerKey')}</span>
+            }
+          />
+          <SettingsRow
+            label={t('settings.access.remoteServerKey')}
+            hint={t('settings.access.remoteServerKeyHint')}
+            layout="stacked"
+            control={
               <input
                 aria-label={t('settings.access.remoteServerKey')}
-                className={styles['settings-input']}
+                className={`${tabStyles['settings-input']} ${styles.fieldInput}`}
                 value={remoteServerKey}
                 type="password"
                 placeholder="hana_dev_..."
                 onChange={(event) => setRemoteServerKey(event.target.value)}
               />
-            </label>
-          }
-        />
-        <SettingsSection.Footer>
-          <button
-            className={styles['settings-btn-primary']}
-            type="button"
-            onClick={connectRemoteServer}
-            disabled={connectingRemoteServer || !remoteServerUrl.trim() || !remoteServerKey.trim()}
-          >
-            {t('settings.access.connectLanServer')}
-          </button>
-        </SettingsSection.Footer>
-      </SettingsSection>
+            }
+          />
+          <SettingsSection.Footer>
+            <button
+              className={tabStyles['settings-btn-primary']}
+              type="button"
+              onClick={connectRemoteServer}
+              disabled={connectingRemoteServer || !remoteServerUrl.trim() || !remoteServerKey.trim()}
+            >
+              <PhosphorIcon icon={Globe} size={14} />
+              {t('settings.access.connectLanServer')}
+            </button>
+          </SettingsSection.Footer>
+        </SettingsSection>
 
-      <SettingsSection title={t('settings.access.pairedDevices')}>
-        <div className={styles['access-device-list']}>
-          {activeDevicesWithoutCredentials.length === 0 && activeCredentials.length === 0 ? (
-            <div className={styles['access-empty']}>{t('settings.access.noDevices')}</div>
-          ) : (
-            <>
-              {activeCredentials.map(credential => {
-                const device = deviceById.get(credential.deviceId);
-                return (
-                  <div className={styles['access-device-item']} key={credential.credentialId}>
-                    <div className={styles['access-device-info']}>
-                      <span className={styles['access-device-name']}>{device?.displayName || credential.deviceId}</span>
-                      <span className={styles['access-device-meta']}>
-                        {device?.deviceKind || 'device'} · {credential.secretPrefix || credential.credentialId} · {credential.scopes.join(', ')}
+        <SettingsSection title={t('settings.access.pairedDevices')}>
+          <SettingsSection.Note>{t('settings.access.devicesSectionNote')}</SettingsSection.Note>
+          <div className={styles.deviceList}>
+            {activeDevicesWithoutCredentials.length === 0 && activeCredentials.length === 0 ? (
+              <div className={styles.empty}>
+                <span className={styles.emptyIcon}>
+                  <PhosphorIcon icon={Devices} size={20} />
+                </span>
+                <span>{t('settings.access.noDevices')}</span>
+              </div>
+            ) : (
+              <>
+                {activeCredentials.map(credential => {
+                  const device = deviceById.get(credential.deviceId);
+                  const isMobile = device?.deviceKind === 'mobile';
+                  return (
+                    <div className={styles.deviceItem} key={credential.credentialId}>
+                      <span className={styles.deviceIcon}>
+                        <PhosphorIcon icon={isMobile ? DeviceMobile : Desktop} size={16} />
                       </span>
+                      <div className={styles.deviceMain}>
+                        <div className={styles.deviceName}>{device?.displayName || credential.deviceId}</div>
+                        <div className={styles.deviceMeta}>
+                          {device?.deviceKind || 'device'} · {credential.secretPrefix || credential.credentialId} · {credential.scopes.join(', ')}
+                        </div>
+                      </div>
+                      <button
+                        className={tabStyles['settings-btn-secondary']}
+                        type="button"
+                        onClick={() => revokeCredential(credential.credentialId)}
+                      >
+                        {t('settings.access.revokeCredential')}
+                      </button>
                     </div>
-                    <button
-                      className={styles['settings-btn-secondary']}
-                      type="button"
-                      onClick={() => revokeCredential(credential.credentialId)}
-                    >
-                      {t('settings.access.revokeCredential')}
+                  );
+                })}
+                {activeDevicesWithoutCredentials.map(device => (
+                  <div className={styles.deviceItem} key={device.deviceId}>
+                    <span className={styles.deviceIcon}>
+                      <PhosphorIcon icon={device.deviceKind === 'mobile' ? DeviceMobile : Desktop} size={16} />
+                    </span>
+                    <div className={styles.deviceMain}>
+                      <div className={styles.deviceName}>{device.displayName}</div>
+                      <div className={styles.deviceMeta}>{device.deviceKind || 'device'} · {device.trustState || 'lan'}</div>
+                    </div>
+                    <button className={tabStyles['settings-btn-secondary']} type="button" onClick={() => revokeDevice(device.deviceId)}>
+                      {t('settings.access.revoke')}
                     </button>
                   </div>
-                );
-              })}
-              {activeDevicesWithoutCredentials.map(device => (
-                <div className={styles['access-device-item']} key={device.deviceId}>
-                  <div className={styles['access-device-info']}>
-                    <span className={styles['access-device-name']}>{device.displayName}</span>
-                    <span className={styles['access-device-meta']}>{device.deviceKind || 'device'} · {device.trustState || 'lan'}</span>
-                  </div>
-                  <button className={styles['settings-btn-secondary']} type="button" onClick={() => revokeDevice(device.deviceId)}>
-                    {t('settings.access.revoke')}
-                  </button>
-                </div>
-              ))}
-            </>
-          )}
-        </div>
-      </SettingsSection>
+                ))}
+              </>
+            )}
+          </div>
+        </SettingsSection>
 
-      <SettingsSection title={t('settings.access.localAccount')}>
-        <SettingsRow
-          label={t('settings.access.username')}
-          layout="stacked"
-          control={
-            <label className={styles['access-field']}>
-              <span>{t('settings.access.username')}</span>
+        <SettingsSection title={t('settings.access.localAccount')}>
+          <SettingsSection.Note>{t('settings.access.accountSectionNote')}</SettingsSection.Note>
+          <SettingsRow
+            label={t('settings.access.username')}
+            layout="stacked"
+            control={
               <input
                 aria-label={t('settings.access.username')}
-                className={styles['settings-input']}
+                className={`${tabStyles['settings-input']} ${styles.fieldInput}`}
                 value={accountDraft.username}
                 onChange={(event) => setAccountDraft(prev => ({ ...prev, username: event.target.value }))}
               />
-            </label>
-          }
-        />
-        <SettingsRow
-          label={t('settings.access.displayName')}
-          layout="stacked"
-          control={
-            <label className={styles['access-field']}>
-              <span>{t('settings.access.displayName')}</span>
+            }
+          />
+          <SettingsRow
+            label={t('settings.access.displayName')}
+            layout="stacked"
+            control={
               <input
                 aria-label={t('settings.access.displayName')}
-                className={styles['settings-input']}
+                className={`${tabStyles['settings-input']} ${styles.fieldInput}`}
                 value={accountDraft.displayName}
                 onChange={(event) => setAccountDraft(prev => ({ ...prev, displayName: event.target.value }))}
               />
-            </label>
-          }
-        />
-        <SettingsSection.Footer>
-          <button className={styles['settings-btn-primary']} type="button" onClick={saveAccount}>
-            {t('settings.access.saveAccount')}
-          </button>
-        </SettingsSection.Footer>
-      </SettingsSection>
+            }
+          />
+          <SettingsSection.Footer>
+            <button className={tabStyles['settings-btn-primary']} type="button" onClick={saveAccount}>
+              {t('settings.access.saveAccount')}
+            </button>
+          </SettingsSection.Footer>
+        </SettingsSection>
 
-      <SettingsSection title={t('settings.access.password')}>
-        <SettingsRow
-          label={summary?.account.passwordSet ? t('settings.access.passwordSet') : t('settings.access.passwordNotSet')}
-          hint={t('settings.access.passwordHint')}
-          layout="stacked"
-          control={
-            <label className={styles['access-field']}>
-              <span>{t('settings.access.newPassword')}</span>
+        <SettingsSection title={t('settings.access.password')}>
+          <SettingsRow
+            label={summary?.account.passwordSet ? t('settings.access.passwordSet') : t('settings.access.passwordNotSet')}
+            hint={t('settings.access.passwordHint')}
+            layout="stacked"
+            control={
               <input
                 aria-label={t('settings.access.newPassword')}
-                className={styles['settings-input']}
+                className={`${tabStyles['settings-input']} ${styles.fieldInput}`}
                 type="password"
                 value={passwordDraft}
                 onChange={(event) => setPasswordDraft(event.target.value)}
               />
-            </label>
-          }
-        />
-        <SettingsSection.Footer>
-          {summary?.account.passwordSet && (
-            <button className={styles['settings-btn-secondary']} type="button" onClick={clearPassword}>
-              {t('settings.access.clearPassword')}
-            </button>
-          )}
-          <button className={styles['settings-btn-primary']} type="button" onClick={savePassword} disabled={!passwordDraft}>
-            {t('settings.access.savePassword')}
-          </button>
-        </SettingsSection.Footer>
-      </SettingsSection>
+            }
+          />
+          <SettingsSection.Footer>
+            <div className={styles.footerRow}>
+              {summary?.account.passwordSet && (
+                <button className={tabStyles['settings-btn-secondary']} type="button" onClick={clearPassword}>
+                  {t('settings.access.clearPassword')}
+                </button>
+              )}
+              <button className={tabStyles['settings-btn-primary']} type="button" onClick={savePassword} disabled={!passwordDraft}>
+                <PhosphorIcon icon={LockKey} size={14} />
+                {t('settings.access.savePassword')}
+              </button>
+            </div>
+          </SettingsSection.Footer>
+        </SettingsSection>
+      </div>
     </div>
   );
 }

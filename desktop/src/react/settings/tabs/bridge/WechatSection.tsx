@@ -45,7 +45,7 @@ export function WechatSection({ status, showToast, onSaveConfig, onReload, agent
 
   /** 状态 + Toggle 作为 section 右上角 context */
   const statusContext = (
-    <div className="bridge-platform-header" style={{ margin: 0 }}>
+    <div className={bridgeStyles.platformHeader}>
       <BridgeStatusDot status={status?.status} />
       <BridgeStatusText status={status?.status} error={status?.error} />
       <Toggle
@@ -60,7 +60,7 @@ export function WechatSection({ status, showToast, onSaveConfig, onReload, agent
 
   return (
     <SettingsSection title={t('settings.bridge.wechat')} context={statusContext}>
-      <div style={{ padding: 'var(--space-sm) var(--space-md)' }}>
+      <div className={bridgeStyles.wechatBody}>
         {status?.token ? (
           <div className={bridgeStyles['wechat-logged-in']}>
             <span className={bridgeStyles['wechat-login-info']}>
@@ -82,14 +82,9 @@ export function WechatSection({ status, showToast, onSaveConfig, onReload, agent
             </button>
           </div>
         )}
-        <div style={{
-          marginTop: 'var(--space-sm)',
-          fontSize: '0.7rem',
-          color: 'var(--text-muted)',
-          lineHeight: 1.4,
-        }}>
-          <div>{t('settings.bridge.wechatHint')}</div>
-          <div>{t('settings.bridge.wechatExclusive')}</div>
+        <div className={bridgeStyles.wechatHint}>
+          <div className={bridgeStyles.wechatHintLine}>{t('settings.bridge.wechatHint')}</div>
+          <div className={bridgeStyles.wechatHintLine}>{t('settings.bridge.wechatExclusive')}</div>
         </div>
       </div>
     </SettingsSection>

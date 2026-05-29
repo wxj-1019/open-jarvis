@@ -1,18 +1,20 @@
 import { useState } from 'react';
+import { DownloadSimple, UploadSimple } from '@phosphor-icons/react';
 import { hanaFetch } from '../../api';
 import { t } from '../../helpers';
 import { useSettingsStore } from '../../store';
+import { PhosphorIcon } from '../../../ui/PhosphorIcon';
+import styles from './BackupTab.module.css';
 
 export function ManualBackup() {
   const selectedAgentId = useSettingsStore(s => s.backupSelectedAgentId);
-  const set = useSettingsStore(s => s.set);
   const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
   const showToast = useSettingsStore(s => s.showToast);
-  const agents = useSettingsStore(s => s.agents);
 
   const handleExport = async () => {
     if (!selectedAgentId) {
-      showToast(t('settings.backup.selectAgent'), 'error');
+      showToast(t('settings.backup.selectAgentFirst'), 'error');
       return;
     }
 
@@ -31,14 +33,20 @@ export function ManualBackup() {
       } else {
         showToast(result.error || t('settings.backup.exportFailed'), 'error');
       }
-    } catch (err: any) {
-      showToast(err.message || t('settings.backup.exportFailed'), 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : t('settings.backup.exportFailed');
+      showToast(message, 'error');
     } finally {
       setExporting(false);
     }
   };
 
   const handleImport = async () => {
+    if (!selectedAgentId) {
+      showToast(t('settings.backup.selectAgentFirst'), 'error');
+      return;
+    }
+
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.zip';
@@ -46,11 +54,7 @@ export function ManualBackup() {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
 
-      if (!selectedAgentId) {
-        showToast(t('settings.backup.selectAgent'), 'error');
-        return;
-      }
-
+      setImporting(true);
       const formData = new FormData();
       formData.append('file', file);
       formData.append('agentId', selectedAgentId);
@@ -67,61 +71,53 @@ export function ManualBackup() {
         } else {
           showToast(result.error || t('settings.backup.importFailed'), 'error');
         }
-      } catch (err: any) {
-        showToast(err.message || t('settings.backup.importFailed'), 'error');
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : t('settings.backup.importFailed');
+        showToast(message, 'error');
+      } finally {
+        setImporting(false);
       }
     };
     input.click();
   };
 
+  const disabled = !selectedAgentId;
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      <select
-        value={selectedAgentId || ''}
-        onChange={(e) => set({ backupSelectedAgentId: e.target.value || null })}
-        style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border, #e1e4e8)', background: 'var(--surface-2, #fff)', color: 'var(--text, #1a1a1a)' }}
+    <div className={styles.actions}>
+      <button
+        type="button"
+        className={styles.actionCard}
+        onClick={handleExport}
+        disabled={disabled || exporting}
       >
-        <option value="">{t('settings.backup.selectAgent')}</option>
-        {agents.map((agent: any) => (
-          <option key={agent.id} value={agent.id}>
-            {agent.name || agent.id}
-          </option>
-        ))}
-      </select>
+        <span className={`${styles.actionIcon} ${styles.actionIconExport}`}>
+          <PhosphorIcon icon={DownloadSimple} size={18} />
+        </span>
+        <span className={styles.actionText}>
+          <span className={styles.actionTitle}>
+            {exporting ? t('settings.backup.exporting') : t('settings.backup.exportBackup')}
+          </span>
+          <span className={styles.actionDesc}>{t('settings.backup.exportBackupDesc')}</span>
+        </span>
+      </button>
 
-      <div style={{ display: 'flex', gap: '8px' }}>
-        <button
-          onClick={handleExport}
-          disabled={exporting || !selectedAgentId}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '6px',
-            border: 'none',
-            background: exporting || !selectedAgentId ? 'var(--text-muted, #666)' : 'var(--accent, #4a9eff)',
-            color: '#fff',
-            cursor: exporting || !selectedAgentId ? 'not-allowed' : 'pointer',
-            opacity: exporting || !selectedAgentId ? 0.5 : 1,
-          }}
-        >
-          {exporting ? '...' : t('settings.backup.exportBackup')}
-        </button>
-
-        <button
-          onClick={handleImport}
-          disabled={!selectedAgentId}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '6px',
-            border: 'none',
-            background: !selectedAgentId ? 'var(--text-muted, #666)' : 'var(--success, #28a745)',
-            color: '#fff',
-            cursor: !selectedAgentId ? 'not-allowed' : 'pointer',
-            opacity: !selectedAgentId ? 0.5 : 1,
-          }}
-        >
-          {t('settings.backup.importBackup')}
-        </button>
-      </div>
+      <button
+        type="button"
+        className={styles.actionCard}
+        onClick={handleImport}
+        disabled={disabled || importing}
+      >
+        <span className={`${styles.actionIcon} ${styles.actionIconImport}`}>
+          <PhosphorIcon icon={UploadSimple} size={18} />
+        </span>
+        <span className={styles.actionText}>
+          <span className={styles.actionTitle}>
+            {importing ? t('settings.backup.importing') : t('settings.backup.importBackup')}
+          </span>
+          <span className={styles.actionDesc}>{t('settings.backup.importBackupDesc')}</span>
+        </span>
+      </button>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSettingsStore } from '../store';
 import { t } from '../helpers';
 import { SettingsSection } from '../components/SettingsSection';
+import { SettingsRow } from '../components/SettingsRow';
 import { Toggle } from '../widgets/Toggle';
 import { AgentConnectorControls } from './mcp/AgentConnectorControls';
 import { ConnectorForm } from './mcp/ConnectorForm';
@@ -23,7 +24,8 @@ import {
   updateMcpConnector,
 } from './mcp/mcp-api';
 import type { McpConnectorInput } from './mcp/types';
-import styles from '../Settings.module.css';
+import tabStyles from '../Settings.module.css';
+import styles from './McpTab.module.css';
 
 const platform = window.platform;
 
@@ -83,10 +85,6 @@ export function McpTab() {
   };
 
   const toggleGlobal = (enabled: boolean) => run('global', () => setMcpEnabled(enabled));
-  const toggleGlobalFromRow = () => {
-    if (loadingState || busyKey === 'global') return;
-    toggleGlobal(!state.enabled);
-  };
 
   const addConnector = (input: McpConnectorInput) => run('add', () => addMcpConnector(input));
   const updateConnector = (connectorId: string, input: McpConnectorInput) =>
@@ -134,145 +132,128 @@ export function McpTab() {
     run(`oauth-logout-${connectorId}`, () => logoutMcpOAuth(connectorId));
 
   return (
-    <div className={`${styles['settings-tab-content']} ${styles['active']}`} data-tab="mcp">
-      <SettingsSection title={t('settings.mcp.masterTitle')}>
-        <div
-          className={styles['skills-list-item']}
-          tabIndex={busyKey === 'global' ? -1 : 0}
-          onClick={toggleGlobalFromRow}
-          onKeyDown={(e) => {
-            if (e.key !== 'Enter' && e.key !== ' ') return;
-            e.preventDefault();
-            toggleGlobalFromRow();
-          }}
-        >
-          <div className={styles['skills-list-info']}>
-            <div className={styles['skills-list-name']}>{t('settings.mcp.masterName')}</div>
-            <div className={styles['skills-list-desc']}>{t('settings.mcp.masterDesc')}</div>
-          </div>
-          <div className={styles['skills-list-actions']}>
-            <Toggle
-              on={loadingState ? undefined : state.enabled}
-              onChange={toggleGlobal}
-              disabled={busyKey === 'global'}
-              label={loadingState ? t('status.loading') : state.enabled ? t('common.on') : t('common.off')}
-            />
-          </div>
-        </div>
-      </SettingsSection>
+    <div className={`${tabStyles['settings-tab-content']} ${tabStyles['active']}`} data-tab="mcp">
+      <div className={styles.root}>
+        <p className={styles.intro}>{t('settings.mcp.pageDesc')}</p>
 
-      <SettingsSection title={t('settings.mcp.connectorsTitle')} variant="flush">
-        {/* Sub-tab navigation */}
-        <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--border-color, #e0e0e0)', marginBottom: 12 }}>
-          <button
-            type="button"
-            onClick={() => setSubTab('connectors')}
-            style={{
-              padding: '8px 16px',
-              border: 'none',
-              background: 'none',
-              cursor: 'pointer',
-              fontWeight: subTab === 'connectors' ? 600 : 400,
-              borderBottom: subTab === 'connectors' ? '2px solid var(--text-link, #0066cc)' : '2px solid transparent',
-              color: subTab === 'connectors' ? 'var(--text-link, #0066cc)' : 'var(--text-secondary, #666)',
-            }}
-          >
-            {t('settings.mcp.myConnectors') || 'My Connectors'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setSubTab('registry')}
-            style={{
-              padding: '8px 16px',
-              border: 'none',
-              background: 'none',
-              cursor: 'pointer',
-              fontWeight: subTab === 'registry' ? 600 : 400,
-              borderBottom: subTab === 'registry' ? '2px solid var(--text-link, #0066cc)' : '2px solid transparent',
-              color: subTab === 'registry' ? 'var(--text-link, #0066cc)' : 'var(--text-secondary, #666)',
-            }}
-          >
-            {t('settings.mcp.browseRegistry') || 'Browse Registry'}
-          </button>
-        </div>
-
-        {subTab === 'registry' ? (
-          <RegistryBrowser onInstalled={() => { setSubTab('connectors'); loadState(); }} />
-        ) : (
-          <>
-        <div className={styles['pv-add-form-actions']}>
-          <button
-            className={styles['pv-add-form-btn']}
-            type="button"
-            disabled={busyKey === 'import-json'}
-            onClick={() => setImportOpen(!importOpen)}
-          >
-            {t('settings.mcp.importJson')}
-          </button>
-        </div>
-        {importOpen && (
-          <div className={styles['pv-add-form']}>
-            <div className={styles['settings-form-field']}>
-              <label className={styles['settings-form-label']}>{t('settings.mcp.importJson')}</label>
-              <textarea
-                className={styles['settings-textarea']}
-                value={importJson}
-                onChange={(e) => setImportJson(e.target.value)}
-                placeholder={'{"mcpServers":{"example":{"command":"npx","args":["-y","mcp-server-example"]}}}'}
+        <SettingsSection title={t('settings.mcp.masterTitle')}>
+          <SettingsSection.Note>{t('settings.mcp.masterSectionNote')}</SettingsSection.Note>
+          <SettingsRow
+            label={t('settings.mcp.masterName')}
+            hint={t('settings.mcp.masterDesc')}
+            control={
+              <Toggle
+                on={loadingState ? undefined : state.enabled}
+                onChange={toggleGlobal}
+                disabled={busyKey === 'global'}
+                label={loadingState ? t('status.loading') : state.enabled ? t('common.on') : t('common.off')}
               />
-              <span className={styles['settings-form-hint']}>{t('settings.mcp.importJsonHint')}</span>
-            </div>
-            <div className={styles['pv-add-form-actions']}>
-              <button
-                className={styles['pv-add-form-btn']}
-                type="button"
-                onClick={() => setImportOpen(false)}
-              >
-                {t('common.cancel')}
-              </button>
-              <button
-                className={`${styles['pv-add-form-btn']} ${styles['primary']}`}
-                type="button"
-                disabled={!importJson.trim() || busyKey === 'import-json'}
-                onClick={importConnectors}
-              >
-                {t('settings.mcp.importJson')}
-              </button>
-            </div>
+            }
+          />
+        </SettingsSection>
+
+        <SettingsSection title={t('settings.mcp.connectorsTitle')} variant="flush">
+          <SettingsSection.Note>{t('settings.mcp.connectorsSectionNote')}</SettingsSection.Note>
+
+          <div className={styles.subTabs} role="tablist">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={subTab === 'connectors'}
+              className={`${styles.subTab}${subTab === 'connectors' ? ` ${styles.subTabActive}` : ''}`}
+              onClick={() => setSubTab('connectors')}
+            >
+              {t('settings.mcp.myConnectors')}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={subTab === 'registry'}
+              className={`${styles.subTab}${subTab === 'registry' ? ` ${styles.subTabActive}` : ''}`}
+              onClick={() => setSubTab('registry')}
+            >
+              {t('settings.mcp.browseRegistry')}
+            </button>
           </div>
-        )}
-        <ConnectorForm
-          disabled={busyKey === 'add' || (editingConnectorId ? busyKey === `update-${editingConnectorId}` : false)}
-          editingConnector={state.connectors.find(connector => connector.id === editingConnectorId) || null}
-          onAdd={addConnector}
-          onUpdate={updateConnector}
-          onCancelEdit={() => setEditingConnectorId(null)}
-        />
-        <ConnectorList
+
+          {subTab === 'registry' ? (
+            <RegistryBrowser onInstalled={() => { setSubTab('connectors'); loadState(); }} />
+          ) : (
+            <>
+              <div className={styles.importToolbar}>
+                <button
+                  type="button"
+                  className={tabStyles['settings-btn-secondary']}
+                  disabled={busyKey === 'import-json'}
+                  onClick={() => setImportOpen(!importOpen)}
+                >
+                  {t('settings.mcp.importJson')}
+                </button>
+              </div>
+              {importOpen && (
+                <div className={`${tabStyles['pv-add-form']} ${styles.importPanel}`}>
+                  <div className={tabStyles['settings-form-field']}>
+                    <label className={tabStyles['settings-form-label']}>{t('settings.mcp.importJson')}</label>
+                    <textarea
+                      className={tabStyles['settings-textarea']}
+                      value={importJson}
+                      onChange={(e) => setImportJson(e.target.value)}
+                      placeholder={'{"mcpServers":{"example":{"command":"npx","args":["-y","mcp-server-example"]}}}'}
+                    />
+                    <span className={tabStyles['settings-form-hint']}>{t('settings.mcp.importJsonHint')}</span>
+                  </div>
+                  <div className={tabStyles['pv-add-form-actions']}>
+                    <button
+                      type="button"
+                      className={tabStyles['pv-add-form-btn']}
+                      onClick={() => setImportOpen(false)}
+                    >
+                      {t('common.cancel')}
+                    </button>
+                    <button
+                      type="button"
+                      className={`${tabStyles['pv-add-form-btn']} ${tabStyles['primary']}`}
+                      disabled={!importJson.trim() || busyKey === 'import-json'}
+                      onClick={importConnectors}
+                    >
+                      {t('settings.mcp.importJson')}
+                    </button>
+                  </div>
+                </div>
+              )}
+              <ConnectorForm
+                disabled={busyKey === 'add' || (editingConnectorId ? busyKey === `update-${editingConnectorId}` : false)}
+                editingConnector={state.connectors.find(connector => connector.id === editingConnectorId) || null}
+                onAdd={addConnector}
+                onUpdate={updateConnector}
+                onCancelEdit={() => setEditingConnectorId(null)}
+              />
+              <ConnectorList
+                connectors={state.connectors}
+                globalEnabled={state.enabled}
+                busyKey={busyKey}
+                onAction={connectorAction}
+                onEdit={setEditingConnectorId}
+                onRemove={removeConnector}
+                onOAuthStart={connectOAuth}
+                onOAuthLogout={disconnectOAuth}
+              />
+            </>
+          )}
+        </SettingsSection>
+
+        <AgentConnectorControls
           connectors={state.connectors}
           globalEnabled={state.enabled}
+          loading={loadingState}
+          viewAgentId={viewAgentId}
           busyKey={busyKey}
-          onAction={connectorAction}
-          onEdit={setEditingConnectorId}
-          onRemove={removeConnector}
-          onOAuthStart={connectOAuth}
-          onOAuthLogout={disconnectOAuth}
+          agentConfig={state.agentConfig}
+          onAgentChange={setViewAgentId}
+          onConnectorToggle={setAgentConnector}
+          onToolToggle={setAgentTool}
         />
-          </>
-        )}
-      </SettingsSection>
-
-      <AgentConnectorControls
-        connectors={state.connectors}
-        globalEnabled={state.enabled}
-        loading={loadingState}
-        viewAgentId={viewAgentId}
-        busyKey={busyKey}
-        agentConfig={state.agentConfig}
-        onAgentChange={setViewAgentId}
-        onConnectorToggle={setAgentConnector}
-        onToolToggle={setAgentTool}
-      />
+      </div>
     </div>
   );
 }

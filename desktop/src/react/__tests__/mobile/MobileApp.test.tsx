@@ -281,7 +281,7 @@ describe('MobileApp', () => {
     });
     expect(useStore.getState().pendingNewSession).toBe(false);
     expect(useStore.getState().currentSessionPath).toBe('/hana/sessions/new.jsonl');
-    expect(useStore.getState().welcomeVisible).toBe(true);
+    expect(useStore.getState().welcomeVisible).toBe(false);
     expect(useStore.getState().sessions.some((session) => session.path === '/hana/sessions/new.jsonl')).toBe(true);
   });
 

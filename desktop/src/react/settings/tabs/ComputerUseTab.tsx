@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ArrowsClockwise } from '@phosphor-icons/react';
 import { hanaFetch } from '../api';
 import { t } from '../helpers';
 import { SettingsSection } from '../components/SettingsSection';
 import { SettingsRow } from '../components/SettingsRow';
 import { Toggle } from '../widgets/Toggle';
 import { CodeSigningPanel } from '../components/CodeSigningPanel';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
 import { useSettingsStore } from '../store';
-import styles from '../Settings.module.css';
+import tabStyles from '../Settings.module.css';
+import styles from './ComputerUseTab.module.css';
 
 interface ComputerProviderStatus {
   providerId: string;
@@ -35,17 +38,11 @@ interface ComputerUseStatusResponse {
   };
 }
 
-function StatusText({ ok, text }: { ok: boolean; text: string }) {
+function StatusPill({ ok, text }: { ok: boolean; text: string }) {
   return (
-    <span style={{
-      color: ok ? 'var(--accent)' : 'var(--text-muted)',
-      fontSize: '0.78rem',
-      whiteSpace: 'nowrap',
-      maxWidth: 280,
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-    }}>
-      {text}
+    <span className={`${styles.statusPill} ${ok ? styles.statusOk : styles.statusWarn}`} title={text}>
+      <span className={`${styles.statusDot} ${ok ? styles.statusDotOk : styles.statusDotWarn}`} />
+      <span>{text}</span>
     </span>
   );
 }
@@ -79,11 +76,11 @@ export function ComputerUseTab() {
     return data?.status?.providers?.find((provider) => provider.providerId === id) || null;
   }, [data]);
 
-  // data 未到位时传 undefined 给 Toggle，走加载态；加载完成后用真实 boolean。
   const enabled = data ? data.settings?.enabled === true : undefined;
   const available = selectedProvider?.status?.available === true;
   const availabilityIssue = selectedProvider?.status?.reason || selectedProvider?.status?.error || '';
   const permissions = selectedProvider?.status?.permissions || [];
+  const permissionsOk = permissions.length === 0 || permissions.every((p) => p.granted !== false);
   const permissionText = permissions.length > 0
     ? permissions.map((p) => `${p.name || 'permission'}:${p.granted ? 'ok' : 'missing'}`).join(' · ')
     : t('settings.computerUse.permissionsEmpty');
@@ -140,68 +137,98 @@ export function ComputerUseTab() {
 
   const refreshButton = (
     <button
-      className={styles['settings-save-btn-sm']}
+      type="button"
+      className={tabStyles['settings-icon-btn']}
+      title={t('settings.computerUse.refresh')}
       onClick={load}
       disabled={loading}
-      style={{ minWidth: 72 }}
     >
-      {t('settings.computerUse.refresh')}
-    </button>
-  );
-
-  const permissionsButton = (
-    <button
-      className={styles['settings-save-btn-sm']}
-      onClick={requestPermissions}
-      disabled={requesting || loading}
-      style={{ minWidth: 120 }}
-    >
-      {t('settings.computerUse.requestPermissions')}
+      <PhosphorIcon icon={ArrowsClockwise} size={14} className={loading ? tabStyles['spin'] : ''} />
     </button>
   );
 
   return (
-    <div className={`${styles['settings-tab-content']} ${styles['active']}`} data-tab="computer">
-      <SettingsSection title={t('settings.computerUse.title')} context={refreshButton}>
-        <SettingsSection.Warning data-testid="computer-use-experimental-warning">
-          {t('settings.computerUse.experimentalWarning')}
-        </SettingsSection.Warning>
-        <SettingsSection.Note>
-          {t('settings.computerUse.description')}
-        </SettingsSection.Note>
-        <SettingsRow
-          label={t('settings.computerUse.enabled')}
-          hint={t('settings.computerUse.enabledHint')}
-          control={<Toggle on={enabled} onChange={(next) => saveEnabled(next)} disabled={saving} />}
-        />
-        <SettingsRow
-          label={t('settings.computerUse.provider')}
-          control={<StatusText ok={!!data?.selectedProviderId} text={data?.selectedProviderId || '-'} />}
-        />
-        <SettingsRow
-          label={t('settings.computerUse.availability')}
-          hint={availabilityIssue || undefined}
-          control={<StatusText ok={available} text={available ? t('settings.computerUse.available') : t('settings.computerUse.unavailable')} />}
-        />
-        <SettingsRow
-          label={t('settings.computerUse.permissions')}
-          hint={t('settings.computerUse.permissionsHint')}
-          control={permissionsButton}
-        />
-        <SettingsRow
-          label={t('settings.computerUse.permissionsStatus')}
-          control={<StatusText ok={permissions.every((p) => p.granted !== false)} text={permissionText} />}
-        />
-        <SettingsRow
-          label={t('settings.computerUse.approvals')}
-          control={<StatusText ok={approvals.length > 0} text={approvalsText} />}
-        />
-        <SettingsRow
-          label={t('settings.computerUse.activeSession')}
-          control={<StatusText ok={!activeLease} text={activeLeaseText} />}
-        />
-      </SettingsSection>
-      <CodeSigningPanel />
+    <div className={`${tabStyles['settings-tab-content']} ${tabStyles['active']}`} data-tab="computer">
+      <div className={styles.root}>
+        <p className={styles.intro}>{t('settings.computerUse.pageDesc')}</p>
+
+        <SettingsSection
+          title={t('settings.computerUse.title')}
+          context={<div className={styles.toolbar}>{refreshButton}</div>}
+        >
+          <SettingsSection.Warning data-testid="computer-use-experimental-warning">
+            {t('settings.computerUse.experimentalWarning')}
+          </SettingsSection.Warning>
+          <SettingsSection.Note>{t('settings.computerUse.controlSectionNote')}</SettingsSection.Note>
+          <SettingsRow
+            label={t('settings.computerUse.enabled')}
+            hint={t('settings.computerUse.enabledHint')}
+            control={<Toggle on={enabled} onChange={(next) => saveEnabled(next)} disabled={saving || loading} />}
+          />
+          <SettingsRow
+            label={t('settings.computerUse.permissions')}
+            hint={t('settings.computerUse.permissionsHint')}
+            control={
+              <button
+                type="button"
+                className={tabStyles['settings-btn-secondary']}
+                onClick={requestPermissions}
+                disabled={requesting || loading}
+              >
+                {t('settings.computerUse.requestPermissions')}
+              </button>
+            }
+          />
+        </SettingsSection>
+
+        <SettingsSection title={t('settings.computerUse.statusSection')}>
+          <SettingsSection.Note>{t('settings.computerUse.statusSectionNote')}</SettingsSection.Note>
+          {loading && !data ? (
+            <p className={styles.intro} style={{ margin: '0 4px 12px' }}>{t('status.loading')}</p>
+          ) : (
+            <>
+              <SettingsRow
+                label={t('settings.computerUse.provider')}
+                control={
+                  <StatusPill
+                    ok={!!data?.selectedProviderId}
+                    text={data?.selectedProviderId || '—'}
+                  />
+                }
+              />
+              <SettingsRow
+                label={t('settings.computerUse.availability')}
+                hint={availabilityIssue || undefined}
+                control={
+                  <StatusPill
+                    ok={available}
+                    text={available ? t('settings.computerUse.available') : t('settings.computerUse.unavailable')}
+                  />
+                }
+              />
+              <SettingsRow
+                label={t('settings.computerUse.permissionsStatus')}
+                control={<StatusPill ok={permissionsOk} text={permissionText} />}
+              />
+              <SettingsRow
+                label={t('settings.computerUse.approvals')}
+                control={<StatusPill ok={approvals.length > 0} text={approvalsText} />}
+              />
+              <SettingsRow
+                label={t('settings.computerUse.activeSession')}
+                control={<StatusPill ok={!activeLease} text={activeLeaseText} />}
+              />
+            </>
+          )}
+        </SettingsSection>
+
+        <SettingsSection title={t('settings.codeSigning.title')} variant="flush">
+          <SettingsSection.Note>{t('settings.codeSigning.description')}</SettingsSection.Note>
+          <div className={styles.codeSigningWrap}>
+            <CodeSigningPanel embedded />
+          </div>
+        </SettingsSection>
+      </div>
     </div>
   );
 }

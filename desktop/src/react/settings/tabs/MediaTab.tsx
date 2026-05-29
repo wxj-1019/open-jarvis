@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { Image, MicrophoneStage } from '@phosphor-icons/react';
 import { useSettingsStore } from '../store';
 import { hanaFetch } from '../api';
 import { t } from '../helpers';
@@ -6,7 +7,9 @@ import { MediaProviderDetail } from './media/MediaProviderDetail';
 import { SettingsSection } from '../components/SettingsSection';
 import { SettingsRow } from '../components/SettingsRow';
 import { SelectWidget } from '@/ui';
-import styles from '../Settings.module.css';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
+import tabStyles from '../Settings.module.css';
+import styles from './MediaTab.module.css';
 
 interface MediaProvider {
   providerId: string;
@@ -19,7 +22,7 @@ interface MediaProvider {
 
 interface MediaConfig {
   defaultImageModel?: { id: string; provider: string };
-  providerDefaults?: Record<string, any>;
+  providerDefaults?: Record<string, unknown>;
 }
 
 function encodeConfigPatch(updates: Partial<MediaConfig>): Record<string, unknown> {
@@ -32,7 +35,7 @@ function applyConfigPatch(prev: MediaConfig, updates: Partial<MediaConfig>): Med
   const next: MediaConfig = { ...prev };
   for (const [key, value] of Object.entries(updates) as Array<[keyof MediaConfig, MediaConfig[keyof MediaConfig]]>) {
     if (value === undefined) delete next[key];
-    else next[key] = value as any;
+    else next[key] = value as MediaConfig[keyof MediaConfig];
   }
   return next;
 }
@@ -42,6 +45,7 @@ export function MediaTab() {
   const [config, setConfig] = useState<MediaConfig>({});
   const [selected, setSelected] = useState<string | null>(null);
   const showToast = useSettingsStore(s => s.showToast);
+  const set = useSettingsStore(s => s.set);
 
   const load = useCallback(async () => {
     try {
@@ -50,19 +54,23 @@ export function MediaTab() {
       const nextProviders = data.providers || {};
       setProviders(nextProviders);
       setConfig(data.config || {});
-      setSelected(current => {
+      setSelected((current) => {
         if (current && nextProviders[current]) return current;
         const ids = Object.keys(nextProviders);
-        return ids.find(id => nextProviders[id]?.hasCredentials) || ids[0] || null;
+        return ids.find((id) => nextProviders[id]?.hasCredentials) || ids[0] || null;
       });
-    } catch { /* plugin not loaded yet */ }
+    } catch {
+      /* plugin not loaded yet */
+    }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const providerIds = Object.keys(providers);
-  const allImageModels = providerIds.flatMap(pid =>
-    (providers[pid].models || []).map(m => ({ ...m, provider: pid }))
+  const allImageModels = providerIds.flatMap((pid) =>
+    (providers[pid].models || []).map((m) => ({ ...m, provider: pid })),
   );
 
   const saveConfig = async (updates: Partial<MediaConfig>) => {
@@ -74,110 +82,118 @@ export function MediaTab() {
       });
       const data = await res.json().catch(() => null);
       if (data?.values) setConfig(data.values);
-      else setConfig(prev => applyConfigPatch(prev, updates));
+      else setConfig((prev) => applyConfigPatch(prev, updates));
       showToast(t('settings.saved'), 'success');
-    } catch (err: any) {
-      showToast(err.message || 'Save failed', 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : t('settings.saveFailed');
+      showToast(message, 'error');
     }
   };
 
   return (
-    <div className={`${styles['settings-tab-content']} ${styles['active']}`} data-tab="media">
-      {/* pv-layout：double-column variant 做外壳，内部 DOM 保留原样 */}
-      <SettingsSection variant="double-column">
-        <div className={styles['pv-layout']}>
-          {/* Left: Provider list */}
-          <div className={styles['pv-list']}>
-            <div className={styles['pv-list-group-label']}>{t('settings.media.imageGeneration')}</div>
-            {providerIds.map(pid => {
-              const p = providers[pid];
-              return (
-                <button
-                  key={pid}
-                  className={`${styles['pv-list-item']}${selected === pid ? ' ' + styles['selected'] : ''}${!p.hasCredentials ? ' ' + styles['dim'] : ''}`}
-                  onClick={() => setSelected(pid)}
-                >
-                  <span className={`${styles['pv-status-dot']}${p.hasCredentials ? ' ' + styles['on'] : ''}`} />
-                  <span className={styles['pv-list-item-name']}>{p.displayName || pid}</span>
-                  <span className={styles['pv-list-item-count']}>{p.models.length}</span>
-                </button>
-              );
-            })}
+    <div className={`${tabStyles['settings-tab-content']} ${tabStyles['active']}`} data-tab="media">
+      <div className={styles.root}>
+        <p className={styles.intro}>{t('settings.media.pageDesc')}</p>
 
-            {/* Placeholder sections for future capabilities */}
-            <div className={styles['pv-list-divider']} />
-            <div className={styles['pv-list-group-label']} style={{ color: 'var(--text-muted)' }}>
-              {t('settings.media.speechRecognition')}
-            </div>
-            <div className={styles['pv-list-item']} style={{ opacity: 0.3, pointerEvents: 'none' }}>
-              <span className={styles['pv-status-dot']} />
-              <span className={styles['pv-list-item-name']} style={{ fontStyle: 'italic', fontSize: '0.7rem' }}>
-                {t('settings.media.comingSoon')}
-              </span>
+        <SettingsSection title={t('settings.media.providersSection')} variant="double-column" className={styles.providerShell}>
+          <div className={tabStyles['pv-layout']}>
+            <div className={tabStyles['pv-list']}>
+              <div className={tabStyles['pv-list-group-label']}>{t('settings.media.imageGeneration')}</div>
+              {providerIds.length === 0 ? (
+                <div className={styles.emptyDetail} style={{ minHeight: 120 }}>
+                  <span>{t('settings.media.noProviders')}</span>
+                </div>
+              ) : (
+                providerIds.map((pid) => {
+                  const p = providers[pid];
+                  return (
+                    <button
+                      key={pid}
+                      type="button"
+                      className={`${tabStyles['pv-list-item']}${selected === pid ? ` ${tabStyles['selected']}` : ''}${!p.hasCredentials ? ` ${tabStyles['dim']}` : ''}`}
+                      onClick={() => setSelected(pid)}
+                    >
+                      <span className={`${tabStyles['pv-status-dot']}${p.hasCredentials ? ` ${tabStyles['on']}` : ''}`} />
+                      <span className={tabStyles['pv-list-item-name']}>{p.displayName || pid}</span>
+                      <span className={tabStyles['pv-list-item-count']}>{p.models.length}</span>
+                    </button>
+                  );
+                })
+              )}
+
             </div>
 
-            <div className={styles['pv-list-divider']} />
-            <div className={styles['pv-list-group-label']} style={{ color: 'var(--text-muted)' }}>
-              {t('settings.media.speechSynthesis')}
-            </div>
-            <div className={styles['pv-list-item']} style={{ opacity: 0.3, pointerEvents: 'none' }}>
-              <span className={styles['pv-status-dot']} />
-              <span className={styles['pv-list-item-name']} style={{ fontStyle: 'italic', fontSize: '0.7rem' }}>
-                {t('settings.media.comingSoon')}
-              </span>
+            <div className={tabStyles['pv-detail']}>
+              {selected && providers[selected] ? (
+                <MediaProviderDetail
+                  providerId={selected}
+                  provider={providers[selected]}
+                  config={config}
+                  onSaveConfig={saveConfig}
+                  onRefresh={load}
+                />
+              ) : (
+                <div className={styles.emptyDetail}>
+                  <span className={styles.emptyIcon}>
+                    <PhosphorIcon icon={Image} size={22} />
+                  </span>
+                  <span>{t('settings.media.noProvider')}</span>
+                </div>
+              )}
             </div>
           </div>
+        </SettingsSection>
 
-          {/* Right: Provider detail */}
-          <div className={styles['pv-detail']}>
-            {selected && providers[selected] ? (
-              <MediaProviderDetail
-                providerId={selected}
-                provider={providers[selected]}
-                config={config}
-                onSaveConfig={saveConfig}
-                onRefresh={load}
+        <SettingsSection title={t('settings.media.voiceSection')}>
+          <SettingsSection.Note>{t('settings.media.voiceSectionNote')}</SettingsSection.Note>
+          <SettingsRow
+            label={t('settings.media.voiceSettings')}
+            control={
+              <button
+                type="button"
+                className={tabStyles['settings-btn-secondary']}
+                onClick={() => set({ activeTab: 'voice' })}
+              >
+                <PhosphorIcon icon={MicrophoneStage} size={14} />
+                {t('settings.media.openVoiceTab')}
+              </button>
+            }
+          />
+        </SettingsSection>
+
+        <SettingsSection title={t('settings.media.globalDefault')}>
+          <SettingsSection.Note>{t('settings.media.globalDefaultNote')}</SettingsSection.Note>
+          <SettingsRow
+            label={t('settings.media.defaultModel')}
+            hint={t('settings.media.defaultModelHint')}
+            control={
+              <SelectWidget
+                value={config.defaultImageModel ? `${config.defaultImageModel.provider}/${config.defaultImageModel.id}` : ''}
+                onChange={(val) => {
+                  if (!val) {
+                    saveConfig({ defaultImageModel: undefined });
+                    return;
+                  }
+                  const [provider, ...rest] = val.split('/');
+                  saveConfig({ defaultImageModel: { id: rest.join('/'), provider } });
+                }}
+                options={[
+                  { value: '', label: '—' },
+                  ...allImageModels.map((m) => {
+                    const providerHasCredentials = providers[m.provider]?.hasCredentials === true;
+                    const label = `${m.provider} / ${m.name || m.id}`;
+                    return {
+                      value: `${m.provider}/${m.id}`,
+                      label: providerHasCredentials ? label : `${label} (${t('settings.media.credentialMissing')})`,
+                      disabled: !providerHasCredentials,
+                    };
+                  }),
+                ]}
               />
-            ) : (
-              <div className={styles['pv-empty']}>
-                {t('settings.media.noProvider')}
-              </div>
-            )}
-          </div>
-        </div>
-      </SettingsSection>
-
-      {/* 全局默认：标准 inline row */}
-      <SettingsSection title={t('settings.media.globalDefault')}>
-        <SettingsRow
-          label={t('settings.media.defaultModel')}
-          control={
-            <SelectWidget
-              value={config.defaultImageModel ? `${config.defaultImageModel.provider}/${config.defaultImageModel.id}` : ''}
-              onChange={(val) => {
-                if (!val) {
-                  saveConfig({ defaultImageModel: undefined });
-                  return;
-                }
-                const [provider, ...rest] = val.split('/');
-                saveConfig({ defaultImageModel: { id: rest.join('/'), provider } });
-              }}
-              options={[
-                { value: '', label: '—' },
-                ...allImageModels.map(m => {
-                  const providerHasCredentials = providers[m.provider]?.hasCredentials === true;
-                  const label = `${m.provider} / ${m.name || m.id}`;
-                  return {
-                    value: `${m.provider}/${m.id}`,
-                    label: providerHasCredentials ? label : `${label} (${t('settings.media.credentialMissing')})`,
-                    disabled: !providerHasCredentials,
-                  };
-                }),
-              ]}
-            />
-          }
-        />
-      </SettingsSection>
+            }
+          />
+        </SettingsSection>
+      </div>
     </div>
   );
 }

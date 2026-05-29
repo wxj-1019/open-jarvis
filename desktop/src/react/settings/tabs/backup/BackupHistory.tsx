@@ -1,15 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Clock, Database, FileArchive, HardDrives } from '@phosphor-icons/react';
 import { hanaFetch } from '../../api';
 import { t } from '../../helpers';
 import { useSettingsStore } from '../../store';
+import { PhosphorIcon } from '../../../ui/PhosphorIcon';
 import type { BackupRecord } from './backup-types';
+import styles from './BackupTab.module.css';
 
 export function BackupHistory() {
   const [backups, setBackups] = useState<BackupRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const agents = useSettingsStore(s => s.agents);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const selectedAgentId = useSettingsStore(s => s.backupSelectedAgentId);
-  const set = useSettingsStore(s => s.set);
+  const showToast = useSettingsStore(s => s.showToast);
 
   const loadBackups = useCallback(async () => {
     if (!selectedAgentId) {
@@ -41,73 +44,102 @@ export function BackupHistory() {
   }, [loadBackups]);
 
   const handleDelete = async (backup: BackupRecord) => {
+    if (!window.confirm(t('settings.backup.deleteConfirm', { name: backup.filename }))) {
+      return;
+    }
+
+    setDeletingId(backup.filename);
     try {
       const res = await hanaFetch(`/api/agents/${backup.agentId}/backups/${backup.filename}`, {
         method: 'DELETE',
       });
       const result = await res.json();
       if (result.success) {
+        showToast(t('settings.backup.deleteSuccess'), 'success');
         loadBackups();
+      } else {
+        showToast(result.error || t('settings.backup.deleteFailed'), 'error');
       }
     } catch (err) {
       console.error('[BackupHistory] Delete failed:', err);
+      showToast(t('settings.backup.deleteFailed'), 'error');
+    } finally {
+      setDeletingId(null);
     }
   };
 
-  const formatSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
-  };
+  if (!selectedAgentId) {
+    return (
+      <div className={styles.empty}>
+        <span className={styles.emptyIcon}>
+          <PhosphorIcon icon={Database} size={22} />
+        </span>
+        <span className={styles.emptyTitle}>{t('settings.backup.selectAgent')}</span>
+        <span className={styles.emptyDesc}>{t('settings.backup.selectAgentFirst')}</span>
+      </div>
+    );
+  }
 
-  const formatDate = (isoString: string) => {
-    try {
-      return new Date(isoString).toLocaleString();
-    } catch {
-      return isoString;
-    }
-  };
+  if (loading) {
+    return <div className={styles.loading}>{t('settings.backup.loading')}</div>;
+  }
 
-  if (loading) return <div style={{ padding: '16px', color: 'var(--text-muted, #666)' }}>{t('settings.backup.loading')}</div>;
-  if (backups.length === 0) return <div style={{ padding: '16px', color: 'var(--text-muted, #666)' }}>{t('settings.backup.noBackups')}</div>;
+  if (backups.length === 0) {
+    return (
+      <div className={styles.empty}>
+        <span className={styles.emptyIcon}>
+          <PhosphorIcon icon={FileArchive} size={22} />
+        </span>
+        <span className={styles.emptyTitle}>{t('settings.backup.noBackups')}</span>
+        <span className={styles.emptyDesc}>{t('settings.backup.noBackupsDesc')}</span>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr style={{ borderBottom: '1px solid var(--border, #e1e4e8)' }}>
-            <th style={{ textAlign: 'left', padding: '8px 4px', fontWeight: 600 }}>{t('settings.backup.filename')}</th>
-            <th style={{ textAlign: 'left', padding: '8px 4px', fontWeight: 600 }}>{t('settings.backup.size')}</th>
-            <th style={{ textAlign: 'left', padding: '8px 4px', fontWeight: 600 }}>{t('settings.backup.date')}</th>
-            <th style={{ textAlign: 'left', padding: '8px 4px', fontWeight: 600 }}>{t('settings.backup.actions')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {backups.map((backup) => (
-            <tr key={backup.filename} style={{ borderBottom: '1px solid var(--border, #e1e4e8)' }}>
-              <td style={{ padding: '8px 4px', fontFamily: 'var(--font-mono, monospace)', fontSize: '12px' }}>{backup.filename}</td>
-              <td style={{ padding: '8px 4px' }}>{formatSize(backup.size)}</td>
-              <td style={{ padding: '8px 4px' }}>{formatDate(backup.createdAt)}</td>
-              <td style={{ padding: '8px 4px' }}>
-                <button
-                  onClick={() => handleDelete(backup)}
-                  style={{
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    border: 'none',
-                    background: 'transparent',
-                    color: 'var(--error, #dc3545)',
-                    cursor: 'pointer',
-                    fontSize: '12px',
-                  }}
-                >
-                  {t('settings.backup.delete')}
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className={styles.historyList}>
+      {backups.map((backup) => (
+        <div key={backup.filename} className={styles.historyItem}>
+          <span className={styles.historyIcon}>
+            <PhosphorIcon icon={FileArchive} size={16} />
+          </span>
+          <div className={styles.historyMain}>
+            <div className={styles.historyName} title={backup.filename}>{backup.filename}</div>
+            <div className={styles.historyMeta}>
+              <span>
+                <PhosphorIcon icon={HardDrives} size={12} />
+                {formatSize(backup.size)}
+              </span>
+              <span>
+                <PhosphorIcon icon={Clock} size={12} />
+                {formatDate(backup.createdAt)}
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            className={styles.deleteBtn}
+            disabled={deletingId === backup.filename}
+            onClick={() => handleDelete(backup)}
+          >
+            {deletingId === backup.filename ? '...' : t('settings.backup.delete')}
+          </button>
+        </div>
+      ))}
     </div>
   );
+}
+
+function formatSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+}
+
+function formatDate(isoString: string) {
+  try {
+    return new Date(isoString).toLocaleString();
+  } catch {
+    return isoString;
+  }
 }

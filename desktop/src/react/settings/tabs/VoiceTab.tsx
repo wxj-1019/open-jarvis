@@ -1,11 +1,14 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { Play } from '@phosphor-icons/react';
 import { useSettingsStore } from '../store';
 import { hanaFetch } from '../api';
 import { t } from '../helpers';
 import { SettingsSection } from '../components/SettingsSection';
 import { SettingsRow } from '../components/SettingsRow';
-import { SelectWidget, Toggle } from '@/ui';
-import styles from '../Settings.module.css';
+import { SelectWidget } from '@/ui';
+import { PhosphorIcon } from '../../ui/PhosphorIcon';
+import tabStyles from '../Settings.module.css';
+import styles from './VoiceTab.module.css';
 
 interface TTSConfig {
   engine: string;
@@ -26,6 +29,53 @@ interface VoiceConfig {
   stt: STTConfig;
 }
 
+const TTS_MODELS = [
+  { value: 'mimo-v2.5-tts', labelKey: 'settings.voice.modelMimo25' },
+  { value: 'mimo-v2-tts', labelKey: 'settings.voice.modelMimo2' },
+  { value: 'mimo-v2.5-tts-voicedesign', labelKey: 'settings.voice.modelVoiceDesign' },
+  { value: 'mimo-v2.5-tts-voiceclone', labelKey: 'settings.voice.modelVoiceClone' },
+] as const;
+
+function StatusPill({ online, label }: { online: boolean; label: string }) {
+  return (
+    <span className={styles.statusPill}>
+      <span className={`${styles.statusDot} ${online ? styles.statusOnline : styles.statusOffline}`} />
+      {label}
+    </span>
+  );
+}
+
+function SliderRow({
+  value,
+  min,
+  max,
+  step,
+  format,
+  onChange,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  format: (v: number) => string;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div className={styles.sliderControl}>
+      <input
+        type="range"
+        className={styles.slider}
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(parseFloat(e.target.value))}
+      />
+      <span className={styles.sliderValue}>{format(value)}</span>
+    </div>
+  );
+}
+
 export function VoiceTab() {
   const [config, setConfig] = useState<VoiceConfig>({
     tts: {
@@ -43,55 +93,68 @@ export function VoiceTab() {
   });
   const [ttsStatus, setTtsStatus] = useState<{ configured: boolean; error?: string }>({ configured: false });
   const [sttStatus, setSttStatus] = useState<{ configured: boolean; error?: string }>({ configured: false });
-  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
   const showToast = useSettingsStore(s => s.showToast);
 
   const loadConfig = useCallback(async () => {
     try {
-      // 加载 TTS 配置
       const ttsRes = await hanaFetch('/api/tts/config');
       const ttsData = await ttsRes.json();
-      setTtsStatus(ttsData.mimo);
+      setTtsStatus(ttsData.mimo || { configured: false });
 
-      // 加载 STT 配置
       const sttRes = await hanaFetch('/api/voice/config');
       const sttData = await sttRes.json();
-      setSttStatus({ configured: sttData.configured });
+      setSttStatus({ configured: !!sttData.configured });
     } catch {
-      // 配置未加载
+      setTtsStatus({ configured: false });
+      setSttStatus({ configured: false });
     }
   }, []);
 
-  useEffect(() => { loadConfig(); }, [loadConfig]);
+  useEffect(() => {
+    loadConfig();
+  }, [loadConfig]);
 
-  const saveConfig = async (updates: Partial<VoiceConfig>) => {
-    setSaving(true);
-    try {
-      const nextConfig = { ...config, ...updates };
-      setConfig(nextConfig);
-
-      // TODO: 保存到后端配置存储
-      // await hanaFetch('/api/voice/config', {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(nextConfig),
-      // });
-
-      showToast('配置已保存', 'success');
-    } catch (err: any) {
-      showToast(err.message || '保存失败', 'error');
-    } finally {
-      setSaving(false);
-    }
+  const patchConfig = (updates: Partial<VoiceConfig>) => {
+    setConfig((prev) => ({
+      ...prev,
+      ...updates,
+      tts: updates.tts ? { ...prev.tts, ...updates.tts } : prev.tts,
+      stt: updates.stt ? { ...prev.stt, ...updates.stt } : prev.stt,
+    }));
   };
 
+  const testWebSpeech = (): Promise<void> =>
+    new Promise((resolve, reject) => {
+      if (typeof window === 'undefined' || !window.speechSynthesis) {
+        reject(new Error(t('settings.voice.testFailed')));
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(t('settings.voice.testPhrase'));
+      utterance.lang = config.stt.language;
+      utterance.rate = config.tts.speed;
+      utterance.pitch = config.tts.pitch;
+      utterance.volume = config.tts.volume;
+      utterance.onend = () => resolve();
+      utterance.onerror = () => reject(new Error(t('settings.voice.testFailed')));
+      window.speechSynthesis.speak(utterance);
+    });
+
   const testTTS = async () => {
+    setTesting(true);
     try {
+      if (config.tts.engine === 'webspeech') {
+        await testWebSpeech();
+        showToast(t('settings.voice.testSuccess'), 'success');
+        return;
+      }
+
       const res = await hanaFetch('/api/tts/synthesize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: '你好，这是语音测试',
+          text: t('settings.voice.testPhrase'),
           engine: config.tts.engine,
           model: config.tts.model,
           speed: config.tts.speed,
@@ -100,172 +163,193 @@ export function VoiceTab() {
 
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.error || 'TTS 测试失败');
+        throw new Error(error.error || t('settings.voice.testFailed'));
       }
 
-      // 播放音频
       const audioBlob = await res.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
       await audio.play();
+      URL.revokeObjectURL(audioUrl);
 
-      showToast('TTS 测试成功！', 'success');
-    } catch (err: any) {
-      showToast(err.message || 'TTS 测试失败', 'error');
+      showToast(t('settings.voice.testSuccess'), 'success');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : t('settings.voice.testFailed');
+      showToast(message, 'error');
+    } finally {
+      setTesting(false);
     }
   };
 
-  const ttsModels = [
-    { id: 'mimo-v2.5-tts', name: 'MiMo V2.5 TTS (推荐)' },
-    { id: 'mimo-v2-tts', name: 'MiMo V2 TTS' },
-    { id: 'mimo-v2.5-tts-voicedesign', name: 'MiMo V2.5 Voice Design' },
-    { id: 'mimo-v2.5-tts-voiceclone', name: 'MiMo V2.5 Voice Clone' },
-  ];
+  const sttConfiguredLabel = sttStatus.configured
+    ? t('settings.voice.configured')
+    : t('settings.voice.notConfiguredStt');
+
+  const webSpeechAvailable = typeof window !== 'undefined' && !!window.speechSynthesis;
+  const ttsEngineReady =
+    config.tts.engine === 'webspeech'
+      ? webSpeechAvailable
+      : config.tts.engine === 'mimo' && ttsStatus.configured;
+
+  const ttsConfiguredLabel = ttsEngineReady
+    ? t('settings.voice.configured')
+    : t('settings.voice.notConfiguredTts');
 
   return (
-    <div className={`${styles['settings-tab-content']} ${styles['active']}`} data-tab="voice">
-      <SettingsSection title="语音识别 (STT)">
-        <SettingsRow label="识别引擎">
-          <SelectWidget
-            value={config.stt.engine}
-            onChange={(engine) => saveConfig({ stt: { ...config.stt, engine } })}
-            options={[
-              { id: 'whisper', name: 'OpenAI Whisper' },
-            ]}
-          />
-        </SettingsRow>
+    <div className={`${tabStyles['settings-tab-content']} ${tabStyles['active']}`} data-tab="voice">
+      <div className={styles.root}>
+        <p className={styles.intro}>{t('settings.voice.pageDesc')}</p>
 
-        <SettingsRow label="默认语言">
-          <SelectWidget
-            value={config.stt.language}
-            onChange={(language) => saveConfig({ stt: { ...config.stt, language } })}
-            options={[
-              { id: 'zh-CN', name: '中文 (简体)' },
-              { id: 'zh-TW', name: '中文 (繁体)' },
-              { id: 'en-US', name: 'English (US)' },
-              { id: 'ja-JP', name: '日本語' },
-              { id: 'ko-KR', name: '한국어' },
-            ]}
-          />
-        </SettingsRow>
-
-        <SettingsRow label="配置状态">
-          <div className={styles['status-indicator']}>
-            <span className={`${styles['status-dot']} ${sttStatus.configured ? styles['online'] : styles['offline']}`} />
-            <span>{sttStatus.configured ? '已配置' : '未配置 OpenAI API Key'}</span>
-          </div>
-        </SettingsRow>
-      </SettingsSection>
-
-      <SettingsSection title="语音合成 (TTS)">
-        <SettingsRow label="TTS 引擎">
-          <SelectWidget
-            value={config.tts.engine}
-            onChange={(engine) => saveConfig({ tts: { ...config.tts, engine } })}
-            options={[
-              { id: 'mimo', name: 'Xiaomi MiMo TTS' },
-              { id: 'webspeech', name: '浏览器内置 (Web Speech)' },
-            ]}
-          />
-        </SettingsRow>
-
-        {config.tts.engine === 'mimo' && (
-          <>
-            <SettingsRow label="TTS 模型">
+        <SettingsSection title={t('settings.voice.sttSection')}>
+          <SettingsSection.Note>{t('settings.voice.sttSectionNote')}</SettingsSection.Note>
+          <SettingsRow
+            label={t('settings.voice.sttEngine')}
+            control={
               <SelectWidget
-                value={config.tts.model}
-                onChange={(model) => saveConfig({ tts: { ...config.tts, model } })}
-                options={ttsModels.map(m => ({ id: m.id, name: m.name }))}
+                value={config.stt.engine}
+                onChange={(engine) => patchConfig({ stt: { ...config.stt, engine } })}
+                options={[{ value: 'whisper', label: t('settings.voice.engineWhisper') }]}
               />
-            </SettingsRow>
-
-            <SettingsRow label="配置状态">
-              <div className={styles['status-indicator']}>
-                <span className={`${styles['status-dot']} ${ttsStatus.configured ? styles['online'] : styles['offline']}`} />
-                <span>{ttsStatus.configured ? '已配置' : '未配置 Mimo API Key'}</span>
-              </div>
-            </SettingsRow>
-          </>
-        )}
-
-        <SettingsRow label="语速">
-          <input
-            type="range"
-            min="0.5"
-            max="2.0"
-            step="0.1"
-            value={config.tts.speed}
-            onChange={(e) => saveConfig({ tts: { ...config.tts, speed: parseFloat(e.target.value) } })}
-            className={styles['slider']}
+            }
           />
-          <span>{config.tts.speed.toFixed(1)}x</span>
-        </SettingsRow>
-
-        <SettingsRow label="音调">
-          <input
-            type="range"
-            min="0.5"
-            max="2.0"
-            step="0.1"
-            value={config.tts.pitch}
-            onChange={(e) => saveConfig({ tts: { ...config.tts, pitch: parseFloat(e.target.value) } })}
-            className={styles['slider']}
+          <SettingsRow
+            label={t('settings.voice.sttLanguage')}
+            control={
+              <SelectWidget
+                value={config.stt.language}
+                onChange={(language) => patchConfig({ stt: { ...config.stt, language } })}
+                options={[
+                  { value: 'zh-CN', label: t('settings.voice.langZhCN') },
+                  { value: 'zh-TW', label: t('settings.voice.langZhTW') },
+                  { value: 'en-US', label: t('settings.voice.langEnUS') },
+                  { value: 'ja-JP', label: t('settings.voice.langJaJP') },
+                  { value: 'ko-KR', label: t('settings.voice.langKoKR') },
+                ]}
+              />
+            }
           />
-          <span>{config.tts.pitch.toFixed(1)}</span>
-        </SettingsRow>
-
-        <SettingsRow label="音量">
-          <input
-            type="range"
-            min="0"
-            max="1.0"
-            step="0.1"
-            value={config.tts.volume}
-            onChange={(e) => saveConfig({ tts: { ...config.tts, volume: parseFloat(e.target.value) } })}
-            className={styles['slider']}
+          <SettingsRow
+            label={t('settings.voice.configStatus')}
+            control={<StatusPill online={sttStatus.configured} label={sttConfiguredLabel} />}
           />
-          <span>{Math.round(config.tts.volume * 100)}%</span>
-        </SettingsRow>
+        </SettingsSection>
 
-        <SettingsRow label="测试语音">
-          <button
-            onClick={testTTS}
-            disabled={!ttsStatus.configured || saving}
-            className={`${styles['btn']} ${styles['btn-primary']}`}
-          >
-            播放测试音频
-          </button>
-        </SettingsRow>
-      </SettingsSection>
+        <SettingsSection title={t('settings.voice.ttsSection')}>
+          <SettingsSection.Note>{t('settings.voice.ttsSectionNote')}</SettingsSection.Note>
+          <SettingsRow
+            label={t('settings.voice.ttsEngine')}
+            control={
+              <SelectWidget
+                value={config.tts.engine}
+                onChange={(engine) => patchConfig({ tts: { ...config.tts, engine } })}
+                options={[
+                  { value: 'mimo', label: t('settings.voice.engineMimo') },
+                  { value: 'webspeech', label: t('settings.voice.engineWebSpeech') },
+                ]}
+              />
+            }
+          />
 
-      <SettingsSection title="使用说明">
-        <div className={styles['help-text']}>
-          <h4>配置步骤：</h4>
-          <ol>
-            <li>
-              <strong>STT（语音识别）</strong>：在 <code>.env</code> 文件中配置 <code>OPENAI_API_KEY</code>
-            </li>
-            <li>
-              <strong>TTS（语音合成）</strong>：在 <code>.env</code> 文件中配置 <code>MIMO_API_KEY</code>
-            </li>
-            <li>
-              选择你喜欢的 TTS 模型（推荐使用 mimo-v2.5-tts）
-            </li>
-            <li>
-              调整语速、音调、音量以获得最佳效果
-            </li>
-            <li>
-              点击"播放测试音频"验证配置
-            </li>
-          </ol>
+          {config.tts.engine === 'mimo' && (
+            <SettingsRow
+              label={t('settings.voice.ttsModel')}
+              control={
+                <SelectWidget
+                  value={config.tts.model}
+                  onChange={(model) => patchConfig({ tts: { ...config.tts, model } })}
+                  options={TTS_MODELS.map((m) => ({ value: m.value, label: t(m.labelKey) }))}
+                />
+              }
+            />
+          )}
 
-          <h4>获取 API Key：</h4>
-          <ul>
-            <li>OpenAI API Key: <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">https://platform.openai.com/api-keys</a></li>
-            <li>Mimo API Key: <a href="https://dev.mi.com/mimo-open-platform" target="_blank" rel="noopener">https://dev.mi.com/mimo-open-platform</a></li>
-          </ul>
-        </div>
-      </SettingsSection>
+          <SettingsRow
+            label={t('settings.voice.configStatus')}
+            control={<StatusPill online={ttsEngineReady} label={ttsConfiguredLabel} />}
+          />
+
+          <SettingsRow
+            label={t('settings.voice.speed')}
+            control={
+              <SliderRow
+                value={config.tts.speed}
+                min={0.5}
+                max={2}
+                step={0.1}
+                format={(v) => `${v.toFixed(1)}×`}
+                onChange={(speed) => patchConfig({ tts: { ...config.tts, speed } })}
+              />
+            }
+          />
+          <SettingsRow
+            label={t('settings.voice.pitch')}
+            control={
+              <SliderRow
+                value={config.tts.pitch}
+                min={0.5}
+                max={2}
+                step={0.1}
+                format={(v) => v.toFixed(1)}
+                onChange={(pitch) => patchConfig({ tts: { ...config.tts, pitch } })}
+              />
+            }
+          />
+          <SettingsRow
+            label={t('settings.voice.volume')}
+            control={
+              <SliderRow
+                value={config.tts.volume}
+                min={0}
+                max={1}
+                step={0.1}
+                format={(v) => `${Math.round(v * 100)}%`}
+                onChange={(volume) => patchConfig({ tts: { ...config.tts, volume } })}
+              />
+            }
+          />
+          <SettingsRow
+            label={t('settings.voice.testVoice')}
+            hint={t('settings.voice.testVoiceHint')}
+            control={
+              <button
+                type="button"
+                className={tabStyles['settings-btn-secondary']}
+                onClick={testTTS}
+                disabled={!ttsEngineReady || testing}
+              >
+                <PhosphorIcon icon={Play} size={14} />
+                {testing ? t('settings.voice.testing') : t('settings.voice.playTest')}
+              </button>
+            }
+          />
+        </SettingsSection>
+
+        <SettingsSection title={t('settings.voice.helpSection')}>
+          <div className={styles.helpBody}>
+            <h4>{t('settings.voice.helpSetupTitle')}</h4>
+            <ol>
+              <li>{t('settings.voice.helpStt')}</li>
+              <li>{t('settings.voice.helpTts')}</li>
+              <li>{t('settings.voice.helpModel')}</li>
+              <li>{t('settings.voice.helpAdjust')}</li>
+              <li>{t('settings.voice.helpTest')}</li>
+            </ol>
+            <h4>{t('settings.voice.helpKeysTitle')}</h4>
+            <ul>
+              <li>
+                <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">
+                  OpenAI API Key
+                </a>
+              </li>
+              <li>
+                <a href="https://dev.mi.com/mimo-open-platform" target="_blank" rel="noopener noreferrer">
+                  Mimo API Key
+                </a>
+              </li>
+            </ul>
+          </div>
+        </SettingsSection>
+      </div>
     </div>
   );
 }

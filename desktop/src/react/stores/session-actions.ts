@@ -516,7 +516,7 @@ async function requestNewSession(body: Record<string, any>): Promise<Record<stri
 async function applyCreatedSession(
   data: Record<string, any>,
   prior: NewSessionPriorState,
-  options?: { justSelectedFolder?: string | null },
+  options?: { justSelectedFolder?: string | null; hideWelcome?: boolean },
 ): Promise<void> {
   const justSelected = options?.justSelectedFolder ?? prior.selectedFolder ?? null;
 
@@ -527,6 +527,10 @@ async function applyCreatedSession(
     workspaceFolders: Array.isArray(data.workspaceFolders) ? data.workspaceFolders : [],
     selectedAgentId: null,
   };
+
+  if (options?.hideWelcome) {
+    patch.welcomeVisible = false;
+  }
 
   if (data.agentId) {
     const switched = data.agentId !== prior.currentAgentId;
@@ -644,7 +648,7 @@ export async function createNewSession(): Promise<void> {
     beforeApply.pendingSessionSwitchPath !== created.path
   );
 
-  await applyCreatedSession(created, prior, { justSelectedFolder: defaultFolder });
+  await applyCreatedSession(created, prior, { justSelectedFolder: defaultFolder, hideWelcome: true });
   if (!userNavigatedAway) {
     requestChatInputFocus(created.path ?? null);
   }
@@ -667,7 +671,7 @@ export async function ensureSession(): Promise<boolean> {
   const created = await requestNewSession(buildNewSessionBody(s));
   if (!created) return false;
 
-  await applyCreatedSession(created, prior, { justSelectedFolder: s.selectedFolder });
+  await applyCreatedSession(created, prior, { justSelectedFolder: s.selectedFolder, hideWelcome: true });
   return true;
 }
 

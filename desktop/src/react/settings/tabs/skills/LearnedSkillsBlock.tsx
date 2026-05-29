@@ -2,7 +2,7 @@ import React from 'react';
 import type { SkillInfo } from '../../store';
 import { t } from '../../helpers';
 import { SkillRow } from './SkillRow';
-import styles from '../../Settings.module.css';
+import skillStyles from '../SkillsTab.module.css';
 
 interface LearnedSkillsBlockProps {
   learnedSkills: SkillInfo[];
@@ -20,7 +20,7 @@ export function LearnedSkillsBlock({
 }: LearnedSkillsBlockProps) {
   if (learnedSkills.length === 0) {
     return (
-      <p className={styles['agent-skill-empty']} style={{ padding: 'var(--space-md)', margin: 0 }}>
+      <p className={skillStyles.learnedEmpty}>
         {t('settings.skills.learnedEmpty')}
       </p>
     );

@@ -1,0 +1,137 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.intro {
+  margin: 0 4px 20px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.heroCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 24px 20px 20px;
+  text-align: center;
+  background: var(--bg-card);
+  border: 0.5px solid color-mix(in srgb, var(--text) 8%, transparent);
+  border-radius: 12px;
+  box-shadow: 0 0.5px 0 rgba(0, 0, 0, 0.04);
+}
+
+.icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 16px;
+  box-shadow:
+    0 8px 24px color-mix(in srgb, var(--text) 14%, transparent),
+    0 0 0 0.5px color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.appName {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.versionBadge {
+  padding: 2px 8px;
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  border: 0.5px solid color-mix(in srgb, var(--text) 10%, transparent);
+  border-radius: 6px;
+}
+
+.channelBadge {
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 0.5px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  border-radius: 6px;
+}
+
+.tagline {
+  max-width: 320px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.updatePanel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: min(100%, 380px);
+  margin-top: 4px;
+}
+
+.updateActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.linkBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: var(--accent);
+  text-decoration: none;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border: 0.5px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-radius: 6px;
+  transition: background 0.15s ease;
+  cursor: pointer;
+}
+
+.linkBtn:hover {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.staticValue {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.licenseText {
+  margin: 0;
+  padding: 12px 14px;
+  max-height: 240px;
+  overflow: auto;
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  border: 0.5px solid color-mix(in srgb, var(--text) 8%, transparent);
+  border-radius: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.licensePanel {
+  padding: 0 16px 12px;
+}

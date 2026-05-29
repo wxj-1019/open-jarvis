@@ -43,6 +43,7 @@ export function AgentConnectorControls({
       title={t('settings.mcp.agentTitle')}
       context={<AgentSelect value={viewAgentId} onChange={onAgentChange} />}
     >
+      <SettingsSection.Note>{t('settings.mcp.agentSectionNote')}</SettingsSection.Note>
       {loading ? (
         <p className={`${styles['agent-skill-empty']} ${styles['mcp-empty-state']}`}>
           {t('status.loading')}

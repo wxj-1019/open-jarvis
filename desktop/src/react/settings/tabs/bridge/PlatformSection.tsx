@@ -11,6 +11,7 @@ import type { KnownUser } from './BridgeWidgets';
 import { SettingsSection } from '../../components/SettingsSection';
 import { SettingsRow } from '../../components/SettingsRow';
 import styles from '../../Settings.module.css';
+import bridgeStyles from '../BridgeTab.module.css';
 
 // ── Types ──
 
@@ -61,7 +62,7 @@ export function PlatformSection({
 
   /** 状态点 + 文字 + Toggle 作为 section 右上角 context */
   const statusContext = (
-    <div className="bridge-platform-header" style={{ margin: 0 }}>
+    <div className={bridgeStyles.platformHeader}>
       <BridgeStatusDot status={status?.status} />
       <BridgeStatusText status={status?.status} error={status?.error} />
       <Toggle on={toggleOn} onChange={onToggle} />
@@ -113,23 +114,13 @@ export function PlatformSection({
 
       {/* 无凭据（如 WhatsApp）：只显示 hint */}
       {credentialFields.length === 0 && hint && (
-        <div style={{
-          padding: 'var(--space-sm) var(--space-md)',
-          fontSize: '0.7rem',
-          color: 'var(--text-muted)',
-          lineHeight: 1.4,
-        }}>
-          {hint}
-        </div>
+        <div className={bridgeStyles.platformHint}>{hint}</div>
       )}
 
       {children}
 
       {ownerUsers && onOwnerChange && (
-        <div style={{
-          padding: 'var(--space-sm) var(--space-md)',
-          borderTop: '1px solid var(--border)',
-        }}>
+        <div className={bridgeStyles.ownerBlock}>
           <OwnerSelect
             platform={platform}
             users={ownerUsers}

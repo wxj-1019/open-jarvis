@@ -33,6 +33,44 @@ vi.mock("../hub/fresh-compact-maintainer.js", () => ({
   }),
 }));
 
+vi.mock("../lib/proactive/proactive-rule-engine.js", () => ({
+  ProactiveRuleEngine: vi.fn().mockImplementation(function () {
+    this.start = vi.fn();
+    this.stop = vi.fn();
+  }),
+}));
+
+vi.mock("../lib/context/deep-context-pipeline.js", () => ({
+  DeepContextPipeline: vi.fn().mockImplementation(function () {
+    this.start = vi.fn();
+    this.stop = vi.fn();
+  }),
+}));
+
+vi.mock("../lib/events/event-capture-engine.js", () => ({
+  EventCaptureEngine: vi.fn().mockImplementation(function () {
+    this.start = vi.fn().mockResolvedValue(undefined);
+    this.stop = vi.fn().mockResolvedValue(undefined);
+    this.on = vi.fn();
+  }),
+}));
+
+vi.mock("../lib/context/browser-context-adapter.js", () => ({
+  BrowserContextAdapter: vi.fn().mockImplementation(function () {
+    this.start = vi.fn();
+    this.stop = vi.fn();
+    this.on = vi.fn();
+  }),
+}));
+
+vi.mock("../lib/context/usage-statistics.js", () => ({}));
+vi.mock("../lib/context/pattern-miner.js", () => ({}));
+vi.mock("../lib/context/task-predictor.js", () => ({}));
+vi.mock("../lib/context/rule-suggestion-engine.js", () => ({}));
+vi.mock("../lib/db/window-events-store.js", () => ({}));
+vi.mock("../lib/context/productivity-analyzer.js", () => ({}));
+vi.mock("../lib/context/agent-suggestion-engine.js", () => ({}));
+
 import { Scheduler } from "../hub/scheduler.js";
 
 describe("Scheduler studio cron", () => {
@@ -64,7 +102,7 @@ describe("Scheduler studio cron", () => {
         getHeartbeatMaster: () => false,
       };
 
-      const scheduler = new Scheduler({ hub: { engine, eventBus: { emit: vi.fn() } } });
+      const scheduler = new Scheduler({ hub: { engine, eventBus: { emit: vi.fn(), subscribe: vi.fn(() => vi.fn()) } } });
       scheduler.start();
 
       expect(createCronSchedulerMock).toHaveBeenCalledTimes(1);
@@ -95,7 +133,7 @@ describe("Scheduler studio cron", () => {
         getActivityStore: vi.fn(() => activityStore),
         emitDevLog: vi.fn(),
       };
-      const eventBus = { emit: vi.fn() };
+      const eventBus = { emit: vi.fn(), subscribe: vi.fn(() => vi.fn()) };
       const scheduler = new Scheduler({ hub: { engine, eventBus } });
       scheduler.start();
       const executeJob = createCronSchedulerMock.mock.calls[0][0].executeJob;

@@ -3,7 +3,7 @@ import { useStore } from '../../stores';
 import { ActivityPanel } from '../ActivityPanel';
 import { AutomationPanel } from '../AutomationPanel';
 import { BridgePanel } from '../BridgePanel';
-import { CapabilitiesPanel } from '../CapabilitiesPanel';
+import { FloatingCapabilitiesPanel } from '../FloatingCapabilitiesPanel';
 import { PreviewPanel } from '../PreviewPanel';
 import { PluginPageView } from '../plugin/PluginPageView';
 import { ChannelMessages, ChannelMembers, ChannelInput, ChannelReadonly, ChannelAgentActivityPanel, ChannelAgentSettingsPanel } from '../ChannelsPanel';
@@ -138,7 +138,7 @@ export function AppPages() {
         <ActivityPanel />
         <AutomationPanel />
         <BridgePanel />
-        <CapabilitiesPanel />
+        <FloatingCapabilitiesPanel />
       </MainContent>
 
       {currentTab === 'chat' && <PreviewPanel />}
