@@ -9,7 +9,7 @@
 
 import { useState, useRef, useCallback, useEffect, memo } from 'react';
 
-declare function t(key: string, vars?: Record<string, string | number>): string;
+const t = (key: string, vars?: Record<string, string | number>): string => window.t?.(key, vars) ?? key;
 
 import { Microphone, MicrophoneSlash } from '@phosphor-icons/react';
 import { PhosphorIcon } from '../../ui/PhosphorIcon';

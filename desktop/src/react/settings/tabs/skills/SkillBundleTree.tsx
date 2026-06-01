@@ -5,7 +5,7 @@ import styles from '../../Settings.module.css';
 import { PhosphorIcon } from '../../../ui/PhosphorIcon';
 import { PencilSimple, DownloadSimple, X, CaretDown, CaretRight } from '@phosphor-icons/react';
 
-declare function t(key: string, vars?: Record<string, string | number>): string;
+const t = (key: string, vars?: Record<string, string | number>): string => window.t?.(key, vars) ?? key;
 
 export interface SkillBundleInfo {
   id: string;

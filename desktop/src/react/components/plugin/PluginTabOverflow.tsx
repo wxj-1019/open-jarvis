@@ -11,7 +11,7 @@ import s from './PluginTabOverflow.module.css';
 import { PhosphorIcon } from '../../ui/PhosphorIcon';
 import { CaretDown, PushPin } from '@phosphor-icons/react';
 
-declare function t(key: string, vars?: Record<string, string | number>): string;
+const t = (key: string, vars?: Record<string, string | number>): string => window.t?.(key, vars) ?? key;
 
 interface TabItem {
   id: TabType;

@@ -17,16 +17,18 @@ export function ToastContainer() {
 
 function ToastItem({ toast }: { toast: Toast }) {
   const ref = useRef<HTMLDivElement>(null);
+  const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     requestAnimationFrame(() => ref.current?.classList.add('show'));
+    return () => { if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current); };
   }, []);
 
   function dismiss() {
     const el = ref.current;
     if (!el) return;
     el.classList.remove('show');
-    setTimeout(() => useStore.getState().removeToast(toast.id), 300);
+    dismissTimerRef.current = setTimeout(() => useStore.getState().removeToast(toast.id), 300);
   }
 
   return (

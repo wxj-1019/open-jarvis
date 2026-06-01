@@ -34,7 +34,7 @@ import { AppTitlebar } from './components/app/AppTitlebar';
 import { ChatSidebar } from './components/app/ChatSidebar';
 import { AppPages } from './components/app/AppPages';
 
-declare function t(key: string, vars?: Record<string, string | number>): string;
+const t = (key: string, vars?: Record<string, string | number>): string => window.t?.(key, vars) ?? key;
 
 // ── 主题 + drag 阻止（import 时立即执行） ──
 initTheme();

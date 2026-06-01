@@ -16,7 +16,7 @@ import { PluginTabOverflow } from '../plugin/PluginTabOverflow';
 import { ContextMenu, type ContextMenuItem } from '../../ui';
 import styles from './Channels.module.css';
 
-declare function t(key: string, vars?: Record<string, string | number>): string;
+const t = (key: string, vars?: Record<string, string | number>): string => window.t?.(key, vars) ?? key;
 
 const MAX_VISIBLE_DRAGGABLE = 5;
 

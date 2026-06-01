@@ -20,7 +20,7 @@ import {
 import { BrowserCard } from './components/BrowserCard';
 import { ComputerUseOverlay } from './components/ComputerUseOverlay';
 
-declare function t(key: string, vars?: Record<string, string | number>): string;
+const t = (key: string, vars?: Record<string, string | number>): string => window.t?.(key, vars) ?? key;
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- deskFiles item typing */
 

@@ -6,7 +6,7 @@ import { useSettingsStore } from '../settings/store';
 import { useAnimatePresence } from '../hooks/use-animate-presence';
 import styles from './SettingsModalShell.module.css';
 
-declare function t(key: string, vars?: Record<string, string | number>): string;
+const t = (key: string, vars?: Record<string, string | number>): string => window.t?.(key, vars) ?? key;
 
 const CLOSE_ANIMATION_MS = 150;  // 对齐 --duration-fast（0.15s）
 type VisualState = 'opening' | 'open' | 'closing';

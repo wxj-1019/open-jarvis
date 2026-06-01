@@ -33,7 +33,7 @@ import { applyTodoLifecycle, migrateLegacyTodos } from '../utils/todo-compat';
 import { renderMarkdown } from '../utils/markdown';
 import { bumpMessageLiveVersion } from '../stores/message-live-version';
 
-declare function t(key: string, vars?: Record<string, string>): any;
+const t = (key: string, vars?: Record<string, string>): string => window.t?.(key, vars as Record<string, string | number>) ?? key;
 
 let requestContextUsage: (sessionPath: string) => void = () => {};
 

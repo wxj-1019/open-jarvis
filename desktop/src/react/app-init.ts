@@ -42,7 +42,7 @@ declare const i18n: {
   defaultName: string;
   load(locale: string): Promise<void>;
 };
-declare function t(key: string, vars?: Record<string, string | number>): string;
+const t = (key: string, vars?: Record<string, string | number>): string => window.t?.(key, vars) ?? key;
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- 全局 bootstrap：platform/IPC callback 签名含 any */
 

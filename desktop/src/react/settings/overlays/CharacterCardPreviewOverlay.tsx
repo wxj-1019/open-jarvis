@@ -4,7 +4,7 @@ import { hanaUrl } from '../api';
 import { displayInitial } from '../../utils/grapheme';
 import styles from '../Settings.module.css';
 
-declare function t(key: string, vars?: Record<string, string | number>): string;
+const t = (key: string, vars?: Record<string, string | number>): string => window.t?.(key, vars) ?? key;
 
 export type CharacterCardPlan = {
   token?: string;

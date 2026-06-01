@@ -8,7 +8,7 @@ import { PhosphorIcon } from '../ui/PhosphorIcon';
 import { Lightning, Plugs, PlugsConnected, CaretDown, CaretRight } from '@phosphor-icons/react';
 import styles from './CapabilitiesPanel.module.css';
 
-declare function t(key: string, vars?: Record<string, string | number>): string;
+const t = (key: string, vars?: Record<string, string | number>): string => window.t?.(key, vars) ?? key;
 
 const EMPTY_MCP_STATE: McpState = { enabled: false, connectors: [], agentConfig: { connectors: {} } };
 

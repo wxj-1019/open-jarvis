@@ -11,7 +11,7 @@ import { useStore } from './index';
 import { hanaFetch, hanaUrl } from '../hooks/use-hana-fetch';
 import { closePreview } from './preview-actions';
 
-declare function t(key: string, vars?: Record<string, string>): any;
+const t = (key: string, vars?: Record<string, string>): string => window.t?.(key, vars as Record<string, string | number>) ?? key;
 declare const i18n: { defaultName: string };
 
 // ── clearChat ──

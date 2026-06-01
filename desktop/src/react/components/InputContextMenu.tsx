@@ -8,7 +8,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { ContextMenu, type ContextMenuItem } from '../ui';
 
-declare function t(key: string): string;
+const t = (key: string): string => window.t?.(key) ?? key;
 
 const TEXT_INPUT_TYPES = new Set([
   'text', 'password', 'email', 'search', 'url', 'tel', 'number', '',

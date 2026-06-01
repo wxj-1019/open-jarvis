@@ -10,7 +10,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useStore } from '../stores';
 import { getWebSocket } from '../services/websocket';
-import { renderMarkdown } from '../utils/markdown';
 
 export type VoiceConversationState = 'idle' | 'listening' | 'processing' | 'speaking' | 'paused' | 'error';
 

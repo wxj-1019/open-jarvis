@@ -10,7 +10,7 @@ import { initTheme } from '../bootstrap';
 import { PhosphorIcon } from '../ui/PhosphorIcon';
 import { X, CaretLeft, CaretRight, ArrowsClockwise, Stop } from '@phosphor-icons/react';
 
-declare function t(key: string): string;
+const t = (key: string): string => window.t?.(key) ?? key;
 declare function setTheme(name: string): void;
 
 initTheme();

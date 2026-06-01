@@ -16,7 +16,7 @@ import { renderMarkdownPreview } from '../utils/markdown';
 import { useMermaidDiagrams } from '../hooks/use-mermaid-diagrams';
 import { Overlay } from '../ui';
 
-declare function t(key: string, vars?: Record<string, string | number>): string;
+const t = (key: string, vars?: Record<string, string | number>): string => window.t?.(key, vars) ?? key;
 
 interface SkillInfo {
   name: string;
