@@ -334,10 +334,13 @@ function registerVoiceIPCHandlers() {
     return { success: true };
   });
 
-  // TTS 播放请求
-  ipcMain.handle("speak-text", async (_event, text, opts) => {
-    // TODO: 处理 TTS 播放
-    console.log("[IPC] speak-text:", text);
+  // TTS 播放请求：广播给所有渲染窗口
+  ipcMain.handle("speak-text", (_event, text, opts) => {
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (!win.isDestroyed()) {
+        win.webContents.send("speak-request", text, opts);
+      }
+    }
     return { success: true };
   });
 
