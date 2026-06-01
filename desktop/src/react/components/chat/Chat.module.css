@@ -44,8 +44,8 @@
 
 .avatar {
     flex-shrink: 0;
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
 }
 
@@ -72,7 +72,7 @@
 
 /* 单条消息 */
 .message {
-    max-width: 92%;
+    max-width: min(92%, var(--chat-column-width, 45rem));
     min-width: 0;
 }
 
@@ -88,7 +88,8 @@
     color: var(--text);
     font-size: 0.95rem;
     word-break: break-word;
-    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    line-height: 1.55;
 }
 
 .messageUser .userText p:last-child {
@@ -177,8 +178,8 @@
 }
 
 .messageFooterBtn svg {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
 }
 
 .messageFooterBtn:hover {
