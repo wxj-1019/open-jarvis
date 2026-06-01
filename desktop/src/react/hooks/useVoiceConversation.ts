@@ -88,13 +88,18 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}) 
         return;
       }
 
-      // 清理 markdown 格式
+      // 清理 markdown 格式（移除语法标记，保留纯文本内容）
       const cleanText = text
-        .replace(/```[\s\S]*?```/g, '代码块已省略')
+        .replace(/```[\s\S]*?```/g, (m) => {
+          // 提取代码块中的注释或首行作为摘要
+          const inner = m.replace(/```\w*\n?/, '').replace(/```$/, '').trim();
+          const firstLine = inner.split('\n')[0]?.trim() || '';
+          return firstLine ? `[code: ${firstLine.slice(0, 40)}]` : '[code]';
+        })
         .replace(/`([^`]+)`/g, '$1')
         .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
         .replace(/[#*_~>|]/g, '')
-        .replace(/\n{2,}/g, '。')
+        .replace(/\n{2,}/g, '. ')
         .trim();
 
       if (!cleanText) {

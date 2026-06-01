@@ -57,6 +57,18 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
   const autoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasRequestedPermission = useRef(false);
 
+  const clearAutoCloseTimer = useCallback(() => {
+    if (autoCloseTimerRef.current) {
+      clearTimeout(autoCloseTimerRef.current);
+      autoCloseTimerRef.current = null;
+    }
+  }, []);
+
+  const handleUserText = useCallback(() => {
+    clearAutoCloseTimer();
+    setIsAutoClosing(false);
+  }, [clearAutoCloseTimer]);
+
   const {
     state,
     userText,
@@ -71,18 +83,8 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
     continuous: true,
     autoSpeak: true,
     onStateChange,
-    onUserText: () => {
-      clearAutoCloseTimer();
-      setIsAutoClosing(false);
-    },
+    onUserText: handleUserText,
   });
-
-  const clearAutoCloseTimer = useCallback(() => {
-    if (autoCloseTimerRef.current) {
-      clearTimeout(autoCloseTimerRef.current);
-      autoCloseTimerRef.current = null;
-    }
-  }, []);
 
   // 请求麦克风权限
   const requestMicPermission = useCallback(async () => {
