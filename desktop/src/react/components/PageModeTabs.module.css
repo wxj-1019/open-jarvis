@@ -1,10 +1,10 @@
 .tabs {
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 2px;
-  background: transparent;
-  border-radius: var(--radius-md);
+  gap: 4px;
+  padding: 6px;
+  background: rgba(83, 125, 150, 0.08);
+  border-radius: 12px;
   position: relative;
   z-index: 10;
 }
@@ -12,58 +12,91 @@
 .tab {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
+  gap: 8px;
+  padding: 8px 16px;
   border: none;
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--text-muted, #666);
   font-family: var(--font-ui);
-  font-size: 0.8125rem;
+  font-size: 13px;
   font-weight: 500;
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
   cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-out);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
   white-space: nowrap;
 }
 
 .tab:hover {
-  color: var(--text-primary);
-  background: rgba(var(--accent-rgb), 0.06);
-  transform: translateY(-1px);
+  color: var(--text, #1a1a1a);
+  background: rgba(83, 125, 150, 0.05);
 }
 
 .tab:active {
-  transform: scale(0.97) translateY(0);
-  transition-duration: var(--duration-instant);
+  transform: scale(0.97);
+  transition-duration: 0.05s;
 }
 
 .tab.active {
-  color: var(--text-primary);
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur-subtle));
-  -webkit-backdrop-filter: blur(var(--glass-blur-subtle));
-  box-shadow: var(--shadow-marshmallow-sm), inset 0 1px 0 var(--glass-highlight);
-  border: 1px solid var(--glass-border);
+  color: var(--accent, #537D96);
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(83, 125, 150, 0.1);
+  animation: pulse-border 2s ease-in-out infinite;
 }
 
-.tab.active:hover {
-  transform: none;
-  box-shadow: var(--shadow-sm), inset 0 1px 0 var(--glass-highlight);
-}
-
-.tab:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tab {
-    transition: none !important;
+/* 脉冲光效 — 激活标签边框呼吸 */
+@keyframes pulse-border {
+  0%, 100% {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(83, 125, 150, 0.1);
+  }
+  50% {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 0 0 2px rgba(83, 125, 150, 0.25);
   }
 }
 
+/* 扫描线光效 — 激活态背景 */
+.tab.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(83, 125, 150, 0.12),
+    transparent
+  );
+  animation: scan-line 3s ease-in-out infinite;
+}
+
+@keyframes scan-line {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* 语音图标旋转 — 象征"聆听" */
+.tab svg {
+  transition: transform 0.3s ease;
+}
+
+.tab.active svg:last-of-type {
+  animation: mic-rotate 4s linear infinite;
+}
+
+@keyframes mic-rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--accent, #537D96);
+  outline-offset: 2px;
+}
+
+/* 暗色主题适配 */
 html[data-theme="midnight"] .tabs,
 html[data-theme="midnight-contrast"] .tabs {
   background: rgba(var(--accent-rgb), 0.12);
@@ -82,6 +115,7 @@ html[data-theme="midnight-contrast"] .tab:hover {
 html[data-theme="midnight"] .tab.active,
 html[data-theme="midnight-contrast"] .tab.active {
   color: var(--text-dark, #e5e5e5);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 html[data-theme="midnight"] .tab:focus-visible,
@@ -92,5 +126,12 @@ html[data-theme="midnight-contrast"] .tab:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .tab {
     transition: none !important;
+    animation: none !important;
+  }
+  .tab.active::before {
+    animation: none !important;
+  }
+  .tab.active svg:last-of-type {
+    animation: none !important;
   }
 }

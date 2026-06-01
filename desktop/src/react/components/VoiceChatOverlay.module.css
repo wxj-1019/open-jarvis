@@ -217,6 +217,73 @@
     background: rgba(220, 38, 38, 1);
 }
 
+/* 权限引导界面 */
+.permission-guide {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-lg);
+    max-width: min(480px, calc(100vw - 48px));
+    padding: var(--space-xl);
+    text-align: center;
+}
+
+.permission-guide .icon-wrapper {
+    background: rgba(83, 125, 150, 0.15);
+    color: var(--accent, #537D96);
+}
+
+.permission-guide .title {
+    color: #fff;
+}
+
+.permission-guide .desc {
+    font-size: 0.9375rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin: 0;
+    line-height: 1.6;
+}
+
+.permission-guide .actions {
+    display: flex;
+    gap: var(--space-md);
+    margin-top: var(--space-sm);
+}
+
+.permission-guide .primary-btn {
+    padding: var(--space-sm) var(--space-xl);
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--accent, #537D96);
+    color: #fff;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+}
+
+.permission-guide .primary-btn:hover {
+    background: var(--accent-hover, #6a9ab5);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(83, 125, 150, 0.3);
+}
+
+.permission-guide .secondary-btn {
+    padding: var(--space-sm) var(--space-xl);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9375rem;
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+}
+
+.permission-guide .secondary-btn:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+    color: #fff;
+}
+
 /* 减少动画偏好 */
 @media (prefers-reduced-motion: reduce) {
     .overlay,
