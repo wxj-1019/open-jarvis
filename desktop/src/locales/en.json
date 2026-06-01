@@ -88,43 +88,9 @@
     "currentChatTitle": "Current chat title"
   },
   "session": {
-    "untitled": "New Chat",
-    "messageCount": "{n} messages",
-    "switchFailed": "Failed to switch session",
-    "createFailed": "Failed to create session",
-    "archiveFailed": "Failed to archive session",
-    "rename": "Rename",
-    "pin": "Pin",
-    "unpin": "Unpin",
-    "pinFailed": "Failed to pin session",
-    "unpinFailed": "Failed to unpin session",
-    "archive": "Archive",
-    "summary": {
-      "title": "Session Summary",
-      "open": "Session Summary",
-      "loading": "Loading summary…",
-      "empty": "No summary yet",
-      "loadFailed": "Failed to load summary"
-    },
-    "archived": {
-      "entry": "Archived Chats",
-      "title": "Archived Chats",
-      "empty": "No archived chats yet",
-      "stats": "{count} items · {size}",
-      "cleanup30": "Clean up >30 days",
-      "cleanup90": "Clean up >90 days",
-      "cleanupConfirm": "Permanently delete {count} archives ({size} total)? This cannot be undone.",
-      "cleanupDone": "Cleaned up {count} archives",
-      "cleanupNoMatch": "No archives match the criteria",
-      "restore": "Restore",
-      "restoreConfirm": "Restore this conversation to its original location?",
-      "restoreConflict": "Original location is occupied; cannot restore",
-      "restoreFailed": "Restore failed",
-      "deleteForever": "Delete forever",
-      "deleteConfirm": "Permanently delete this archive? This cannot be undone.",
-      "deleteFailed": "Delete failed",
-      "daysAgo": "Archived {days} days ago"
-    }
+    "takingOver": "{{platform}} taking over",
+    "feishu": "Feishu",
+    "wechat": "WeChat"
   },
   "common": {
     "on": "On",
@@ -2597,17 +2563,19 @@
   "preview.markdownEditorStatus": "Selected {selected} chars · Total {total} chars",
   "capabilities": {
     "title": "Capabilities",
+    "close": "Close",
     "skills": "Skills",
-    "connectors": "Connectors",
-    "noSkills": "No skills yet",
-    "noSkillsDesc": "Add skill folders in your workspace",
-    "noConnectors": "No active connectors",
-    "noConnectorsDesc": "Configure MCP connectors in Settings",
-    "tools": "tools",
-    "statusRunning": "Running",
-    "statusStopped": "Stopped",
+    "loading": "Loading...",
+    "noSkills": "No skills loaded",
+    "noSkillsHint": "Add skill folders in Workspace settings",
     "viewSkill": "View skill",
-    "goToSettings": "Go to Settings"
+    "connectors": "Connectors",
+    "noConnectors": "No connectors active",
+    "noConnectorsHint": "Configure MCP connectors in Settings",
+    "tools": "tools",
+    "toolsCount": "{{count}} tools",
+    "running": "Running",
+    "stopped": "Stopped"
   },
   "pageMode": {
     "chat": "Text Mode",
@@ -2653,7 +2621,18 @@
     "closeVoice": "Close voice chat",
     "resumeConversation": "Resume conversation",
     "pauseConversation": "Pause conversation",
-    "stopConversation": "Stop conversation"
+    "stopConversation": "Stop conversation",
+    "unavailableTitle": "Voice Recognition Unavailable",
+    "unavailableDesc": "Web Speech API is not supported in this environment. Please use Chrome or Edge, or configure Whisper API in settings.",
+    "openSettings": "Open Voice Settings",
+    "permissionDenied": "Microphone Permission Required",
+    "permissionDeniedDesc": "Voice chat requires microphone access. Please allow microphone permission in the browser address bar and try again.",
+    "retryPermission": "Retry Permission",
+    "networkError": "Network Disconnected",
+    "networkErrorDesc": "Cannot connect to server. Please check your network and retry.",
+    "retry": "Retry",
+    "idleHint": "Speak into the microphone",
+    "noResponse": "No response received"
   },
   "voiceButton": {
     "idle": "Start",
@@ -2677,22 +2656,6 @@
     "speaking": "Speaking...",
     "thinking": "Thinking...",
     "idle": "Ready"
-  },
-  "capabilities": {
-    "title": "Capabilities",
-    "close": "Close",
-    "skills": "Skills",
-    "loading": "Loading...",
-    "noSkills": "No skills loaded",
-    "noSkillsHint": "Add skill folders in Workspace settings",
-    "viewSkill": "View skill",
-    "connectors": "Connectors",
-    "noConnectors": "No connectors active",
-    "noConnectorsHint": "Configure MCP connectors in Settings",
-    "tools": "tools",
-    "toolsCount": "{{count}} tools",
-    "running": "Running",
-    "stopped": "Stopped"
   },
   "skillBundle": {
     "newBundle": "New Bundle",
@@ -2749,11 +2712,6 @@
     "result": "Result",
     "expandFull": "Expand",
     "done": "Done"
-  },
-  "session": {
-    "takingOver": "{{platform}} taking over",
-    "feishu": "Feishu",
-    "wechat": "WeChat"
   },
   "agentCreate": {
     "cardReadFailed": "Character card read failed: {{error}}",

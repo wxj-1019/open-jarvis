@@ -155,7 +155,7 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}) 
       // 监听响应
       const timeout = setTimeout(() => {
         cleanup();
-        resolve(currentAiTextRef.current || '(无响应)');
+        resolve(currentAiTextRef.current || '');
       }, 60000);
 
       const messageHandler = (event: MessageEvent) => {
@@ -175,7 +175,7 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}) 
           if (msg.type === 'turn_end') {
             turnCompleteRef.current = true;
             cleanup();
-            resolve(currentAiTextRef.current || '(无响应)');
+            resolve(currentAiTextRef.current || '');
           }
         } catch {}
       };

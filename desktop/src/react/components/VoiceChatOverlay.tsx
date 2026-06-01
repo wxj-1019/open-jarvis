@@ -177,17 +177,17 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
           <div className={styles['icon-wrapper']}>
             <PhosphorIcon icon={MicrophoneSlash} size={48} weight="bold" />
           </div>
-          <h2 className={styles.title}>{t('voiceOverlay.unavailableTitle', { fallback: '语音识别不可用' })}</h2>
+          <h2 className={styles.title}>{t('voiceOverlay.unavailableTitle')}</h2>
           <p className={styles.desc}>
-            {t('voiceOverlay.unavailableDesc', { fallback: '当前环境不支持 Web Speech API。请使用 Chrome 或 Edge 浏览器，或在设置中配置 Whisper API。' })}
+            {t('voiceOverlay.unavailableDesc')}
           </p>
           <div className={styles.actions}>
             <button className={styles['primary-btn']} onClick={handleOpenVoiceSettings}>
               <PhosphorIcon icon={Gear} size={16} />
-              {t('voiceOverlay.openSettings', { fallback: '打开语音设置' })}
+              {t('voiceOverlay.openSettings')}
             </button>
             <button className={styles['secondary-btn']} onClick={handleClose}>
-              {t('common.close', { fallback: '关闭' })}
+              {t('common.close')}
             </button>
           </div>
         </div>
@@ -206,17 +206,17 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
           <div className={styles['icon-wrapper']}>
             <PhosphorIcon icon={MicrophoneSlash} size={48} weight="bold" />
           </div>
-          <h2 className={styles.title}>{t('voiceOverlay.permissionDenied', { fallback: '需要麦克风权限' })}</h2>
+          <h2 className={styles.title}>{t('voiceOverlay.permissionDenied')}</h2>
           <p className={styles.desc}>
-            {t('voiceOverlay.permissionDeniedDesc', { fallback: '语音对话需要使用麦克风。请在浏览器地址栏中允许麦克风权限，然后重试。' })}
+            {t('voiceOverlay.permissionDeniedDesc')}
           </p>
           <div className={styles.actions}>
             <button className={styles['primary-btn']} onClick={requestMicPermission}>
               <PhosphorIcon icon={Microphone} size={16} />
-              {t('voiceOverlay.retryPermission', { fallback: '重新授权' })}
+              {t('voiceOverlay.retryPermission')}
             </button>
             <button className={styles['secondary-btn']} onClick={handleClose}>
-              {t('common.close', { fallback: '关闭' })}
+              {t('common.close')}
             </button>
           </div>
         </div>
@@ -249,6 +249,19 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
         <h2 className={styles.title}>Jarvis</h2>
 
         <p className={styles.status}>{getStateLabel(state)}</p>
+
+        {state === 'idle' && !userText && !aiText && (
+          <p className={styles.desc}>{t('voiceOverlay.idleHint')}</p>
+        )}
+
+        {state === 'error' && (
+          <div className={styles['permission-guide']} style={{ gap: 'var(--space-sm)' }}>
+            <p className={styles.desc}>{t('voiceOverlay.networkErrorDesc')}</p>
+            <button className={styles['primary-btn']} onClick={() => { start(); }}>
+              {t('voiceOverlay.retry')}
+            </button>
+          </div>
+        )}
 
         {(state === 'listening' || state === 'speaking') && (
           <span className={styles.duration}>
@@ -293,7 +306,7 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
               title={state === 'paused' ? t('voiceOverlay.resumeConversation') : t('voiceOverlay.pauseConversation')}
             >
               <PhosphorIcon icon={state === 'paused' ? Play : Pause} size={20} weight="fill" />
-              <span>{state === 'paused' ? t('pageMode.resume', { fallback: '继续对话' }) : t('voiceOverlay.pause')}</span>
+              <span>{state === 'paused' ? t('pageMode.resume') : t('voiceOverlay.pause')}</span>
             </button>
 
             <button
