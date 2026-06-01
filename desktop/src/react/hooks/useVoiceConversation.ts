@@ -48,7 +48,7 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}) 
   const activeRef = useRef(false);
   const wsListenerRef = useRef<((event: MessageEvent) => void) | null>(null);
   const currentAiTextRef = useRef('');
-  const turnCompleteRef = useRef(false);
+  const stopRef = useRef<() => void>(() => {});
 
   const updateState = useCallback((newState: VoiceConversationState) => {
     stateRef.current = newState;
@@ -91,7 +91,6 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}) 
       // 清理 markdown 格式（移除语法标记，保留纯文本内容）
       const cleanText = text
         .replace(/```[\s\S]*?```/g, (m) => {
-          // 提取代码块中的注释或首行作为摘要
           const inner = m.replace(/```\w*\n?/, '').replace(/```$/, '').trim();
           const firstLine = inner.split('\n')[0]?.trim() || '';
           return firstLine ? `[code: ${firstLine.slice(0, 40)}]` : '[code]';
@@ -107,21 +106,32 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}) 
         return;
       }
 
-      const utterance = new SpeechSynthesisUtterance(cleanText);
-      utterance.lang = lang;
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
+      const doSpeak = () => {
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.lang = lang;
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
 
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length > 0) {
+          const match = voices.find(v => v.lang.startsWith(lang.split('-')[0])) || voices[0];
+          utterance.voice = match;
+        }
+
+        utterance.onend = () => resolve();
+        utterance.onerror = () => resolve();
+        window.speechSynthesis.speak(utterance);
+      };
+
+      // getVoices() 首次调用可能返回空数组，等待 voiceschanged 事件
       const voices = window.speechSynthesis.getVoices();
       if (voices.length > 0) {
-        const match = voices.find(v => v.lang.startsWith(lang.split('-')[0])) || voices[0];
-        utterance.voice = match;
+        doSpeak();
+      } else {
+        window.speechSynthesis.addEventListener('voiceschanged', () => doSpeak(), { once: true });
+        // 超时兜底：500ms 后如果事件未触发也尝试播放
+        setTimeout(doSpeak, 500);
       }
-
-      utterance.onend = () => resolve();
-      utterance.onerror = () => resolve();
-
-      window.speechSynthesis.speak(utterance);
     });
   }, [lang]);
 
@@ -142,7 +152,6 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}) 
 
       // 重置状态
       currentAiTextRef.current = '';
-      turnCompleteRef.current = false;
 
       // 发送消息
       ws.send(JSON.stringify({
@@ -173,7 +182,6 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}) 
           }
 
           if (msg.type === 'turn_end') {
-            turnCompleteRef.current = true;
             cleanup();
             resolve(currentAiTextRef.current || '');
           }
@@ -306,7 +314,7 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}) 
         updateState('idle');
         setTimeout(() => startConversationTurn(), 500);
       } else {
-        stop();
+        stopRef.current();
       }
     } catch (err) {
       console.error('[VoiceConversation] Agent error:', err);
@@ -319,8 +327,6 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}) 
       }
     }
   }, [lang, continuous, autoSpeak, updateState, onUserText, onAiText, sendToAgent, speakText]);
-
-  // 启动语音对话
   const start = useCallback(() => {
     if (activeRef.current) return;
     if (!isAvailable()) {
@@ -353,6 +359,7 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}) 
 
     updateState('idle');
   }, [stopRecognition, stopTTS, updateState]);
+  stopRef.current = stop;
 
   // 暂停
   const pause = useCallback(() => {
