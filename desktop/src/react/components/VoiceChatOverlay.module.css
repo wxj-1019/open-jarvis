@@ -222,10 +222,12 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: var(--space-lg);
     max-width: min(480px, calc(100vw - 48px));
     padding: var(--space-xl);
     text-align: center;
+    flex: 1;
 }
 
 .permission-guide .icon-wrapper {

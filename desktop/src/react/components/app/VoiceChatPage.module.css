@@ -4,6 +4,9 @@
   height: 100%;
   flex: 1;
   min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   animation: page-enter 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   /* 背景网格效果 */
   background-color: var(--bg, #FAF8F5);
