@@ -20,6 +20,7 @@ const {
   getAutoLaunchStatus,
   setAutoLaunchEnabled,
 } = require("./login-item-settings.cjs");
+const { registerVoiceIPCHandlers, voiceManager } = require("./voice-conversation-manager.cjs");
 const { createFileWatchRegistry } = require("./file-watch-registry.cjs");
 const { createWorkspaceWatchRegistry } = require("./workspace-watch-registry.cjs");
 const { readTextFileSnapshot, writeTextFileIfUnchanged } = require("./file-text-io.cjs");
@@ -3716,6 +3717,10 @@ app.whenReady().then(async () => {
     setupBrowserCommands();
     createTray();
     registerGlobalShortcuts();
+
+    // 注册语音对话 IPC 处理
+    registerVoiceIPCHandlers();
+    console.log("[desktop] 语音对话 IPC 已注册");
     if (_startHiddenAtLogin && process.platform === "darwin") {
       app.dock.hide();
     }

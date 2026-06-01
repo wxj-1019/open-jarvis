@@ -51,9 +51,9 @@ export function FloatingCapabilitiesPanel() {
         <div className={styles.header}>
           <div className={styles.headerLeft}>
             <PhosphorIcon icon={Lightning} size={18} className={styles.headerIcon} />
-            <h3 className={styles.headerTitle}>{t('capabilities.title', '能力面板')}</h3>
+            <h3 className={styles.headerTitle}>{t('capabilities.title')}</h3>
           </div>
-          <button className={styles.closeBtn} onClick={close} title={t('common.close', '关闭')}>
+          <button className={styles.closeBtn} onClick={close} title={t('common.close')}>
             <PhosphorIcon icon={X} size={16} />
           </button>
         </div>
@@ -65,7 +65,7 @@ export function FloatingCapabilitiesPanel() {
             <button className={styles.sectionHeader} onClick={() => toggleSection('skills')}>
               <PhosphorIcon icon={sections.skills ? CaretDown : CaretRight} size={14} className={styles.chevron} />
               <PhosphorIcon icon={Lightning} size={14} className={styles.sectionIcon} />
-              <span className={styles.sectionTitle}>{t('capabilities.skills', '技能')}</span>
+              <span className={styles.sectionTitle}>{t('capabilities.skills')}</span>
               <span className={styles.badge}>{skills.length}</span>
             </button>
             
@@ -74,13 +74,13 @@ export function FloatingCapabilitiesPanel() {
                 {loading ? (
                   <div className={styles.loadingState}>
                     <div className={styles.loadingSpinner} />
-                    <p>{t('status.loading', '加载中...')}</p>
+                    <p>{t('status.loading')}</p>
                   </div>
                 ) : skills.length === 0 ? (
                   <div className={styles.emptyState}>
                     <PhosphorIcon icon={Lightning} size={32} className={styles.emptyIcon} />
-                    <p className={styles.emptyTitle}>{t('capabilities.noSkills', '暂无技能')}</p>
-                    <p className={styles.emptyDesc}>{t('capabilities.noSkillsDesc', '在工作台中添加技能文件夹')}</p>
+                    <p className={styles.emptyTitle}>{t('capabilities.noSkills')}</p>
+                    <p className={styles.emptyDesc}>{t('capabilities.noSkillsDesc')}</p>
                   </div>
                 ) : (
                   skills.map(skill => (
@@ -109,7 +109,7 @@ export function FloatingCapabilitiesPanel() {
                       </div>
                       <div className={styles.skillFooter}>
                         <code className={styles.trigger}>/{skill.name}</code>
-                        <span className={styles.viewText}>{t('capabilities.viewSkill', '查看技能')}</span>
+                        <span className={styles.viewText}>{t('capabilities.viewSkill')}</span>
                       </div>
                     </button>
                   ))
@@ -123,7 +123,7 @@ export function FloatingCapabilitiesPanel() {
             <button className={styles.sectionHeader} onClick={() => toggleSection('mcp')}>
               <PhosphorIcon icon={sections.mcp ? CaretDown : CaretRight} size={14} className={styles.chevron} />
               <PhosphorIcon icon={Plug} size={14} className={styles.sectionIcon} />
-              <span className={styles.sectionTitle}>{t('capabilities.connectors', '连接器')}</span>
+              <span className={styles.sectionTitle}>{t('capabilities.connectors')}</span>
               <span className={styles.badge}>{activeConnectors.length}</span>
             </button>
             
@@ -132,13 +132,13 @@ export function FloatingCapabilitiesPanel() {
                 {loading ? (
                   <div className={styles.loadingState}>
                     <div className={styles.loadingSpinner} />
-                    <p>{t('status.loading', '加载中...')}</p>
+                    <p>{t('status.loading')}</p>
                   </div>
                 ) : activeConnectors.length === 0 ? (
                   <div className={styles.emptyState}>
                     <PhosphorIcon icon={Plug} size={32} className={styles.emptyIcon} />
-                    <p className={styles.emptyTitle}>{t('capabilities.noConnectors', '暂无活跃连接器')}</p>
-                    <p className={styles.emptyDesc}>{t('capabilities.noConnectorsDesc', '在设置中配置 MCP 连接器')}</p>
+                    <p className={styles.emptyTitle}>{t('capabilities.noConnectors')}</p>
+                    <p className={styles.emptyDesc}>{t('capabilities.noConnectorsDesc')}</p>
                   </div>
                 ) : (
                   activeConnectors.map(conn => (
@@ -153,11 +153,11 @@ export function FloatingCapabilitiesPanel() {
                       <div className={styles.connectorInfo}>
                         <span className={styles.connectorName}>{conn.name}</span>
                         <span className={styles.connectorTools}>
-                          {conn.tools?.length ?? conn.toolCount ?? 0} {t('capabilities.tools', '工具')}
+                          {conn.tools?.length ?? conn.toolCount ?? 0} {t('capabilities.tools')}
                           <span className={styles.statusBadge}>
                             {conn.status === 'running' 
-                              ? t('capabilities.statusRunning', '运行中')
-                              : t('capabilities.statusStopped', '已停止')}
+                              ? t('capabilities.statusRunning')
+                              : t('capabilities.statusStopped')}
                           </span>
                         </span>
                       </div>

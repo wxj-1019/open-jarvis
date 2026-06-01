@@ -1,4 +1,3 @@
-// @ts-expect-error — shared JS module
 import * as sharedUiScale from '../../../shared/ui-scale.js';
 
 export const UI_SCALE_MIN = sharedUiScale.UI_SCALE_MIN;

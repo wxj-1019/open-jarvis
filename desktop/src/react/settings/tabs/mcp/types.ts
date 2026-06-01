@@ -103,6 +103,7 @@ export interface McpConnectorInput {
 }
 
 export interface McpPreset {
+  url?: string;
   id: string;
   name: string;
   description: string;

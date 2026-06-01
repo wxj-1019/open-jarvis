@@ -32,7 +32,7 @@ import { useClickOutside } from '../hooks/useClickOutside';
 import { getSlashMatches, type SlashItem } from './input/slash-commands';
 import styles from './input/InputArea.module.css';
 
-const EMPTY_TODOS = [] as import('../types/index').TodoItem[];
+const EMPTY_TODOS = [] as import('../types').TodoItem[];
 
 export type { SlashItem };
 
@@ -114,7 +114,7 @@ function InputAreaInner({ surface }: Required<InputAreaProps>) {
         spellcheck: 'false',
       },
       handlePaste: (_view: any, event: any) => pasteHandlerRef.current(event),
-      handleKeyDown: (_view: any, event: any) => keyDownHandlerRef.current(event),
+      handleKeyDown: (_view: any, event: any) => keyDownHandlerRef.current(event as any),
       handleDOMEvents: {
         beforeinput: (_view: any, event: any) => beforeInputHandlerRef.current(event as InputEvent),
       },
@@ -209,7 +209,7 @@ function InputAreaInner({ surface }: Required<InputAreaProps>) {
     completingTodos,
   } = useMessageSend({
     editor,
-    attachedFiles,
+    attachedFiles: attachedFiles as any,
     docContextAttached,
     currentDoc,
     surface,
@@ -374,7 +374,7 @@ function InputAreaInner({ surface }: Required<InputAreaProps>) {
           />
           <div
             onKeyDown={(event) => {
-              if (!event.defaultPrevented) keyDownHandlerRef.current(event);
+              if (!event.defaultPrevented) keyDownHandlerRef.current(event as any);
             }}
             onCompositionStart={() => { isComposingRef.current = true; }}
             onCompositionEnd={() => { isComposingRef.current = false; }}

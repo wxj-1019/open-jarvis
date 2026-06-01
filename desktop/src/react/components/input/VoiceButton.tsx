@@ -65,7 +65,7 @@ export const VoiceButton = memo(function VoiceButton({
 
   // 监听服务器 speak 请求，触发 TTS 播放
   useEffect(() => {
-    const hana = (window as any).hana;
+    const hana = window.hana;
     if (!hana?.onSpeakRequest) return;
 
     const unsub = hana.onSpeakRequest((text: string, opts?: { lang?: string; rate?: number; pitch?: number; volume?: number }) => {

@@ -9,7 +9,6 @@ import { applyEditorTypography } from '../editor/typography';
 import { applyUiScale, normalizeUiScale, resolveEffectiveUiScale } from '../ui-scale';
 import { useSettingsStore } from '../settings/store';
 import registry from '../../shared/theme-registry';
-// @ts-expect-error — shared JS module
 import { mergeWorkspaceHistory } from '../../../../shared/workspace-history.js';
 
 declare const i18n: {

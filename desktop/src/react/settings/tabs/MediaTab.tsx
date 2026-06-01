@@ -32,12 +32,12 @@ function encodeConfigPatch(updates: Partial<MediaConfig>): Record<string, unknow
 }
 
 function applyConfigPatch(prev: MediaConfig, updates: Partial<MediaConfig>): MediaConfig {
-  const next: MediaConfig = { ...prev };
-  for (const [key, value] of Object.entries(updates) as Array<[keyof MediaConfig, MediaConfig[keyof MediaConfig]]>) {
+  const next = { ...prev } as Record<string, unknown>;
+  for (const [key, value] of Object.entries(updates)) {
     if (value === undefined) delete next[key];
-    else next[key] = value as MediaConfig[keyof MediaConfig];
+    else next[key] = value;
   }
-  return next;
+  return next as MediaConfig;
 }
 
 export function MediaTab() {

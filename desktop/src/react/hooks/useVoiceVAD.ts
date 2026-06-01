@@ -41,14 +41,15 @@ export function useVoiceVAD(options: UseVoiceVADOptions = {}) {
       });
       streamRef.current = stream;
 
-      const hana = (window as any).hana;
+      const hana = window.hana;
       if (!hana?.sendAudioEnergy) {
         throw new Error('window.hana.sendAudioEnergy not available');
       }
 
+      const sendAudioEnergy = hana.sendAudioEnergy;
       const cleanup = await createVADWorklet(stream, {
         onEnergy: (rms: number) => {
-          hana.sendAudioEnergy(rms);
+          sendAudioEnergy(rms);
         },
         onSpeechStart,
         onSpeechEnd,

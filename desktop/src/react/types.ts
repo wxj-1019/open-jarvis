@@ -334,5 +334,35 @@ export interface PlatformApi {
   // ── Skill viewer overlay ──
   onShowSkillViewer?(callback: (data: unknown) => void): void;
 
+  // ── 语音对话 ──
+  /** 启动语音对话 */
+  startVoiceConversation?(opts?: { continuous?: boolean; autoSpeak?: boolean }): Promise<{ success: boolean; error?: string }>;
+  /** 停止语音对话 */
+  stopVoiceConversation?(): Promise<{ success: boolean; error?: string }>;
+  /** 暂停语音对话 */
+  pauseVoiceConversation?(): { success: boolean; error?: string };
+  /** 恢复语音对话 */
+  resumeVoiceConversation?(): { success: boolean; error?: string };
+  /** 获取语音对话状态 */
+  getVoiceState?(): string;
+  /** 发送音频能量数据 */
+  sendAudioEnergy?(rms: number): void;
+  /** 发送音频 Blob */
+  sendVoiceAudioBlob?(audioBlob: Blob): Promise<{ success: boolean }>;
+  /** 监听语音状态变化 */
+  onVoiceStateChange?(callback: (state: string) => void): (() => void) | void;
+  /** 监听识别结果 */
+  onVoiceRecognized?(callback: (text: string) => void): (() => void) | void;
+  /** 监听用户文本 */
+  onVoiceUserText?(callback: (text: string) => void): (() => void) | void;
+  /** 监听 AI 响应 */
+  onVoiceAiText?(callback: (text: string) => void): (() => void) | void;
+  /** 监听 TTS 播放 */
+  onVoiceTtsSpeak?(callback: (text: string) => void): (() => void) | void;
+  /** TTS 播放文本 */
+  speakText?(text: string, opts?: { lang?: string; rate?: number; pitch?: number; volume?: number }): Promise<{ success: boolean }>;
+  /** 监听 TTS 播放请求 */
+  onSpeakRequest?(callback: (text: string, opts?: { lang?: string; rate?: number; pitch?: number; volume?: number }) => void): (() => void) | void;
+
   [key: string]: unknown;
 }

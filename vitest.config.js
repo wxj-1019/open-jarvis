@@ -21,8 +21,16 @@ export default defineConfig({
       "desktop/native/**/.build/**",
       "dist-computer-use/**",
     ],
-    testTimeout: 10_000,
+    testTimeout: 5_000,
+    hookTimeout: 5_000,
     setupFiles: ["./tests/setup-auto-updater.js"],
+    pool: 'threads',
+    poolOptions: {
+      threads: {
+        minThreads: 1,
+        maxThreads: 4,
+      },
+    },
     server: {
       deps: {
         inline: ["electron-updater", /desktop\/auto-updater/],

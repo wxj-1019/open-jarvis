@@ -4,7 +4,9 @@ import styles from '../../Settings.module.css';
 import { SelectWidget } from '@/ui';
 import { parseKeyValueLines, serializeKeyValueLines } from './mcp-config';
 import type { McpAuthType, McpConnector, McpConnectorInput, McpTransport } from './types';
-import { loadMcpPresets, type McpPreset } from './mcp-api';
+import { loadMcpPresets } from './mcp-api';
+import type { McpPreset } from './types';
+// McpPreset re-exported from mcp-api for backward compatibility
 
 /**
  * ConnectorForm — 添加/编辑 MCP 连接器的表单组件。

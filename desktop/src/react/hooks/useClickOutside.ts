@@ -6,15 +6,15 @@ import { useEffect, type RefObject } from 'react';
  */
 export function useClickOutside(
   open: boolean,
-  menuRef: RefObject<HTMLElement>,
-  buttonRef: RefObject<HTMLElement> | undefined,
+  menuRef: RefObject<HTMLElement | null>,
+  buttonRef: RefObject<HTMLElement | null> | undefined,
   onDismiss: () => void,
 ) {
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
       if (menuRef.current?.contains(e.target as Node)) return;
-      if (buttonRef.current?.contains(e.target as Node)) return;
+      if (buttonRef?.current?.contains(e.target as Node)) return;
       onDismiss();
     };
     document.addEventListener('mousedown', handler);

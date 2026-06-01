@@ -85,7 +85,7 @@ export function ChatSidebar({
               </button>
               <button className="sidebar-activity-bar" id="capabilitiesBar" onClick={() => onTogglePanel?.('capabilities')}>
                 <PhosphorIcon icon={Lightning} size={14} />
-                <span>{t('sidebar.capabilities', '能力')}</span>
+                <span>{t('sidebar.capabilities')}</span>
               </button>
               <button className={`sidebar-activity-bar browser-bg-bar${browserRunning ? '' : ' hidden'}`} id="browserBgBar" title={t('browser.backgroundHint')} onClick={() => window.platform?.openBrowserViewer?.()}>
                 <PhosphorIcon icon={Globe} size={14} className="browser-bg-globe" />

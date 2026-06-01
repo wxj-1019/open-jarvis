@@ -1,9 +1,13 @@
 packages:
   - "packages/*"
 
-onlyBuiltDependencies:
-  - sharp
-  - better-sqlite3
-  - get-windows
-  - esbuild
-  - node-pty
+allowBuilds:
+  '@google/genai': true
+  better-sqlite3: true
+  electron-winstaller: true
+  esbuild: true
+  get-windows: true
+  koffi: true
+  node-pty: true
+  protobufjs: true
+  sharp: true
