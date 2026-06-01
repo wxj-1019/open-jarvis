@@ -7,12 +7,15 @@
  * - 提供停止/暂停/恢复控制
  * - 对话结束后自动隐藏
  * - 使用 CSS 动画提供视觉反馈
+ *
+ * 使用渲染进程侧 useVoiceConversation hook 实现完整对话循环。
  */
 
-import { useState, useEffect, useCallback, memo, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { X, Microphone, Lightbulb, SpeakerHigh, Pause, Play, Stop } from '@phosphor-icons/react';
 import { PhosphorIcon } from '../ui/PhosphorIcon';
-import { formatDuration, type VoiceState } from '../utils/voice-helpers';
+import { formatDuration } from '../utils/voice-helpers';
+import { useVoiceConversation, type VoiceConversationState } from '../hooks/useVoiceConversation';
 import styles from './VoiceChatOverlay.module.css';
 
 const t = (key: string, vars?: Record<string, string | number>): string => window.t?.(key, vars) ?? key;
@@ -23,27 +26,16 @@ interface VoiceChatOverlayProps {
   /** 关闭浮层回调 */
   onClose: () => void;
   /** 状态变化时回调 */
-  onStateChange?: (state: VoiceState) => void;
+  onStateChange?: (state: VoiceConversationState) => void;
 }
 
 const WAVEFORM_BARS = Array.from({ length: 24 }, (_, i) => i);
 
-function getStateLabel(state: VoiceState): string {
+function getStateLabel(state: VoiceConversationState): string {
   return t(`voiceOverlay.${state}`);
 }
 
-function getStateColor(state: VoiceState): string {
-  switch (state) {
-    case 'listening': return 'var(--color-red-600, #dc2626)';
-    case 'processing': return 'var(--color-amber-600, #d97706)';
-    case 'speaking': return 'var(--color-green-600, #16a34a)';
-    case 'paused': return 'var(--color-gray-600, #4b5563)';
-    case 'error': return 'var(--color-red-800, #991b1b)';
-    default: return 'var(--accent, #537d96)';
-  }
-}
-
-function getStateIcon(state: VoiceState): React.ReactNode {
+function getStateIcon(state: VoiceConversationState): React.ReactNode {
   switch (state) {
     case 'listening': return <PhosphorIcon icon={Microphone} size={48} weight="fill" />;
     case 'processing': return <PhosphorIcon icon={Lightbulb} size={48} weight="fill" />;
@@ -59,14 +51,29 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
   onClose,
   onStateChange,
 }: VoiceChatOverlayProps) {
-  const [state, setState] = useState<VoiceState>('idle');
-  const [userText, setUserText] = useState('');
-  const [aiText, setAiText] = useState('');
   const [duration, setDuration] = useState(0);
   const [isAutoClosing, setIsAutoClosing] = useState(false);
   const autoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const userTextRef = useRef('');
-  const aiTextRef = useRef('');
+
+  const {
+    state,
+    userText,
+    aiText,
+    start,
+    stop,
+    pause,
+    resume,
+    isAvailable,
+  } = useVoiceConversation({
+    lang: 'zh-CN',
+    continuous: true,
+    autoSpeak: true,
+    onStateChange,
+    onUserText: () => {
+      clearAutoCloseTimer();
+      setIsAutoClosing(false);
+    },
+  });
 
   const clearAutoCloseTimer = useCallback(() => {
     if (autoCloseTimerRef.current) {
@@ -75,50 +82,29 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
     }
   }, []);
 
+  // 打开时启动对话
   useEffect(() => {
-    if (!isOpen) return;
-
-    const hana = window.hana;
-    if (!hana) return;
-
-    const cleanupState = hana.onVoiceStateChange?.((newState: string) => {
-      setState(newState as VoiceState);
-      onStateChange?.(newState as VoiceState);
-
-      if (newState === 'listening' || newState === 'speaking') {
-        setDuration(0);
-        clearAutoCloseTimer();
-        setIsAutoClosing(false);
-      }
-
-      if (newState === 'idle' && userTextRef.current && aiTextRef.current) {
-        autoCloseTimerRef.current = setTimeout(() => {
-          setIsAutoClosing(true);
-          autoCloseTimerRef.current = setTimeout(() => onClose(), 300);
-        }, 3000);
-      }
-    });
-
-    const cleanupUser = hana.onVoiceUserText?.((text: string) => {
-      setUserText(text);
-      userTextRef.current = text;
-      clearAutoCloseTimer();
-      setIsAutoClosing(false);
-    });
-
-    const cleanupAi = hana.onVoiceAiText?.((text: string) => {
-      setAiText(text);
-      aiTextRef.current = text;
-    });
-
+    if (isOpen && isAvailable) {
+      start();
+    }
     return () => {
-      cleanupState?.();
-      cleanupUser?.();
-      cleanupAi?.();
+      if (isOpen) stop();
       clearAutoCloseTimer();
     };
-  }, [isOpen, onStateChange, onClose, clearAutoCloseTimer]);
+  }, [isOpen, isAvailable]);
 
+  // 对话结束后自动关闭
+  useEffect(() => {
+    if (state === 'idle' && userText && aiText && isOpen) {
+      clearAutoCloseTimer();
+      autoCloseTimerRef.current = setTimeout(() => {
+        setIsAutoClosing(true);
+        autoCloseTimerRef.current = setTimeout(() => onClose(), 300);
+      }, 3000);
+    }
+  }, [state, userText, aiText, isOpen, onClose, clearAutoCloseTimer]);
+
+  // 监听/说话时计时
   useEffect(() => {
     if (state === 'listening' || state === 'speaking') {
       setDuration(0);
@@ -128,31 +114,45 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
   }, [state]);
 
   const handleStop = useCallback(() => {
-    const hana = window.hana;
-    if (!hana) return;
     clearAutoCloseTimer();
     setIsAutoClosing(false);
-    hana.stopVoiceConversation?.();
-  }, [clearAutoCloseTimer]);
+    stop();
+  }, [stop, clearAutoCloseTimer]);
 
   const handlePauseResume = useCallback(() => {
-    const hana = window.hana;
-    if (!hana) return;
-
     if (state === 'paused') {
-      hana.resumeVoiceConversation?.();
+      resume();
     } else if (state !== 'idle' && state !== 'error') {
-      hana.pauseVoiceConversation?.();
+      pause();
     }
-  }, [state]);
+  }, [state, pause, resume]);
 
   const handleClose = useCallback(() => {
     clearAutoCloseTimer();
     setIsAutoClosing(false);
+    stop();
     onClose();
-  }, [onClose, clearAutoCloseTimer]);
+  }, [onClose, stop, clearAutoCloseTimer]);
 
   if (!isOpen) return null;
+
+  // Web Speech API 不可用时显示提示
+  if (!isAvailable) {
+    return (
+      <div className={styles.overlay} role="dialog" aria-modal="true">
+        <button onClick={handleClose} className={styles['close-btn']} aria-label={t('voiceOverlay.closeVoice')}>
+          <PhosphorIcon icon={X} size={24} weight="regular" />
+        </button>
+        <div className={styles.content}>
+          <div className={`${styles['icon-wrapper']} ${styles['state-error']}`}>
+            <PhosphorIcon icon={Microphone} size={48} weight="bold" />
+          </div>
+          <h2 className={styles.title}>Jarvis</h2>
+          <p className={styles.status}>{t('voiceOverlay.unavailable', { fallback: '语音识别不可用。请使用 Chrome 或 Edge 浏览器。' })}</p>
+        </div>
+      </div>
+    );
+  }
 
   const isActive = state === 'listening' || state === 'speaking' || state === 'processing';
 

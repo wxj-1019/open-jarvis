@@ -1,30 +1,29 @@
 /**
  * VoiceChatButton.tsx — 语音对话按钮
  *
- * 点击一次进入连续对话模式，VAD 自动检测说话开始/结束。
+ * 点击一次进入连续对话模式，使用 Web Speech API 进行语音识别和合成。
  * 状态可视化：idle → listening → processing → speaking → paused
  */
 
 import { useState, useEffect, useCallback, memo } from 'react';
 import { Microphone, MicrophoneSlash, Pause, Play, Spinner } from '@phosphor-icons/react';
 import { PhosphorIcon } from '../../ui/PhosphorIcon';
-import { formatDuration, type VoiceState } from '../../utils/voice-helpers';
+import { formatDuration } from '../../utils/voice-helpers';
+import { useVoiceConversation, type VoiceConversationState } from '../../hooks/useVoiceConversation';
 import styles from './InputArea.module.css';
 
 const t = (key: string, vars?: Record<string, string | number>): string => window.t?.(key, vars) ?? key;
 
 interface VoiceChatButtonProps {
   /** 状态变化时回调 */
-  onStateChange?: (state: VoiceState) => void;
+  onStateChange?: (state: VoiceConversationState) => void;
   /** 是否禁用 */
   disabled?: boolean;
   /** 自定义 className */
   className?: string;
-  /** 初始状态（用于同步后端状态） */
-  initialState?: VoiceState;
 }
 
-function getStateConfig(): Record<VoiceState, { label: string; color: string; active: boolean }> {
+function getStateConfig(): Record<VoiceConversationState, { label: string; color: string; active: boolean }> {
   return {
     idle: {
       label: t('voiceButton.idle'),
@@ -63,58 +62,44 @@ export const VoiceChatButton = memo(function VoiceChatButton({
   onStateChange,
   disabled = false,
   className = '',
-  initialState = 'idle',
 }: VoiceChatButtonProps) {
-  const [state, setState] = useState<VoiceState>(initialState);
   const [duration, setDuration] = useState(0);
 
-  const handleToggle = useCallback(async () => {
+  const {
+    state,
+    start,
+    stop,
+    pause,
+    resume,
+    isAvailable,
+  } = useVoiceConversation({
+    lang: 'zh-CN',
+    continuous: true,
+    autoSpeak: true,
+    onStateChange,
+  });
+
+  const handleToggle = useCallback(() => {
     if (disabled) return;
 
-    const hana = window.hana;
-    if (!hana) return;
-
     if (state === 'idle' || state === 'error') {
-      await hana.startVoiceConversation?.({});
+      start();
     } else if (state === 'paused') {
-      hana.resumeVoiceConversation?.();
+      resume();
     } else {
-      await hana.stopVoiceConversation?.();
+      stop();
     }
-  }, [state, disabled]);
+  }, [state, disabled, start, stop, resume]);
 
   const handlePauseResume = useCallback(() => {
     if (disabled) return;
 
-    const hana = window.hana;
-    if (!hana) return;
-
     if (state === 'paused') {
-      hana.resumeVoiceConversation?.();
+      resume();
     } else if (state !== 'idle' && state !== 'error') {
-      hana.pauseVoiceConversation?.();
+      pause();
     }
-  }, [state, disabled]);
-
-  useEffect(() => {
-    const hana = window.hana;
-    if (!hana?.onVoiceStateChange) return;
-
-    // 初始化时尝试获取当前状态（如果 API 可用）
-    if (hana.getVoiceState) {
-      const currentState = hana.getVoiceState();
-      if (currentState) {
-        setState(currentState as VoiceState);
-        onStateChange?.(currentState as VoiceState);
-      }
-    }
-
-    const cleanup = hana.onVoiceStateChange((newState: string) => {
-      setState(newState as VoiceState);
-      onStateChange?.(newState as VoiceState);
-    });
-    return cleanup;
-  }, [onStateChange]);
+  }, [state, disabled, pause, resume]);
 
   useEffect(() => {
     if (state === 'listening' || state === 'speaking') {
@@ -165,6 +150,9 @@ export const VoiceChatButton = memo(function VoiceChatButton({
       <PhosphorIcon icon={Microphone} size={iconSize} weight="regular" />
     );
   };
+
+  // Web Speech API 不可用时隐藏按钮
+  if (!isAvailable) return null;
 
   return (
     <div className={`${styles['voice-chat-container']} ${className}`}>

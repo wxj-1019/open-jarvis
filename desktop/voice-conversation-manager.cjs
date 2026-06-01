@@ -48,13 +48,15 @@ class VoiceConversationManager extends EventEmitter {
     this._serverToken = opts.serverToken || "";
 
     try {
-      // 动态加载后端引擎
-      const vadModule = require("../lib/speech/vad-service.js");
-      const sttModule = require("../lib/speech/stt-engine.js");
-      const ttsModule = require("../lib/speech/tts-engine.js");
-      const whisperModule = require("../lib/speech/whisper-stt-adapter.js");
-      const loopModule = require("../lib/speech/voice-conversation-loop.js");
-      const routerModule = require("../lib/voice/voice-agent-router.js");
+      // 动态加载后端引擎（ESM 模块，使用 dynamic import）
+      const [vadModule, sttModule, ttsModule, whisperModule, loopModule, routerModule] = await Promise.all([
+        import("../lib/speech/vad-service.js"),
+        import("../lib/speech/stt-engine.js"),
+        import("../lib/speech/tts-engine.js"),
+        import("../lib/speech/whisper-stt-adapter.js"),
+        import("../lib/speech/voice-conversation-loop.js"),
+        import("../lib/voice/voice-agent-router.js"),
+      ]);
 
       VADService = vadModule.VADService;
       STTEngine = sttModule.STTEngine;
