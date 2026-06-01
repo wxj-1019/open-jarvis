@@ -785,6 +785,17 @@ export function createSessionsRoute(engine, hub = null) {
       if (!sessionPath) {
         return c.json({ error: t("error.missingParam", { param: "path" }) }, 400);
       }
+
+      const requestContext = createRequestContext(c, engine);
+      const switchAuth = authorizeSessionRoute(requestContext, "sessions.write", {
+        kind: "session",
+        studioId: requestContext.studioId,
+        sessionPath,
+      });
+      if (!switchAuth.allowed) {
+        return c.json({ error: "insufficient_scope", reason: switchAuth.reason }, 403);
+      }
+
       // 运行路径只允许 active desktop session。归档会话必须先 restore。
       if (!isActiveDesktopSessionPath(sessionPath, engine.agentsDir)) {
         return c.json({ error: "Invalid session path" }, 403);

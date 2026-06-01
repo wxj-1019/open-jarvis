@@ -2,6 +2,7 @@ import type { MouseEventHandler } from 'react';
 import { SidebarSimple, Plus, FileText } from '@phosphor-icons/react';
 import { PhosphorIcon } from '../../ui/PhosphorIcon';
 import { ChannelTabBar } from '../channels/ChannelTabBar';
+import { PageModeTabs } from '../PageModeTabs';
 import { WidgetButtons } from '../plugin/WidgetButtons';
 import { WindowControls } from '../WindowControls';
 
@@ -18,6 +19,7 @@ interface AppTitlebarProps {
   showPreviewToggle?: boolean;
   showChannelTabs?: boolean;
   showWidgetButtons?: boolean;
+  currentTab?: string;
   onLeftMouseEnter?: MouseEventHandler<HTMLButtonElement>;
   onRightMouseEnter?: MouseEventHandler<HTMLButtonElement>;
   onToggleMouseLeave?: MouseEventHandler<HTMLButtonElement>;
@@ -36,6 +38,7 @@ export function AppTitlebar({
   showPreviewToggle = false,
   showChannelTabs = true,
   showWidgetButtons = true,
+  currentTab,
   onLeftMouseEnter,
   onRightMouseEnter,
   onToggleMouseLeave,
@@ -70,12 +73,15 @@ export function AppTitlebar({
           </button>
         )}
       </div>
-      {centerTitle && (
-        <div className="tb-center-title" aria-label={t('titlebar.currentChatTitle')} title={centerTitle}>
-          <span>{centerTitle}</span>
-        </div>
-      )}
-      {showChannelTabs && <ChannelTabBar />}
+      <div className="tb-center-group">
+        {centerTitle && (
+          <div className="tb-center-title" aria-label={t('titlebar.currentChatTitle')} title={centerTitle}>
+            <span>{centerTitle}</span>
+          </div>
+        )}
+        {showChannelTabs && <ChannelTabBar />}
+        {currentTab === 'chat' && <PageModeTabs />}
+      </div>
       <div className="tb-right-group">
         {showWidgetButtons && <WidgetButtons />}
         {showPreviewToggle && onTogglePreview && (

@@ -1,7 +1,7 @@
 {
   "channel": {
-    "tab": "채널",
-    "chatTab": "채팅",
+    "tab": "그룹 채팅",
+    "chatTab": "어시스턴트",
     "moreTabs": "더 많은 탭",
     "empty": "아직 채널이 없어요 ✿",
     "dmLabel": "메시지",
@@ -81,7 +81,8 @@
     "bridge": "소셜 플랫폼",
     "toggle": "사이드바",
     "bridgeShort": "연결",
-    "pinned": "고정"
+    "pinned": "고정",
+    "capabilities": "기능"
   },
   "titlebar": {
     "currentChatTitle": "현재 대화 제목"
@@ -2594,6 +2595,157 @@
   "preview.openInNewWindow": "새 창에서 보기",
   "preview.openInNewWindowUnsupported": "이 파일 형식은 지원되지 않습니다",
   "preview.markdownEditorStatus": "선택 {selected}자 · 총 {total}자",
+  "settingsTabs": {
+    "agent": "어시스턴트",
+    "me": "나",
+    "interface": "인터페이스",
+    "work": "워크스페이스",
+    "computer": "컴퓨터 사용",
+    "skills": "스킬",
+    "bridge": "소셜",
+    "providers": "제공업체",
+    "media": "미디어",
+    "voice": "음성",
+    "sharing": "공유",
+    "access": "접속 및 기기",
+    "plugins": "플러그인",
+    "pluginMarketplace": "플러그인 마켓",
+    "security": "보안",
+    "about": "정보",
+    "backup": "백업 및 복원"
+  },
+  "voiceOverlay": {
+    "idle": "터치하여 시작",
+    "listening": "듣고 있습니다...",
+    "processing": "생각 중...",
+    "speaking": "답변 중...",
+    "paused": "일시정지",
+    "error": "오류",
+    "aiReply": "AI 답변",
+    "youSaid": "말한 내용",
+    "resume": "재개",
+    "pause": "일시정지",
+    "stop": "대화 종료",
+    "closeVoice": "음성 대화 닫기",
+    "resumeConversation": "대화 재개",
+    "pauseConversation": "대화 일시정지",
+    "stopConversation": "대화 종료"
+  },
+  "voiceButton": {
+    "idle": "시작",
+    "listening": "듣는 중...",
+    "processing": "생각 중...",
+    "speaking": "말하는 중...",
+    "paused": "일시정지",
+    "error": "오류",
+    "resumeConversation": "대화 재개",
+    "pauseConversation": "대화 일시정지"
+  },
+  "voiceInput": {
+    "notAvailable": "음성 입력을 사용할 수 없습니다",
+    "recording": "녹음 중... 놓으면 전송",
+    "recognizing": "인식 중...",
+    "error": "음성 인식 오류",
+    "holdToTalk": "누르고 말하기"
+  },
+  "voiceStatus": {
+    "listening": "듣는 중...",
+    "speaking": "말하는 중...",
+    "thinking": "생각 중...",
+    "idle": "준비 완료"
+  },
+  "capabilities": {
+    "title": "기능 패널",
+    "close": "닫기",
+    "skills": "스킬",
+    "loading": "로딩 중...",
+    "noSkills": "스킬 없음",
+    "noSkillsHint": "워크스페이스에서 스킬 폴더를 추가하세요",
+    "viewSkill": "스킬 보기",
+    "connectors": "커넥터",
+    "noConnectors": "활성 커넥터 없음",
+    "noConnectorsHint": "설정에서 MCP 커넥터를 구성하세요",
+    "tools": "도구",
+    "toolsCount": "{{count}}개 도구",
+    "running": "실행 중",
+    "stopped": "중지됨"
+  },
+  "toolCard": {
+    "params": "매개변수",
+    "result": "결과",
+    "expandFull": "전체 보기",
+    "done": "완료"
+  },
+  "session": {
+    "takingOver": "{{platform}} 인계 중",
+    "feishu": "Feishu",
+    "wechat": "WeChat"
+  },
+  "agentCreate": {
+    "cardReadFailed": "캐릭터 카드 읽기 실패: {{error}}",
+    "cardImportFailed": "캐릭터 카드 가져오기 실패: {{error}}",
+    "readingCard": "캐릭터 카드 읽는 중",
+    "dropOrClick": "캐릭터 카드를 드래그하거나 클릭하여 열기"
+  },
+  "agentTab": {
+    "exportedTo": "{{path}}에 내보냄",
+    "generatingPreview": "캐릭터 카드 미리보기 생성 중"
+  },
+  "agentCardStack": {
+    "generatingPreview": "미리보기 생성 중",
+    "exportAgent": "어시스턴트 내보내기"
+  },
+  "skillBundle": {
+    "newBundle": "새 Bundle",
+    "newSkillBundle": "새 Skill Bundle",
+    "collapse": "Bundle 접기",
+    "expand": "Bundle 펼치기",
+    "enableBundle": "Bundle 활성화",
+    "disableBundle": "Bundle 비활성화",
+    "enableAll": "전체 Bundle 활성화",
+    "disableAll": "전체 Bundle 비활성화",
+    "enable": "{{name}} 활성화",
+    "disable": "{{name}} 비활성화",
+    "rename": "{{name}} 이름 변경",
+    "renameBundle": "Bundle 이름 변경",
+    "renameName": "{{name}} 이름 변경",
+    "export": "{{name}} 내보내기",
+    "exportBundle": "Skill Bundle 내보내기",
+    "exportName": "{{name}} 내보내기",
+    "dissolve": "{{name}} 해체",
+    "dissolveBundle": "Bundle 해체",
+    "dissolveName": "{{name}} 해체",
+    "emptyBundle": "빈 Bundle",
+    "skillNotFound": "이 Skill이 더 이상 존재하지 않습니다",
+    "missingSkill": "이 Skill이 더 이상 존재하지 않습니다",
+    "removeFromBundle": "Bundle에서 제거",
+    "removeSkill": "Bundle에서 {{name}} 제거",
+    "removeSkillFromBundle": "Bundle에서 {{name}} 제거",
+    "noLooseSkills": "느슨한 Skill 없음"
+  },
+  "characterCard": {
+    "exportMemory": "메모리 내보내기",
+    "importMemory": "메모리 가져오기",
+    "noExportableMemory": "내보낼 메모리 없음",
+    "noImportableMemory": "가져올 메모리 없음",
+    "exporting": "내보내는 중",
+    "importing": "가져오는 중",
+    "confirm": "확인",
+    "noDescription": "이 캐릭터 카드에 Description이 없습니다.",
+    "noIshiki": "Ishiki가 제공되지 않음",
+    "noMemory": "메모리 없음",
+    "importantFacts": "중요 사실",
+    "today": "오늘",
+    "earlierThisWeek": "이번 주 초",
+    "longTerm": "장기",
+    "noIdentity": "Identity가 제공되지 않음",
+    "memoryCount": "{{count}}개 메모리 항목",
+    "none": "없음",
+    "noSkills": "Skill 포함되지 않음",
+    "viewDetails": "캐릭터 카드 상세 보기",
+    "cancel": "취소"
+  },
+  "settingsLoading": "로딩 중...",
   "emojiStyle": {
     "title": "도구 아이콘 스타일",
     "description": "도구 호출 시 표시되는 이모지 스타일 선택",

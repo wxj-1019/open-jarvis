@@ -10,9 +10,11 @@
  */
 
 import { useState, useEffect, useCallback, memo, useRef } from 'react';
-import { X, Microphone, Think, SpeakerHigh, Pause, Play, Stop } from '@phosphor-icons/react';
+import { X, Microphone, Lightbulb, SpeakerHigh, Pause, Play, Stop } from '@phosphor-icons/react';
 import { PhosphorIcon } from '../ui/PhosphorIcon';
 import styles from './VoiceChatOverlay.module.css';
+
+declare function t(key: string, vars?: Record<string, string | number>): string;
 
 type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking' | 'paused' | 'error';
 
@@ -25,49 +27,51 @@ interface VoiceChatOverlayProps {
   onStateChange?: (state: VoiceState) => void;
 }
 
-const STATE_CONFIG: Record<VoiceState, {
+function getStateConfig(): Record<VoiceState, {
   emoji: string;
   label: string;
   color: string;
   icon: React.ReactNode;
-}> = {
-  idle: {
-    emoji: '🤖',
-    label: '点击开始对话',
-    color: 'var(--accent, #537d96)',
-    icon: <PhosphorIcon icon={Microphone} size={48} weight="light" />,
-  },
-  listening: {
-    emoji: '🎤',
-    label: '正在听你说话...',
-    color: 'var(--color-red-600, #dc2626)',
-    icon: <PhosphorIcon icon={Microphone} size={48} weight="fill" />,
-  },
-  processing: {
-    emoji: '🤔',
-    label: '正在思考...',
-    color: 'var(--color-amber-600, #d97706)',
-    icon: <PhosphorIcon icon={Think} size={48} weight="fill" />,
-  },
-  speaking: {
-    emoji: '🔊',
-    label: '正在回答...',
-    color: 'var(--color-green-600, #16a34a)',
-    icon: <PhosphorIcon icon={SpeakerHigh} size={48} weight="fill" />,
-  },
-  paused: {
-    emoji: '⏸',
-    label: '已暂停',
-    color: 'var(--color-gray-600, #4b5563)',
-    icon: <PhosphorIcon icon={Pause} size={48} weight="fill" />,
-  },
-  error: {
-    emoji: '⚠️',
-    label: '出错了',
-    color: 'var(--color-red-800, #991b1b)',
-    icon: <PhosphorIcon icon={Think} size={48} weight="bold" />,
-  },
-};
+}> {
+  return {
+    idle: {
+      emoji: '🤖',
+      label: t('voiceOverlay.idle'),
+      color: 'var(--accent, #537d96)',
+      icon: <PhosphorIcon icon={Microphone} size={48} weight="light" />,
+    },
+    listening: {
+      emoji: '🎤',
+      label: t('voiceOverlay.listening'),
+      color: 'var(--color-red-600, #dc2626)',
+      icon: <PhosphorIcon icon={Microphone} size={48} weight="fill" />,
+    },
+    processing: {
+      emoji: '🤔',
+      label: t('voiceOverlay.processing'),
+      color: 'var(--color-amber-600, #d97706)',
+      icon: <PhosphorIcon icon={Lightbulb} size={48} weight="fill" />,
+    },
+    speaking: {
+      emoji: '🔊',
+      label: t('voiceOverlay.speaking'),
+      color: 'var(--color-green-600, #16a34a)',
+      icon: <PhosphorIcon icon={SpeakerHigh} size={48} weight="fill" />,
+    },
+    paused: {
+      emoji: '⏸',
+      label: t('voiceOverlay.paused'),
+      color: 'var(--color-gray-600, #4b5563)',
+      icon: <PhosphorIcon icon={Pause} size={48} weight="fill" />,
+    },
+    error: {
+      emoji: '⚠️',
+      label: t('voiceOverlay.error'),
+      color: 'var(--color-red-800, #991b1b)',
+      icon: <PhosphorIcon icon={Lightbulb} size={48} weight="bold" />,
+    },
+  };
+}
 
 export const VoiceChatOverlay = memo(function VoiceChatOverlay({
   isOpen,
@@ -80,6 +84,8 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
   const [duration, setDuration] = useState(0);
   const [isAutoClosing, setIsAutoClosing] = useState(false);
   const autoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const userTextRef = useRef('');
+  const aiTextRef = useRef('');
 
   const clearAutoCloseTimer = useCallback(() => {
     if (autoCloseTimerRef.current) {
@@ -104,7 +110,7 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
         setIsAutoClosing(false);
       }
 
-      if (newState === 'idle' && userText && aiText) {
+      if (newState === 'idle' && userTextRef.current && aiTextRef.current) {
         autoCloseTimerRef.current = setTimeout(() => {
           setIsAutoClosing(true);
           setTimeout(onClose, 300);
@@ -114,12 +120,14 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
 
     const cleanupUser = hana.onVoiceUserText?.((text: string) => {
       setUserText(text);
+      userTextRef.current = text;
       clearAutoCloseTimer();
       setIsAutoClosing(false);
     });
 
     const cleanupAi = hana.onVoiceAiText?.((text: string) => {
       setAiText(text);
+      aiTextRef.current = text;
     });
 
     return () => {
@@ -128,7 +136,7 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
       cleanupAi?.();
       clearAutoCloseTimer();
     };
-  }, [isOpen, onStateChange, userText, aiText, onClose, clearAutoCloseTimer]);
+  }, [isOpen, onStateChange, onClose, clearAutoCloseTimer]);
 
   useEffect(() => {
     if (state === 'listening' || state === 'speaking') {
@@ -171,7 +179,7 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
 
   if (!isOpen) return null;
 
-  const config = STATE_CONFIG[state];
+  const config = getStateConfig()[state];
   const isActive = state === 'listening' || state === 'speaking' || state === 'processing';
 
   return (
@@ -179,18 +187,18 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
       className={`${styles.overlay} ${isAutoClosing ? styles['overlay-exit'] : ''}`}
       role="dialog"
       aria-modal="true"
-      aria-label="语音对话"
+      aria-label={t('pageMode.voice')}
     >
       <button
         onClick={handleClose}
         className={styles['close-btn']}
-        aria-label="关闭语音对话"
+        aria-label={t('voiceOverlay.closeVoice')}
       >
         <PhosphorIcon icon={X} size={24} weight="regular" />
       </button>
 
       <div className={`${styles.content} ${isActive ? styles['content-active'] : ''}`}>
-        <div className={`${styles.icon-wrapper} ${styles[`state-${state}`]}`}>
+        <div className={`${styles['icon-wrapper']} ${styles[`state-${state}`]}`}>
           {config.icon}
         </div>
 
@@ -220,14 +228,14 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
 
         {aiText && (
           <div className={`${styles.textCard} ${styles['ai-card']}`}>
-            <p className={styles.textCardLabel}>AI 回复</p>
+            <p className={styles.textCardLabel}>{t('voiceOverlay.aiReply')}</p>
             <p className={styles.textCardContent}>{aiText}</p>
           </div>
         )}
 
         {userText && (
           <div className={`${styles.textCard} ${styles['user-card']}`}>
-            <p className={styles.textCardLabel}>你说了</p>
+            <p className={styles.textCardLabel}>{t('voiceOverlay.youSaid')}</p>
             <p className={styles.textCardContent}>"{userText}"</p>
           </div>
         )}
@@ -237,25 +245,25 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
             <button
               onClick={handlePauseResume}
               className={`${styles.controlBtn} ${styles['pause-btn']}`}
-              aria-label={state === 'paused' ? '恢复对话' : '暂停对话'}
-              title={state === 'paused' ? '恢复对话' : '暂停对话'}
+              aria-label={state === 'paused' ? t('voiceOverlay.resumeConversation') : t('voiceOverlay.pauseConversation')}
+              title={state === 'paused' ? t('voiceOverlay.resumeConversation') : t('voiceOverlay.pauseConversation')}
             >
               <PhosphorIcon
                 icon={state === 'paused' ? Play : Pause}
                 size={20}
                 weight="fill"
               />
-              <span>{state === 'paused' ? '恢复' : '暂停'}</span>
+              <span>{state === 'paused' ? t('voiceOverlay.resume') : t('voiceOverlay.pause')}</span>
             </button>
 
             <button
               onClick={handleStop}
               className={`${styles.controlBtn} ${styles['stop-btn']}`}
-              aria-label="停止对话"
-              title="停止对话"
+              aria-label={t('voiceOverlay.stopConversation')}
+              title={t('voiceOverlay.stopConversation')}
             >
               <PhosphorIcon icon={Stop} size={20} weight="fill" />
-              <span>停止对话</span>
+              <span>{t('voiceOverlay.stop')}</span>
             </button>
           </div>
         )}

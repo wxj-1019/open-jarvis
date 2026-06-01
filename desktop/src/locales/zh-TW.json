@@ -1,7 +1,7 @@
 {
   "channel": {
-    "tab": "頻道",
-    "chatTab": "聊天",
+    "tab": "多人群聊",
+    "chatTab": "助手對話",
     "moreTabs": "更多標籤",
     "empty": "還沒有頻道 ✿",
     "dmLabel": "私聊",
@@ -81,7 +81,8 @@
     "bridge": "接入社群平台",
     "toggle": "側邊欄",
     "bridgeShort": "接入",
-    "pinned": "置頂"
+    "pinned": "置頂",
+    "capabilities": "能力"
   },
   "titlebar": {
     "currentChatTitle": "目前對話標題"
@@ -2594,6 +2595,157 @@
   "preview.openInNewWindow": "在新視窗查看",
   "preview.openInNewWindowUnsupported": "此類型不支援新視窗查看",
   "preview.markdownEditorStatus": "選中 {selected} 字 · 共 {total} 字",
+  "settingsTabs": {
+    "agent": "助手",
+    "me": "我",
+    "interface": "介面",
+    "work": "工作台",
+    "computer": "使用電腦",
+    "skills": "技能",
+    "bridge": "社交平台",
+    "providers": "供應商",
+    "media": "多媒體",
+    "voice": "語音",
+    "sharing": "分享",
+    "access": "存取與裝置",
+    "plugins": "外掛",
+    "pluginMarketplace": "外掛市集",
+    "security": "安全",
+    "about": "關於",
+    "backup": "備份與還原"
+  },
+  "voiceOverlay": {
+    "idle": "點擊開始對話",
+    "listening": "正在聽你說話...",
+    "processing": "正在思考...",
+    "speaking": "正在回答...",
+    "paused": "已暫停",
+    "error": "出錯了",
+    "aiReply": "AI 回覆",
+    "youSaid": "你說了",
+    "resume": "恢復",
+    "pause": "暫停",
+    "stop": "停止對話",
+    "closeVoice": "關閉語音對話",
+    "resumeConversation": "恢復對話",
+    "pauseConversation": "暫停對話",
+    "stopConversation": "停止對話"
+  },
+  "voiceButton": {
+    "idle": "開始對話",
+    "listening": "正在聽...",
+    "processing": "正在想...",
+    "speaking": "正在說...",
+    "paused": "已暫停",
+    "error": "出錯了",
+    "resumeConversation": "恢復對話",
+    "pauseConversation": "暫停對話"
+  },
+  "voiceInput": {
+    "notAvailable": "語音輸入不可用（瀏覽器不支援錄音）",
+    "recording": "正在錄音... 放開發送",
+    "recognizing": "正在辨識...",
+    "error": "語音辨識出錯",
+    "holdToTalk": "按住說話"
+  },
+  "voiceStatus": {
+    "listening": "正在聆聽...",
+    "speaking": "正在說話...",
+    "thinking": "正在思考...",
+    "idle": "準備就緒"
+  },
+  "capabilities": {
+    "title": "能力面板",
+    "close": "關閉",
+    "skills": "技能",
+    "loading": "載入中...",
+    "noSkills": "暫無技能",
+    "noSkillsHint": "在工作台新增技能資料夾",
+    "viewSkill": "檢視技能",
+    "connectors": "連接器",
+    "noConnectors": "暫無活躍連接器",
+    "noConnectorsHint": "在設定中配置 MCP 連接器",
+    "tools": "工具",
+    "toolsCount": "{{count}} 個工具",
+    "running": "執行中",
+    "stopped": "已停止"
+  },
+  "skillBundle": {
+    "newBundle": "新建 Bundle",
+    "newSkillBundle": "新建 Skill Bundle",
+    "collapse": "收合 Bundle",
+    "expand": "展開 Bundle",
+    "enableBundle": "啟用整個 Bundle",
+    "disableBundle": "關閉整個 Bundle",
+    "enableAll": "啟用整個 Bundle",
+    "disableAll": "關閉整個 Bundle",
+    "enable": "啟用 {{name}}",
+    "disable": "關閉 {{name}}",
+    "rename": "重新命名 {{name}}",
+    "renameBundle": "重新命名 Bundle",
+    "renameName": "重新命名 {{name}}",
+    "export": "匯出 {{name}}",
+    "exportBundle": "匯出 Skill Bundle",
+    "exportName": "匯出 {{name}}",
+    "dissolve": "打散 {{name}}",
+    "dissolveBundle": "打散 Bundle",
+    "dissolveName": "打散 {{name}}",
+    "emptyBundle": "空 Bundle",
+    "skillNotFound": "這個 Skill 已不存在",
+    "missingSkill": "這個 Skill 已不存在",
+    "removeFromBundle": "移出 Bundle，變為散裝 Skill",
+    "removeSkill": "將 {{name}} 移出 Bundle",
+    "removeSkillFromBundle": "將 {{name}} 移出 Bundle",
+    "noLooseSkills": "沒有散裝 Skill"
+  },
+  "characterCard": {
+    "exportMemory": "匯出記憶",
+    "importMemory": "匯入記憶",
+    "noExportableMemory": "無可匯出記憶",
+    "noImportableMemory": "無可匯入記憶",
+    "exporting": "正在匯出",
+    "importing": "正在匯入",
+    "confirm": "確定",
+    "noDescription": "這個角色卡沒有寫入 Description。",
+    "noIshiki": "未提供 Ishiki",
+    "noMemory": "無記憶",
+    "importantFacts": "重要事實",
+    "today": "今天",
+    "earlierThisWeek": "本週稍早",
+    "longTerm": "長期情況",
+    "noIdentity": "未提供 Identity",
+    "memoryCount": "{{count}} 個記憶項目，可選...",
+    "none": "無",
+    "noSkills": "未包含 Skill",
+    "viewDetails": "檢視角色卡詳情",
+    "cancel": "取消"
+  },
+  "toolCard": {
+    "params": "參數",
+    "result": "結果",
+    "expandFull": "展開全文",
+    "done": "完成"
+  },
+  "session": {
+    "takingOver": "{{platform}} 接管中",
+    "feishu": "飛書",
+    "wechat": "微信"
+  },
+  "agentCreate": {
+    "cardReadFailed": "角色卡讀取失敗: {{error}}",
+    "cardImportFailed": "角色卡匯入失敗: {{error}}",
+    "readingCard": "正在讀取角色卡",
+    "dropOrClick": "拖入角色卡或點擊開啟"
+  },
+  "agentTab": {
+    "exportedTo": "已匯出到 {{path}}",
+    "generatingPreview": "正在產生角色卡預覽"
+  },
+  "agentCardStack": {
+    "generatingPreview": "正在產生預覽",
+    "exportAgent": "匯出助手"
+  },
+  "settingsLoading": "載入中...",
   "emojiStyle": {
     "title": "工具圖示風格",
     "description": "選擇工具呼叫時顯示的 emoji 風格",

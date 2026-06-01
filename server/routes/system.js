@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { exec } from "child_process";
+import { exec, execFile } from "child_process";
 import { promisify } from "util";
 import path from "path";
 import fs from "fs";
@@ -7,6 +7,7 @@ import { createModuleLogger } from "../../lib/debug-log.js";
 import { runHealthChecks, getFixAction } from "../utils/health-checks.js";
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 const log = createModuleLogger("system-health");
 
 async function verifyWindowsSignature(filePath) {
@@ -18,29 +19,31 @@ async function verifyWindowsSignature(filePath) {
     };
   }
 
-  const sanitizedPath = filePath.replace(/'/g, "''");
+  if (!filePath || typeof filePath !== "string" || filePath.includes("\0")) {
+    return { supported: true, signed: false, valid: false, status: "InvalidPath", message: "Invalid file path" };
+  }
 
   try {
-    const psCommand = `
-      $sig = Get-AuthenticodeSignature -FilePath '${sanitizedPath}'
-      [PSCustomObject]@{
-        Status = $sig.Status.ToString()
-        StatusMessage = $sig.StatusMessage
-        SignerCertificate = if ($sig.SignerCertificate) {
-          [PSCustomObject]@{
-            Subject = $sig.SignerCertificate.Subject
-            Issuer = $sig.SignerCertificate.Issuer
-            NotBefore = $sig.SignerCertificate.NotBefore.ToString("o")
-            NotAfter = $sig.SignerCertificate.NotAfter.ToString("o")
-            Thumbprint = $sig.SignerCertificate.Thumbprint
-          }
-        } else { $null }
-      } | ConvertTo-Json -Depth 3
-    `.trim();
+    const psScript = `
+$sig = Get-AuthenticodeSignature -LiteralFilePath $args[0]
+[PSCustomObject]@{
+  Status = $sig.Status.ToString()
+  StatusMessage = $sig.StatusMessage
+  SignerCertificate = if ($sig.SignerCertificate) {
+    [PSCustomObject]@{
+      Subject = $sig.SignerCertificate.Subject
+      Issuer = $sig.SignerCertificate.Issuer
+      NotBefore = $sig.SignerCertificate.NotBefore.ToString('o')
+      NotAfter = $sig.SignerCertificate.NotAfter.ToString('o')
+      Thumbprint = $sig.SignerCertificate.Thumbprint
+    }
+  } else { $null }
+} | ConvertTo-Json -Depth 3`.trim();
 
-    const { stdout } = await execAsync(
-      `powershell.exe -NoProfile -NonInteractive -Command "${psCommand.replace(/"/g, '\\"')}"`,
-      { timeout: 15000 }
+    const { stdout } = await execFileAsync(
+      "powershell.exe",
+      ["-NoProfile", "-NonInteractive", "-Command", psScript, "-", filePath],
+      { timeout: 15000, windowsHide: true }
     );
 
     const result = JSON.parse(stdout.trim());

@@ -130,7 +130,7 @@ function McpPanelContent({ state, onOpenSettings }: { state: McpState; onOpenSet
         <div key={conn.id} className={styles.connectorItem}>
           <ConnectorStatus connector={conn} />
           <span className={styles.connectorName} title={conn.description}>{conn.name}</span>
-          <span className={styles.connectorTools}>{conn.toolCount ?? conn.tools?.length ?? 0} tools</span>
+          <span className={styles.connectorTools}>{conn.toolCount ?? conn.tools?.length ?? 0} {(window.t ?? ((p: string) => p))('capabilities.tools')}</span>
         </div>
       ))}
     </div>

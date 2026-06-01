@@ -5,6 +5,8 @@ import styles from '../../Settings.module.css';
 import { PhosphorIcon } from '../../../ui/PhosphorIcon';
 import { PencilSimple, DownloadSimple, X, CaretDown, CaretRight } from '@phosphor-icons/react';
 
+declare function t(key: string, vars?: Record<string, string | number>): string;
+
 export interface SkillBundleInfo {
   id: string;
   name: string;
@@ -157,11 +159,11 @@ export function SkillBundleTree({
           <button
             className={styles['skill-bundle-create']}
             type="button"
-            title="新建 Skill Bundle"
-            aria-label="新建 Skill Bundle"
+            title={t('skillBundle.newSkillBundle')}
+            aria-label={t('skillBundle.newSkillBundle')}
             onClick={onCreateBundle}
           >
-            新建 Bundle
+            {t('skillBundle.newBundle')}
           </button>
         ) : null}
         <p className={styles['agent-skill-empty']} style={{ padding: 'var(--space-md)', margin: 0 }}>
@@ -178,11 +180,11 @@ export function SkillBundleTree({
           <button
             className={styles['skill-bundle-create']}
             type="button"
-            title="新建 Skill Bundle"
-            aria-label="新建 Skill Bundle"
+            title={t('skillBundle.newSkillBundle')}
+            aria-label={t('skillBundle.newSkillBundle')}
             onClick={onCreateBundle}
           >
-            新建 Bundle
+            {t('skillBundle.newBundle')}
           </button>
         </div>
       ) : null}
@@ -204,8 +206,8 @@ export function SkillBundleTree({
                 <button
                   className={styles['skill-bundle-caret']}
                   type="button"
-                  aria-label={isExpanded ? '收起 Bundle' : '展开 Bundle'}
-                  title={isExpanded ? '收起 Bundle' : '展开 Bundle'}
+                  aria-label={isExpanded ? t('skillBundle.collapse') : t('skillBundle.expand')}
+                  title={isExpanded ? t('skillBundle.collapse') : t('skillBundle.expand')}
                   onClick={() => setExpanded(prev => ({ ...prev, [bundle.id]: !isExpanded }))}
                 >
                   {isExpanded ? '⌄' : '›'}
@@ -220,8 +222,8 @@ export function SkillBundleTree({
                       data-testid={`skill-bundle-toggle-${bundle.id}`}
                       className={`hana-toggle mini${state.all ? ' on' : ''}${state.partial ? ' bundle-mixed' : ''}`}
                       type="button"
-                      title={state.next ? '启用整个 Bundle' : '关闭整个 Bundle'}
-                      aria-label={state.next ? `启用 ${bundle.name}` : `关闭 ${bundle.name}`}
+                      title={state.next ? t('skillBundle.enableAll') : t('skillBundle.disableAll')}
+                      aria-label={state.next ? t('skillBundle.enable', { name: bundle.name }) : t('skillBundle.disable', { name: bundle.name })}
                       onClick={() => onToggleBundle(bundle, state.next)}
                     />
                   ) : null}
@@ -229,8 +231,8 @@ export function SkillBundleTree({
                     <button
                       className={styles['skill-bundle-icon-button']}
                       type="button"
-                      title="重命名 Bundle"
-                      aria-label={`重命名 ${bundle.name}`}
+                      title={t('skillBundle.renameBundle')}
+                      aria-label={t('skillBundle.rename', { name: bundle.name })}
                       onClick={() => onRenameBundle(bundle)}
                     >
                       <PhosphorIcon icon={PencilSimple} size={13} />
@@ -240,8 +242,8 @@ export function SkillBundleTree({
                     <button
                       className={styles['skill-bundle-icon-button']}
                       type="button"
-                      title="导出 Skill Bundle"
-                      aria-label={`导出 ${bundle.name}`}
+                      title={t('skillBundle.exportBundle')}
+                      aria-label={t('skillBundle.export', { name: bundle.name })}
                       onClick={() => onExportBundle(bundle)}
                     >
                       <PhosphorIcon icon={DownloadSimple} size={13} />
@@ -251,8 +253,8 @@ export function SkillBundleTree({
                     <button
                       className={styles['skill-card-delete']}
                       type="button"
-                      title="打散 Bundle"
-                      aria-label={`打散 ${bundle.name}`}
+                      title={t('skillBundle.dissolveBundle')}
+                      aria-label={t('skillBundle.dissolve', { name: bundle.name })}
                       onClick={() => onDeleteBundle(bundle)}
                     >
                       <PhosphorIcon icon={X} size={12} />
@@ -263,11 +265,11 @@ export function SkillBundleTree({
               {isExpanded ? (
                 <div className={styles['skill-bundle-children']}>
                   {bundle.skillNames.length === 0 ? (
-                    <div className={styles['skill-bundle-empty']}>空 Bundle</div>
+                    <div className={styles['skill-bundle-empty']}>{t('skillBundle.emptyBundle')}</div>
                   ) : bundle.skillNames.map((skillName, index) => {
                     const skill = skillByName.get(skillName) || {
                       name: skillName,
-                      description: '这个 Skill 已不存在',
+                      description: t('skillBundle.missingSkill'),
                       enabled: false,
                       source: 'missing',
                     };
@@ -288,8 +290,8 @@ export function SkillBundleTree({
                           <button
                             className={styles['skill-bundle-icon-button']}
                             type="button"
-                            title="移出 Bundle，变为散装 Skill"
-                            aria-label={`将 ${skillName} 移出 Bundle`}
+                            title={t('skillBundle.removeFromBundle')}
+                            aria-label={t('skillBundle.removeSkill', { name: skillName })}
                             onClick={(event) => {
                               event.stopPropagation();
                               onRemoveSkillFromBundles?.(skillName);
@@ -325,7 +327,7 @@ export function SkillBundleTree({
             />
           ))}
           {looseSkills.length === 0 ? (
-            <div className={styles['skill-bundle-empty']}>没有散装 Skill</div>
+            <div className={styles['skill-bundle-empty']}>{t('skillBundle.noLooseSkills')}</div>
           ) : null}
         </div>
       </div>

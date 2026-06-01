@@ -18,6 +18,12 @@
   /* 弹簧·快速稳定：loading/toggle 切换，无 overshoot 渲染开销最小 */
   --ease-spring-settle: cubic-bezier(0.33, 1, 0.68, 1);
   
+  /* === 动效时长 === */
+  --duration-instant: 0.12s;
+  --duration-fast:    0.2s;
+  --duration-slow:    0.35s;
+  --duration-elegant: 0.5s;   /* 页面级过渡 */
+  
   /* 专属弹簧曲线（针对特定组件优化） */
   /* 模态框专用：更柔和的回弹，避免突兀感 */
   --ease-spring-modal: cubic-bezier(0.32, 1.4, 0.6, 1);
@@ -103,6 +109,35 @@
   /* 系统 UI 字体栈：Apple 优先跨平台回退，系统字体零加载开销 */
   --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 
+  /* ============================================================
+     排版层级 (Apple Dynamic Type 近似)
+     - 基于 4px 基数，从 11px 到 34px 共 8 级
+     ============================================================ */
+
+  /* 字体大小 */
+  --font-size-xs:     0.6875rem;  /* 11px — Caption 2 */
+  --font-size-sm:     0.75rem;    /* 12px — Caption 1 / Footnote */
+  --font-size-base:   0.875rem;   /* 14px — Subheadline / Body */
+  --font-size-md:     1rem;       /* 16px — Headline */
+  --font-size-lg:     1.1875rem;  /* 19px — Title 3 */
+  --font-size-xl:     1.375rem;   /* 22px — Title 2 */
+  --font-size-2xl:    1.75rem;    /* 28px — Title 1 */
+  --font-size-3xl:    2.125rem;   /* 34px — Large Title */
+
+  /* 字重 */
+  --font-weight-regular: 400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+
+  /* 行高 */
+  --line-height-tight:   1.2;
+  --line-height-normal:  1.5;
+  --line-height-relaxed: 1.65;
+
+  /* 触控目标 */
+  --touch-target-min:   32px;   /* 桌面最低标准 */
+  --touch-target-large: 44px;   /* 触控场景（语音、移动端） */
+
   /* === 多主题支持 === */
   /* 强调色 RGB 值（用于动态阴影和发光） */
   --accent-rgb: 83 125 150;
@@ -118,133 +153,10 @@
   --skeleton-base-rgb: 0 0 0;
 }
 
-/* ── 暗色主题变量覆盖 ── */
-html[data-theme="midnight"],
-html[data-theme="midnight-contrast"] {
-  --spinner-track-rgb: 255 255 255;
-  --skeleton-base-rgb: 255 255 255;
-  --text-primary: rgba(255, 255, 255, 0.95);
-  --text-secondary: rgba(255, 255, 255, 0.7);
-  --text-tertiary: rgba(255, 255, 255, 0.5);
-  --text-quaternary: rgba(255, 255, 255, 0.35);
-}
+/* ═══════════════════════════════════════════════════════════
+ * 主题系统 - 自动生成
+ * ⚠️ 以下代码由 generate-themes.cjs 自动生成
+ * 如需修改主题，请编辑 theme-config.ts 并运行生成器
+ * ═══════════════════════════════════════════════════════════ */
 
-/* ── 海洋蓝主题 ── */
-html[data-theme="ocean-blue"] {
-  --accent: #3b82f6;
-  --accent-rgb: 59 130 246;
-  --success-rgb: 34 197 94;
-  --error-rgb: 239 68 68;
-  --warning-rgb: 245 158 11;
-  --glass-bg: rgba(240, 249, 255, 0.88);
-  --glass-bg-dark: rgba(15, 23, 42, 0.82);
-  --glass-border: rgba(59, 130, 246, 0.15);
-  --glass-highlight: rgba(59, 130, 246, 0.08);
-  --shadow-accent: 0 4px 14px rgba(59, 130, 246, 0.18);
-  --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.12);
-  --text-primary: rgba(15, 23, 42, 0.95);
-  --text-secondary: rgba(15, 23, 42, 0.7);
-  --text-tertiary: rgba(15, 23, 42, 0.5);
-  --text-quaternary: rgba(15, 23, 42, 0.35);
-}
-html[data-theme="ocean-blue"] .hana-glass,
-html[data-theme="ocean-blue"] .float-card,
-html[data-theme="ocean-blue"] .context-menu {
-  border-color: var(--glass-border);
-}
-
-/* ── 樱花粉主题 ── */
-html[data-theme="sakura-pink"] {
-  --accent: #ec4899;
-  --accent-rgb: 236 72 153;
-  --success-rgb: 34 197 94;
-  --error-rgb: 239 68 68;
-  --warning-rgb: 245 158 11;
-  --glass-bg: rgba(255, 245, 247, 0.88);
-  --glass-bg-dark: rgba(30, 10, 18, 0.82);
-  --glass-border: rgba(236, 72, 153, 0.15);
-  --glass-highlight: rgba(236, 72, 153, 0.08);
-  --shadow-accent: 0 4px 14px rgba(236, 72, 153, 0.18);
-  --shadow-glow: 0 0 20px rgba(236, 72, 153, 0.12);
-  --text-primary: rgba(30, 10, 18, 0.95);
-  --text-secondary: rgba(30, 10, 18, 0.7);
-  --text-tertiary: rgba(30, 10, 18, 0.5);
-  --text-quaternary: rgba(30, 10, 18, 0.35);
-}
-html[data-theme="sakura-pink"] .hana-glass,
-html[data-theme="sakura-pink"] .float-card,
-html[data-theme="sakura-pink"] .context-menu {
-  border-color: var(--glass-border);
-}
-
-/* ── 薰衣草紫主题 ── */
-html[data-theme="lavender"] {
-  --accent: #a855f7;
-  --accent-rgb: 168 85 247;
-  --success-rgb: 34 197 94;
-  --error-rgb: 239 68 68;
-  --warning-rgb: 245 158 11;
-  --glass-bg: rgba(250, 245, 255, 0.88);
-  --glass-bg-dark: rgba(20, 10, 30, 0.82);
-  --glass-border: rgba(168, 85, 247, 0.15);
-  --glass-highlight: rgba(168, 85, 247, 0.08);
-  --shadow-accent: 0 4px 14px rgba(168, 85, 247, 0.18);
-  --shadow-glow: 0 0 20px rgba(168, 85, 247, 0.12);
-  --text-primary: rgba(20, 10, 30, 0.95);
-  --text-secondary: rgba(20, 10, 30, 0.7);
-  --text-tertiary: rgba(20, 10, 30, 0.5);
-  --text-quaternary: rgba(20, 10, 30, 0.35);
-}
-html[data-theme="lavender"] .hana-glass,
-html[data-theme="lavender"] .float-card,
-html[data-theme="lavender"] .context-menu {
-  border-color: var(--glass-border);
-}
-
-/* ── 薄荷绿主题 ── */
-html[data-theme="mint-green"] {
-  --accent: #10b981;
-  --accent-rgb: 16 185 129;
-  --success-rgb: 34 197 94;
-  --error-rgb: 239 68 68;
-  --warning-rgb: 245 158 11;
-  --glass-bg: rgba(240, 253, 250, 0.88);
-  --glass-bg-dark: rgba(10, 25, 20, 0.82);
-  --glass-border: rgba(16, 185, 129, 0.15);
-  --glass-highlight: rgba(16, 185, 129, 0.08);
-  --shadow-accent: 0 4px 14px rgba(16, 185, 129, 0.18);
-  --shadow-glow: 0 0 20px rgba(16, 185, 129, 0.12);
-  --text-primary: rgba(10, 25, 20, 0.95);
-  --text-secondary: rgba(10, 25, 20, 0.7);
-  --text-tertiary: rgba(10, 25, 20, 0.5);
-  --text-quaternary: rgba(10, 25, 20, 0.35);
-}
-html[data-theme="mint-green"] .hana-glass,
-html[data-theme="mint-green"] .float-card,
-html[data-theme="mint-green"] .context-menu {
-  border-color: var(--glass-border);
-}
-
-/* ── 棉花糖粉主题 ── */
-html[data-theme="marshmallow-pink"] {
-  --accent: #f4a4b4;
-  --accent-rgb: 244 164 180;
-  --success-rgb: 34 197 94;
-  --error-rgb: 239 68 68;
-  --warning-rgb: 245 158 11;
-  --glass-bg: rgba(255, 252, 253, 0.9);
-  --glass-bg-dark: rgba(35, 20, 25, 0.82);
-  --glass-border: rgba(244, 164, 180, 0.18);
-  --glass-highlight: rgba(244, 164, 180, 0.1);
-  --shadow-accent: 0 4px 14px rgba(244, 164, 180, 0.22);
-  --shadow-glow: 0 0 20px rgba(244, 164, 180, 0.15);
-  --text-primary: rgba(35, 20, 25, 0.95);
-  --text-secondary: rgba(35, 20, 25, 0.7);
-  --text-tertiary: rgba(35, 20, 25, 0.5);
-  --text-quaternary: rgba(35, 20, 25, 0.35);
-}
-html[data-theme="marshmallow-pink"] .hana-glass,
-html[data-theme="marshmallow-pink"] .float-card,
-html[data-theme="marshmallow-pink"] .context-menu {
-  border-color: var(--glass-border);
-}
+@import './themes-generated.css';

@@ -10,7 +10,9 @@ import { ChannelMessages, ChannelMembers, ChannelInput, ChannelReadonly, Channel
 import { ChannelHeader } from '../channels/ChannelHeader';
 import { MainContent } from '../../MainContent';
 import { ChatPage } from './ChatPage';
+import { VoiceChatPage } from './VoiceChatPage';
 import { WorkspaceCompanionRail } from './WorkspaceCompanionRail';
+import './PageTransitions.css';
 
 const tr = (key: string, vars?: Record<string, string | number>) => window.t?.(key, vars) ?? key;
 
@@ -125,23 +127,47 @@ function PluginPage({ pluginId }: { pluginId: string }) {
   );
 }
 
+const PLUGIN_PREFIX = 'plugin:' as const;
+
 export function AppPages() {
   const currentTab = useStore(s => s.currentTab);
-  const isPluginTab = typeof currentTab === 'string' && currentTab.startsWith('plugin:');
+  const currentPage = useStore(s => s.currentPage);
+  const isPluginTab = typeof currentTab === 'string' && currentTab.startsWith(PLUGIN_PREFIX);
 
   return (
     <>
       <MainContent>
-        {currentTab === 'chat' && <ChatPage />}
-        {currentTab === 'channels' && <ChannelPage />}
-        {isPluginTab && <PluginPage pluginId={currentTab.slice(7)} />}
+        {currentTab === 'chat' && (
+          <>
+            {currentPage === 'chat' && (
+              <div className="chat-page-transition" key="chat">
+                <ChatPage />
+              </div>
+            )}
+            {currentPage === 'voice' && (
+              <div className="voice-page-transition" key="voice">
+                <VoiceChatPage />
+              </div>
+            )}
+          </>
+        )}
+        {currentTab === 'channels' && (
+          <div className="channel-page-transition" key="channels">
+            <ChannelPage />
+          </div>
+        )}
+        {isPluginTab && (
+          <div className="plugin-page-transition" key={`plugin-${currentTab}`}>
+            <PluginPage pluginId={currentTab.slice(PLUGIN_PREFIX.length)} />
+          </div>
+        )}
         <ActivityPanel />
         <AutomationPanel />
         <BridgePanel />
         <FloatingCapabilitiesPanel />
       </MainContent>
 
-      {currentTab === 'chat' && <PreviewPanel />}
+      {currentTab === 'chat' && currentPage === 'chat' && <PreviewPanel />}
       <WorkspaceCompanionRail />
     </>
   );

@@ -4,6 +4,62 @@
    包含：毛玻璃、多层阴影、边框发光、暗色主题覆盖
    ======================================== */
 
+/* ============================================================
+   毛玻璃公共基类 — Apple Liquid Glass Material System
+   提取 ::before 边框高光代码，消除重复
+   ============================================================ */
+
+.hana-glass-panel {
+    position: relative;
+    background: var(--glass-bg, rgba(255, 255, 255, 0.88));
+    border: 1px solid transparent;
+    box-shadow: var(--shadow-md, 0 4px 8px rgba(0, 0, 0, 0.08));
+    overflow: hidden;
+}
+
+@supports (backdrop-filter: blur(12px)) {
+    .hana-glass-panel {
+        background: var(--glass-bg, rgba(255, 255, 255, 0.88));
+        backdrop-filter: blur(var(--glass-blur-subtle, 10px)) saturate(var(--glass-saturate, 180%));
+        -webkit-backdrop-filter: blur(var(--glass-blur-subtle, 10px)) saturate(var(--glass-saturate, 180%));
+    }
+}
+
+/* 边框高光（mask-composite 技巧） */
+.hana-glass-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.30) 0%,
+        rgba(255, 255, 255, 0.10) 50%,
+        rgba(255, 255, 255, 0.05) 100%
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+}
+
+/* 暗色主题覆盖 */
+html[data-theme="midnight"] .hana-glass-panel,
+html[data-theme="midnight-contrast"] .hana-glass-panel {
+    background: var(--glass-bg-dark, rgba(30, 30, 30, 0.82));
+}
+
+html[data-theme="midnight"] .hana-glass-panel::before,
+html[data-theme="midnight-contrast"] .hana-glass-panel::before {
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.15) 0%,
+        rgba(255, 255, 255, 0.06) 50%,
+        rgba(255, 255, 255, 0.02) 100%
+    );
+}
+
 /* ── 浮动卡片 (float-card) ── */
 .float-card {
     background: rgba(255, 255, 255, 0.85);

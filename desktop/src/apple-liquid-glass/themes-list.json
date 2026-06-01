@@ -1,0 +1,74 @@
+[
+  {
+    "name": "default",
+    "accent": "#537D96",
+    "accentRgb": [
+      83,
+      125,
+      150
+    ]
+  },
+  {
+    "name": "midnight",
+    "accent": "#7BAFD4",
+    "accentRgb": [
+      123,
+      175,
+      212
+    ]
+  },
+  {
+    "name": "midnight-contrast",
+    "accent": "#9BC3E6",
+    "accentRgb": [
+      155,
+      195,
+      230
+    ]
+  },
+  {
+    "name": "ocean-blue",
+    "accent": "#3b82f6",
+    "accentRgb": [
+      59,
+      130,
+      246
+    ]
+  },
+  {
+    "name": "sakura-pink",
+    "accent": "#ec4899",
+    "accentRgb": [
+      236,
+      72,
+      153
+    ]
+  },
+  {
+    "name": "lavender",
+    "accent": "#a855f7",
+    "accentRgb": [
+      168,
+      85,
+      247
+    ]
+  },
+  {
+    "name": "mint-green",
+    "accent": "#10b981",
+    "accentRgb": [
+      16,
+      185,
+      129
+    ]
+  },
+  {
+    "name": "marshmallow-pink",
+    "accent": "#f4a4b4",
+    "accentRgb": [
+      244,
+      164,
+      180
+    ]
+  }
+]

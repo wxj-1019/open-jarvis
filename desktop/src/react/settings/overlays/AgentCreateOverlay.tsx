@@ -80,7 +80,7 @@ export function AgentCreateOverlay() {
       setCardPlan(data.plan);
       setImportMemory(false);
     } catch (err: any) {
-      showToast('角色卡读取失败: ' + err.message, 'error');
+      showToast(t('agentCreate.cardReadFailed', { error: err.message }), 'error');
     } finally {
       setPlanning(false);
       setDragActive(false);
@@ -104,7 +104,7 @@ export function AgentCreateOverlay() {
       close();
       showToast(t('settings.agent.created', { name: data.agent.name }), 'success');
     } catch (err: any) {
-      showToast('角色卡导入失败: ' + err.message, 'error');
+      showToast(t('agentCreate.cardImportFailed', { error: err.message }), 'error');
     } finally {
       setCreating(false);
     }

@@ -273,7 +273,7 @@ const SessionItem = memo(function SessionItem({ session: s, isActive, isStreamin
     if (dirName) parts.push(dirName);
   }
   if (s.modified) parts.push(formatSessionDate(s.modified));
-  const rcLabel = s.rcAttachment ? `${formatRcPlatform(s.rcAttachment.platform)} 接管中` : null;
+  const rcLabel = s.rcAttachment ? (window.t ?? ((p: string) => p))('session.takingOver', { platform: formatRcPlatform(s.rcAttachment.platform) }) : null;
   const browserUrl = browserState?.url || null;
   const browserTitle = [
     browserUrl,

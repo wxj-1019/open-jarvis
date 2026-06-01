@@ -111,6 +111,10 @@ export class Scheduler {
   }
 
   async stop() {
+    if (this._jianTimers) {
+      for (const timer of this._jianTimers) clearTimeout(timer);
+      this._jianTimers.clear();
+    }
     this._stopBrowserContextAdapter();
     this._stopPatternLearning();
     this._stopEventCaptureEngine();
@@ -441,16 +445,19 @@ export class Scheduler {
 
     // 防抖：同一 agent 2s 内只触发一次
     if (!this._pendingJianAgents) this._pendingJianAgents = new Set();
+    if (!this._jianTimers) this._jianTimers = new Set();
     if (this._pendingJianAgents.has(agentId)) return;
     this._pendingJianAgents.add(agentId);
 
-    setTimeout(() => {
+    const timer = setTimeout(() => {
+      this._jianTimers.delete(timer);
       this._pendingJianAgents.delete(agentId);
       const hb = this._heartbeats.get(agentId);
       if (hb && hb.triggerJianBeat) {
         hb.triggerJianBeat(event.path);
       }
     }, 2000);
+    this._jianTimers.add(timer);
   }
 
   /**
@@ -664,6 +671,10 @@ export class Scheduler {
     // persist 参数需要是字符串路径（目录），传 falsy 则使用 .ephemeral 默认目录
     engine.executeIsolated(prompt, {
       cwd: cwd || undefined,
+    }).then((result) => {
+      if (result?.error) {
+        log.warn(`[proactive] 动作执行返回错误: ${result.error}`);
+      }
     }).catch((err) => {
       log.warn(`[proactive] 动作执行失败: ${err.message}`);
     });
@@ -733,6 +744,7 @@ export class Scheduler {
           log.warn(`Pattern analysis failed: ${err.message}`);
         });
       }, 3600000);
+      patternLearningTimer.unref?.();
 
       // 所有初始化成功后才赋值到实例
       this._windowEventsStore = windowEventsStore;

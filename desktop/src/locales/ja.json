@@ -1,7 +1,7 @@
 {
   "channel": {
-    "tab": "チャンネル",
-    "chatTab": "チャット",
+    "tab": "グループチャット",
+    "chatTab": "アシスタント",
     "moreTabs": "その他のタブ",
     "empty": "チャンネルはまだありません ✿",
     "dmLabel": "メッセージ",
@@ -81,7 +81,8 @@
     "bridge": "ソーシャル連携",
     "toggle": "サイドバー",
     "bridgeShort": "連携",
-    "pinned": "ピン留め"
+    "pinned": "ピン留め",
+    "capabilities": "機能"
   },
   "titlebar": {
     "currentChatTitle": "現在のチャットタイトル"
@@ -2594,6 +2595,157 @@
   "preview.openInNewWindow": "新しいウィンドウで表示",
   "preview.openInNewWindowUnsupported": "このファイル形式は対応していません",
   "preview.markdownEditorStatus": "選択 {selected} 文字 · 合計 {total} 文字",
+  "settingsTabs": {
+    "agent": "アシスタント",
+    "me": "自分",
+    "interface": "インターフェース",
+    "work": "ワークスペース",
+    "computer": "コンピュータ使用",
+    "skills": "スキル",
+    "bridge": "ソーシャル",
+    "providers": "プロバイダー",
+    "media": "メディア",
+    "voice": "音声",
+    "sharing": "共有",
+    "access": "アクセスとデバイス",
+    "plugins": "プラグイン",
+    "pluginMarketplace": "プラグインストア",
+    "security": "セキュリティ",
+    "about": "バージョン情報",
+    "backup": "バックアップと復元"
+  },
+  "voiceOverlay": {
+    "idle": "タップして開始",
+    "listening": "聞いています...",
+    "processing": "考え中...",
+    "speaking": "回答中...",
+    "paused": "一時停止",
+    "error": "エラー",
+    "aiReply": "AI の回答",
+    "youSaid": "あなたの発言",
+    "resume": "再開",
+    "pause": "一時停止",
+    "stop": "会話を終了",
+    "closeVoice": "音声会話を閉じる",
+    "resumeConversation": "会話を再開",
+    "pauseConversation": "会話を一時停止",
+    "stopConversation": "会話を終了"
+  },
+  "voiceButton": {
+    "idle": "開始",
+    "listening": "聞いています...",
+    "processing": "考え中...",
+    "speaking": "話しています...",
+    "paused": "一時停止",
+    "error": "エラー",
+    "resumeConversation": "会話を再開",
+    "pauseConversation": "会話を一時停止"
+  },
+  "voiceInput": {
+    "notAvailable": "音声入力は利用できません",
+    "recording": "録音中... 離すと送信",
+    "recognizing": "認識中...",
+    "error": "音声認識エラー",
+    "holdToTalk": "長押しして話す"
+  },
+  "voiceStatus": {
+    "listening": "聞いています...",
+    "speaking": "話しています...",
+    "thinking": "考え中...",
+    "idle": "準備完了"
+  },
+  "capabilities": {
+    "title": "機能パネル",
+    "close": "閉じる",
+    "skills": "スキル",
+    "loading": "読み込み中...",
+    "noSkills": "スキルなし",
+    "noSkillsHint": "ワークスペースでスキルフォルダを追加",
+    "viewSkill": "スキルを表示",
+    "connectors": "コネクタ",
+    "noConnectors": "アクティブなコネクタなし",
+    "noConnectorsHint": "設定でMCPコネクタを構成",
+    "tools": "ツール",
+    "toolsCount": "{{count}}個のツール",
+    "running": "実行中",
+    "stopped": "停止"
+  },
+  "toolCard": {
+    "params": "パラメータ",
+    "result": "結果",
+    "expandFull": "全文表示",
+    "done": "完了"
+  },
+  "session": {
+    "takingOver": "{{platform}} 引き継ぎ中",
+    "feishu": "Feishu",
+    "wechat": "WeChat"
+  },
+  "agentCreate": {
+    "cardReadFailed": "キャラクターカードの読み取りに失敗: {{error}}",
+    "cardImportFailed": "キャラクターカードのインポートに失敗: {{error}}",
+    "readingCard": "キャラクターカードを読み取り中",
+    "dropOrClick": "キャラクターカードをドラッグまたはクリックして開く"
+  },
+  "agentTab": {
+    "exportedTo": "{{path}} にエクスポート",
+    "generatingPreview": "キャラクターカードのプレビューを生成中"
+  },
+  "agentCardStack": {
+    "generatingPreview": "プレビュー生成中",
+    "exportAgent": "アシスタントをエクスポート"
+  },
+  "skillBundle": {
+    "newBundle": "新しい Bundle",
+    "newSkillBundle": "新しい Skill Bundle",
+    "collapse": "Bundle を折りたたむ",
+    "expand": "Bundle を展開",
+    "enableBundle": "Bundle を有効化",
+    "disableBundle": "Bundle を無効化",
+    "enableAll": "Bundle 全体を有効化",
+    "disableAll": "Bundle 全体を無効化",
+    "enable": "{{name}} を有効化",
+    "disable": "{{name}} を無効化",
+    "rename": "{{name}} の名前変更",
+    "renameBundle": "Bundle の名前変更",
+    "renameName": "{{name}} の名前変更",
+    "export": "{{name}} をエクスポート",
+    "exportBundle": "Skill Bundle をエクスポート",
+    "exportName": "{{name}} をエクスポート",
+    "dissolve": "{{name}} を解散",
+    "dissolveBundle": "Bundle を解散",
+    "dissolveName": "{{name}} を解散",
+    "emptyBundle": "空の Bundle",
+    "skillNotFound": "この Skill はもう存在しません",
+    "missingSkill": "この Skill はもう存在しません",
+    "removeFromBundle": "Bundle から削除",
+    "removeSkill": "Bundle から {{name}} を削除",
+    "removeSkillFromBundle": "Bundle から {{name}} を削除",
+    "noLooseSkills": "個別 Skill なし"
+  },
+  "characterCard": {
+    "exportMemory": "メモリをエクスポート",
+    "importMemory": "メモリをインポート",
+    "noExportableMemory": "エクスポート可能なメモリなし",
+    "noImportableMemory": "インポート可能なメモリなし",
+    "exporting": "エクスポート中",
+    "importing": "インポート中",
+    "confirm": "確認",
+    "noDescription": "このキャラクターカードには Description がありません。",
+    "noIshiki": "Ishiki が提供されていません",
+    "noMemory": "メモリなし",
+    "importantFacts": "重要な事実",
+    "today": "今日",
+    "earlierThisWeek": "今週の前半",
+    "longTerm": "長期",
+    "noIdentity": "Identity が提供されていません",
+    "memoryCount": "{{count}} 件のメモリ項目",
+    "none": "なし",
+    "noSkills": "Skill は含まれていません",
+    "viewDetails": "キャラクターカードの詳細を表示",
+    "cancel": "キャンセル"
+  },
+  "settingsLoading": "読み込み中...",
   "emojiStyle": {
     "title": "ツールアイコンスタイル",
     "description": "ツール呼び出し時に表示される絵文字スタイルを選択",

@@ -8,6 +8,8 @@ import { PhosphorIcon } from '../ui/PhosphorIcon';
 import { Lightning, Plugs, PlugsConnected, CaretDown, CaretRight } from '@phosphor-icons/react';
 import styles from './CapabilitiesPanel.module.css';
 
+declare function t(key: string, vars?: Record<string, string | number>): string;
+
 const EMPTY_MCP_STATE: McpState = { enabled: false, connectors: [], agentConfig: { connectors: {} } };
 
 export function CapabilitiesPanel() {
@@ -43,8 +45,8 @@ export function CapabilitiesPanel() {
   return (
     <div className={styles.capabilitiesPanel}>
       <div className={styles.panelHeader}>
-        <span>Capabilities</span>
-        <button className={styles.closeBtn} onClick={close} title="Close">&#x2715;</button>
+        <span>{t('capabilities.title')}</span>
+        <button className={styles.closeBtn} onClick={close} title={t('capabilities.close')}>&#x2715;</button>
       </div>
       <div className={styles.panelBody}>
         {/* Skills section */}
@@ -52,11 +54,11 @@ export function CapabilitiesPanel() {
           <div className={styles.sectionTitle} onClick={() => toggleSection('skills')}>
             <PhosphorIcon icon={sections.skills ? CaretDown : CaretRight} size={12} />
             <PhosphorIcon icon={Lightning} size={14} />
-            <span>Skills &middot; {skills.length}</span>
+            <span>{t('capabilities.skills')} &middot; {skills.length}</span>
           </div>
           {sections.skills && (
             <div className={styles.sectionList}>
-              {skills.length === 0 && <div className={styles.emptyRow}>No skills loaded</div>}
+              {skills.length === 0 && <div className={styles.emptyRow}>{t('capabilities.noSkills')}</div>}
               {skills.map(skill => (
                 <div key={skill.name} className={styles.skillRow} title={skill.description}
                      onClick={() => window.platform?.openSkillViewer?.({ name: skill.name, baseDir: skill.baseDir, filePath: skill.filePath, installed: false })}>
@@ -77,17 +79,17 @@ export function CapabilitiesPanel() {
           <div className={styles.sectionTitle} onClick={() => toggleSection('mcp')}>
             <PhosphorIcon icon={sections.mcp ? CaretDown : CaretRight} size={12} />
             <PhosphorIcon icon={PlugsConnected} size={14} />
-            <span>Connectors &middot; {activeConnectors.length}</span>
+            <span>{t('capabilities.connectors')} &middot; {activeConnectors.length}</span>
           </div>
           {sections.mcp && (
             <div className={styles.sectionList}>
-              {activeConnectors.length === 0 && <div className={styles.emptyRow}>No connectors active</div>}
+              {activeConnectors.length === 0 && <div className={styles.emptyRow}>{t('capabilities.noConnectors')}</div>}
               {activeConnectors.map(conn => (
                 <div key={conn.id} className={styles.connectorRow}>
                   <span className={`${styles.connectorDot} ${conn.status === 'running' ? styles.dotRunning : styles.dotStopped}`} />
                   <div className={styles.connectorRowInfo}>
                     <span className={styles.connectorRowName}>{conn.name}</span>
-                    <span className={styles.connectorRowTools}>{conn.tools?.length ?? conn.toolCount ?? 0} tools</span>
+                    <span className={styles.connectorRowTools}>{conn.tools?.length ?? conn.toolCount ?? 0} {t('capabilities.tools')}</span>
                   </div>
                 </div>
               ))}

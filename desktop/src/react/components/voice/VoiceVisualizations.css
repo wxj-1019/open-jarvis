@@ -1,0 +1,353 @@
+/**
+ * 语音模式可视化效果
+ * 包含波纹动画、音频波形、粒子效果等
+ */
+
+/* ========================================
+   波纹动画（Ripple Effect）
+   ======================================== */
+
+.voice-ripple-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 120px;
+}
+
+.voice-ripple {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: radial-gradient(
+    circle,
+    rgba(var(--accent-rgb), 0.3) 0%,
+    rgba(var(--accent-rgb), 0.1) 50%,
+    transparent 70%
+  );
+  animation: voice-ripple-pulse 2s ease-out infinite;
+}
+
+.voice-ripple:nth-child(2) {
+  animation-delay: 0.5s;
+}
+
+.voice-ripple:nth-child(3) {
+  animation-delay: 1s;
+}
+
+.voice-ripple:nth-child(4) {
+  animation-delay: 1.5s;
+}
+
+@keyframes voice-ripple-pulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+/* ========================================
+   音频波形可视化（Audio Waveform）
+   ======================================== */
+
+.voice-waveform {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 60px;
+}
+
+.voice-waveform-bar {
+  width: 4px;
+  height: 20px;
+  background: linear-gradient(
+    to top,
+    rgba(var(--accent-rgb), 0.6),
+    rgba(var(--accent-rgb), 1)
+  );
+  border-radius: 2px;
+  animation: voice-waveform-bounce 1.2s ease-in-out infinite;
+}
+
+.voice-waveform-bar:nth-child(1) { animation-delay: 0s; height: 20px; }
+.voice-waveform-bar:nth-child(2) { animation-delay: 0.1s; height: 35px; }
+.voice-waveform-bar:nth-child(3) { animation-delay: 0.2s; height: 50px; }
+.voice-waveform-bar:nth-child(4) { animation-delay: 0.3s; height: 40px; }
+.voice-waveform-bar:nth-child(5) { animation-delay: 0.4s; height: 55px; }
+.voice-waveform-bar:nth-child(6) { animation-delay: 0.3s; height: 45px; }
+.voice-waveform-bar:nth-child(7) { animation-delay: 0.2s; height: 60px; }
+.voice-waveform-bar:nth-child(8) { animation-delay: 0.1s; height: 40px; }
+.voice-waveform-bar:nth-child(9) { animation-delay: 0s; height: 25px; }
+
+@keyframes voice-waveform-bounce {
+  0%, 100% {
+    transform: scaleY(0.5);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+/* ========================================
+   粒子效果（Particle Effect）
+   ======================================== */
+
+.voice-particles {
+  position: relative;
+  width: 100px;
+  height: 100px;
+}
+
+.voice-particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: rgba(var(--accent-rgb), 0.8);
+  border-radius: var(--radius-full);
+  animation: voice-particle-float 3s ease-in-out infinite;
+}
+
+.voice-particle:nth-child(1) {
+  top: 20%;
+  left: 30%;
+  animation-delay: 0s;
+  animation-duration: 2.5s;
+}
+
+.voice-particle:nth-child(2) {
+  top: 40%;
+  left: 70%;
+  animation-delay: 0.5s;
+  animation-duration: 3s;
+}
+
+.voice-particle:nth-child(3) {
+  top: 60%;
+  left: 20%;
+  animation-delay: 1s;
+  animation-duration: 2.8s;
+}
+
+.voice-particle:nth-child(4) {
+  top: 30%;
+  left: 60%;
+  animation-delay: 1.5s;
+  animation-duration: 3.2s;
+}
+
+.voice-particle:nth-child(5) {
+  top: 70%;
+  left: 50%;
+  animation-delay: 0.8s;
+  animation-duration: 2.6s;
+}
+
+.voice-particle:nth-child(6) {
+  top: 50%;
+  left: 40%;
+  animation-delay: 1.2s;
+  animation-duration: 3.5s;
+}
+
+@keyframes voice-particle-float {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.8;
+  }
+  25% {
+    transform: translate(-10px, -15px) scale(1.2);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(10px, -25px) scale(0.8);
+    opacity: 0.6;
+  }
+  75% {
+    transform: translate(-5px, -10px) scale(1.1);
+    opacity: 0.9;
+  }
+}
+
+/* ========================================
+   脉冲光环（Pulsing Ring）
+   ======================================== */
+
+.voice-pulse-ring {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.voice-pulse-ring::before,
+.voice-pulse-ring::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-full);
+  border: 2px solid rgba(var(--accent-rgb), 0.4);
+  animation: voice-pulse-ring-expand 2s ease-out infinite;
+}
+
+.voice-pulse-ring::after {
+  animation-delay: 1s;
+}
+
+@keyframes voice-pulse-ring-expand {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* ========================================
+   声波圆圈（Sound Wave Circle）
+   ======================================== */
+
+.voice-sound-circle {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(
+    135deg,
+    rgba(var(--accent-rgb), 0.2),
+    rgba(var(--accent-rgb), 0.4)
+  );
+  animation: voice-sound-circle-pulse 2s ease-in-out infinite;
+}
+
+.voice-sound-circle::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: var(--radius-full);
+  background: conic-gradient(
+    from 0deg,
+    transparent,
+    rgba(var(--accent-rgb), 0.6),
+    transparent,
+    rgba(var(--accent-rgb), 0.4),
+    transparent
+  );
+  animation: voice-sound-circle-rotate 4s linear infinite;
+  filter: blur(4px);
+}
+
+@keyframes voice-sound-circle-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+@keyframes voice-sound-circle-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ========================================
+   语音状态指示器
+   ======================================== */
+
+.voice-status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur-subtle));
+  -webkit-backdrop-filter: blur(var(--glass-blur-subtle));
+  border-radius: var(--radius-full);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-marshmallow-sm);
+}
+
+.voice-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  animation: voice-status-pulse 1.5s ease-in-out infinite;
+}
+
+.voice-status-dot.listening {
+  background: #22c55e;
+}
+
+.voice-status-dot.speaking {
+  background: #3b82f6;
+}
+
+.voice-status-dot.thinking {
+  background: #f59e0b;
+}
+
+@keyframes voice-status-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+}
+
+/* ========================================
+   组合效果：语音对话主视觉
+   ======================================== */
+
+.voice-hero-visual {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 48px;
+}
+
+/* 尊重用户的动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .voice-ripple,
+  .voice-waveform-bar,
+  .voice-particle,
+  .voice-pulse-ring::before,
+  .voice-pulse-ring::after,
+  .voice-sound-circle,
+  .voice-sound-circle::before,
+  .voice-status-dot {
+    animation: none !important;
+  }
+  
+  .voice-waveform-bar {
+    opacity: 0.8;
+  }
+  
+  .voice-particle {
+    opacity: 0.6;
+  }
+}

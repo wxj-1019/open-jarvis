@@ -8,6 +8,9 @@
  */
 
 import { useState, useRef, useCallback, useEffect, memo } from 'react';
+
+declare function t(key: string, vars?: Record<string, string | number>): string;
+
 import { Microphone, MicrophoneSlash } from '@phosphor-icons/react';
 import { PhosphorIcon } from '../../ui/PhosphorIcon';
 import { AudioRecorder, type RecorderState } from '../../utils/audio-recorder';
@@ -336,11 +339,11 @@ export const VoiceButton = memo(function VoiceButton({
     <button
       className={`${styles['attach-btn']} ${styles['voice-btn']} ${isActive ? styles['voice-btn-active'] : ''} ${voiceState === 'listening' ? styles['voice-btn-listening'] : ''} ${voiceState === 'listening' && modeRef.current === 'recorder' ? styles['voice-btn-recording'] : ''}`}
       title={
-        voiceState === 'unavailable' ? '语音输入不可用（浏览器不支持录音）' :
-        voiceState === 'listening' ? '正在录音... 松开发送' :
-        voiceState === 'processing' ? '正在识别...' :
-        voiceState === 'error' ? '语音识别出错' :
-        '按住说话'
+        voiceState === 'unavailable' ? t('voiceInput.notAvailable') :
+        voiceState === 'listening' ? t('voiceInput.recording') :
+        voiceState === 'processing' ? t('voiceInput.recognizing') :
+        voiceState === 'error' ? t('voiceInput.error') :
+        t('voiceInput.holdToTalk')
       }
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}

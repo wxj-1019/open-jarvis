@@ -2485,7 +2485,7 @@ export class SessionCoordinator {
           // mkdir 自身失败（如目录已存在）不影响重试，吞掉即可。
           try { await fsp.mkdir(path.dirname(metaPath), { recursive: true }); } catch {}
         } else {
-          log.warn(`writeSessionMeta failed for ${sessKey}: ${err.message}`);
+          log.warn(`writeSessionMeta failed for ${sessKey} (path: ${metaPath}): ${err.message}`);
         }
       }
     }

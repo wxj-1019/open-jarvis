@@ -88,25 +88,28 @@ function connectionState(connection: ServerConnection | null) {
 }
 
 /** Tab 顶部大标题（对应左栏导航 label），所有 tab 都会显示 */
-const TAB_TITLES: Record<string, string> = {
-  agent: '助手',
-  me: '我',
-  interface: '界面',
-  work: '工作台',
-  computer: '使用电脑',
-  skills: '技能',
-  bridge: '社交平台',
-  providers: '供应商',
-  media: '多媒体',
-  voice: '语音',
-  sharing: '分享',
-  access: '访问与设备',
-  plugins: '插件',
-  'plugin-marketplace': '插件市场',
-  security: '安全',
-  about: '关于',
-  backup: '备份与恢复',
-};
+function getTabTitle(tab: string): string {
+  const map: Record<string, string> = {
+    agent: t('settingsTabs.agent'),
+    me: t('settingsTabs.me'),
+    interface: t('settingsTabs.interface'),
+    work: t('settingsTabs.work'),
+    computer: t('settingsTabs.computer'),
+    skills: t('settingsTabs.skills'),
+    bridge: t('settingsTabs.bridge'),
+    providers: t('settingsTabs.providers'),
+    media: t('settingsTabs.media'),
+    voice: t('settingsTabs.voice'),
+    sharing: t('settingsTabs.sharing'),
+    access: t('settingsTabs.access'),
+    plugins: t('settingsTabs.plugins'),
+    'plugin-marketplace': t('settingsTabs.pluginMarketplace'),
+    security: t('settingsTabs.security'),
+    about: t('settingsTabs.about'),
+    backup: t('settingsTabs.backup'),
+  };
+  return map[tab] || tab;
+}
 
 function normalizeNativeTabForPlatform(tab: string, platformName: string | null | undefined): string {
   return platformName === 'linux' && tab === 'computer' ? 'agent' : tab;
@@ -200,7 +203,7 @@ export function SettingsContent({
     || (dynamicTab ? getNativeSettingsTabComponent(dynamicTab.nativeComponent) : null)
     || AgentTab;
   const isModal = variant === 'modal';
-  const activeTabTitle = TAB_TITLES[effectiveActiveTab] || titleToLabel(dynamicTab?.title);
+  const activeTabTitle = getTabTitle(effectiveActiveTab) || titleToLabel(dynamicTab?.title);
   // 所有 tab 都使用全宽布局，不再限制特定 tab
   const isWideTab = true;
 
@@ -278,7 +281,7 @@ export function SettingsContent({
       {!ready && (
         <div className="settings-loading-mask" id="settingsLoadingMask">
           <div className={styles['settings-loading-text']}>
-            loading...
+            {t('settingsLoading')}
           </div>
         </div>
       )}

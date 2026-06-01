@@ -1,0 +1,336 @@
+/* ============================================================
+   主题画廊 - Theme Gallery
+   大尺寸预览卡片，每个主题展示模拟的 UI 截图
+   ============================================================ */
+
+.galleryWrapper {
+  padding: 8px 0;
+}
+
+.galleryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  transition: opacity 0.3s var(--ease-standard);
+}
+
+.galleryGrid.transitioning {
+  opacity: 0.6;
+}
+
+/* 画廊卡片 */
+.galleryCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: var(--radius-card, 20px);
+  background: var(--bg-card);
+  cursor: pointer;
+  overflow: hidden;
+  transition: all var(--duration-slow) var(--ease-spring-card);
+  box-shadow: var(--shadow-md);
+}
+
+.galleryCard:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: var(--shadow-xl);
+}
+
+.galleryCard.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb, 83 125 150), 0.2), var(--shadow-lg);
+}
+
+/* 预览容器 */
+.previewContainer {
+  width: 100%;
+  height: 180px;
+  overflow: hidden;
+  background: var(--bg);
+  position: relative;
+}
+
+/* 模拟 UI 框架 */
+.previewMockup {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  gap: 8px;
+}
+
+.previewHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  background: rgba(var(--accent-rgb, 83 125 150), 0.1);
+  border-radius: var(--radius-md, 10px);
+}
+
+.previewDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.6;
+}
+
+.previewDot:nth-child(1) { opacity: 0.8; }
+.previewDot:nth-child(2) { opacity: 0.5; }
+.previewDot:nth-child(3) { opacity: 0.3; }
+
+/* 预览内容区域 */
+.previewContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+/* 聊天气泡 */
+.previewBubble {
+  max-width: 75%;
+  padding: 8px 12px;
+  border-radius: 16px;
+  position: relative;
+}
+
+.previewBubble[data-side="left"] {
+  align-self: flex-start;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+}
+
+.previewBubble[data-side="right"] {
+  align-self: flex-end;
+  background: rgba(var(--accent-rgb, 83 125 150), 0.15);
+  border-bottom-right-radius: 4px;
+}
+
+.previewBubbleLine {
+  height: 4px;
+  background: var(--text);
+  opacity: 0.3;
+  border-radius: 2px;
+  margin-bottom: 4px;
+  width: 100%;
+}
+
+.previewBubbleLine:last-child {
+  margin-bottom: 0;
+}
+
+.previewBubbleLineShort {
+  height: 4px;
+  background: var(--text);
+  opacity: 0.3;
+  border-radius: 2px;
+  width: 60%;
+}
+
+/* 预览输入框 */
+.previewInput {
+  align-self: flex-end;
+  width: 80%;
+  padding: 8px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-input, 12px);
+  margin-top: auto;
+}
+
+.previewInputLine {
+  height: 4px;
+  background: var(--text-muted);
+  opacity: 0.2;
+  border-radius: 2px;
+  width: 40%;
+}
+
+/* 卡片底部信息 */
+.cardFooter {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card);
+  position: relative;
+}
+
+.themeName {
+  font-size: var(--font-size-sm, 0.75rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text);
+}
+
+.themeMode {
+  font-size: var(--font-size-xs, 0.6875rem);
+  color: var(--text-muted);
+  opacity: 0.85;
+}
+
+/* 激活指示器 */
+.activeIndicator {
+  position: absolute;
+  right: 16px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: activePulse 2s ease-in-out infinite;
+}
+
+@keyframes activePulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.2);
+  }
+}
+
+/* 各主题配色 */
+.galleryCard[data-theme="warm-paper"] {
+  --bg: #F8F5ED;
+  --bg-card: #FFFFFF;
+  --accent: #537D96;
+  --accent-rgb: 83, 125, 150;
+  --text: #3B3D3F;
+  --text-muted: #537D96;
+  --border: rgba(83, 125, 150, 0.2);
+}
+
+.galleryCard[data-theme="midnight"] {
+  --bg: #3B4A54;
+  --bg-card: #445560;
+  --accent: #C99AAF;
+  --accent-rgb: 201, 154, 175;
+  --text: #E1EAF0;
+  --text-muted: #A3B5C0;
+  --border: rgba(170, 121, 141, 0.16);
+}
+
+.galleryCard[data-theme="auto"] {
+  --bg: linear-gradient(90deg, #F8F5ED 50%, #3B4A54 50%);
+  --bg-card: #FFFFFF;
+  --accent: #537D96;
+  --accent-rgb: 83, 125, 150;
+  --text: #3B3D3F;
+  --text-muted: #537D96;
+  --border: rgba(83, 125, 150, 0.2);
+}
+
+.galleryCard[data-theme="auto"] .previewMockup {
+  background: linear-gradient(90deg, #F8F5ED 50%, #3B4A54 50%);
+}
+
+.galleryCard[data-theme="high-contrast"] {
+  --bg: #FAF9F6;
+  --bg-card: #FFFFFF;
+  --accent: #2C3E50;
+  --accent-rgb: 44, 62, 80;
+  --text: #1A1A1A;
+  --text-muted: #4A4A4A;
+  --border: rgba(0, 0, 0, 0.15);
+}
+
+.galleryCard[data-theme="grass-aroma"] {
+  --bg: #F5F8F3;
+  --bg-card: #FFFFFF;
+  --accent: #6B8E5A;
+  --accent-rgb: 107, 142, 90;
+  --text: #3B3D3F;
+  --text-muted: #6B8E5A;
+  --border: rgba(107, 142, 90, 0.2);
+}
+
+.galleryCard[data-theme="contemplation"] {
+  --bg: #F3F5F7;
+  --bg-card: #FFFFFF;
+  --accent: #7B8FA1;
+  --accent-rgb: 123, 143, 161;
+  --text: #3B3D3F;
+  --text-muted: #7B8FA1;
+  --border: rgba(123, 143, 161, 0.2);
+}
+
+.galleryCard[data-theme="absolutely"] {
+  --bg: #F4F3EE;
+  --bg-card: #FFFFFF;
+  --accent: #C17767;
+  --accent-rgb: 193, 119, 103;
+  --text: #3B3D3F;
+  --text-muted: #C17767;
+  --border: rgba(193, 119, 103, 0.2);
+}
+
+.galleryCard[data-theme="delve"] {
+  --bg: #FFFFFF;
+  --bg-card: #F8F8F8;
+  --accent: #10A37F;
+  --accent-rgb: 16, 163, 127;
+  --text: #1A1A1A;
+  --text-muted: #6E6E6E;
+  --border: rgba(0, 0, 0, 0.1);
+}
+
+.galleryCard[data-theme="deep-think"] {
+  --bg: #FCFCFD;
+  --bg-card: #FFFFFF;
+  --accent: #6366F1;
+  --accent-rgb: 99, 102, 241;
+  --text: #1A1A1A;
+  --text-muted: #6366F1;
+  --border: rgba(99, 102, 241, 0.2);
+}
+
+.galleryCard[data-theme="new-warm-paper"] {
+  --bg: #F5EFE4;
+  --bg-card: #FFFFFF;
+  --accent: #537D96;
+  --accent-rgb: 83, 125, 150;
+  --text: #3B3D3F;
+  --text-muted: #537D96;
+  --border: rgba(83, 125, 150, 0.2);
+}
+
+.galleryCard[data-theme="midnight-contrast"] {
+  --bg: #26343D;
+  --bg-card: #2E3E47;
+  --accent: #D8AFC0;
+  --accent-rgb: 216, 175, 192;
+  --text: #E1EAF0;
+  --text-muted: #B7C5CE;
+  --border: rgba(170, 121, 141, 0.2);
+}
+
+/* 响应式适配 */
+@media (max-width: 768px) {
+  .galleryGrid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+  }
+  
+  .previewContainer {
+    height: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .galleryGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .previewContainer {
+    height: 140px;
+  }
+}

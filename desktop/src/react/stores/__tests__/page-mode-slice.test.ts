@@ -3,8 +3,8 @@ import { create } from 'zustand';
 import { createPageModeSlice, type PageModeSlice } from '../page-mode-slice';
 
 const createStore = () =>
-  create<PageModeSlice>()((...a) => ({
-    ...createPageModeSlice(...a),
+  create<PageModeSlice>()((set, get) => ({
+    ...createPageModeSlice(set, get),
   }));
 
 describe('page-mode-slice', () => {

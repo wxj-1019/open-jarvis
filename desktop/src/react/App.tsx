@@ -142,6 +142,7 @@ function App() {
         onLeftMouseEnter={(e) => showFloat('left', e.currentTarget)}
         onRightMouseEnter={(e) => showFloat('right', e.currentTarget)}
         onToggleMouseLeave={scheduleFloatHide}
+        currentTab={currentTab}
       />
 
       {/* ── App body ── */}

@@ -194,6 +194,7 @@ describe("WhisperSTTAdapter", () => {
       ok: false,
       status: 401,
       text: () => Promise.resolve("Unauthorized"),
+      json: () => Promise.resolve({}),
     });
 
     await expect(adapter.transcribe(createMockBlob())).rejects.toThrow(
@@ -222,13 +223,25 @@ describe("WhisperSTTAdapter", () => {
   it("请求超时时抛出超时错误", async () => {
     adapter = new WhisperSTTAdapter({ timeoutMs: 1000 });
 
-    mockFetch.mockImplementation(
-      () => new Promise((resolve) => setTimeout(resolve, 5000))
-    );
+    // mock fetch 模拟一个永远不会完成的请求
+    // 使用 AbortSignal 来触发超时
+    mockFetch.mockImplementation(async (url, options) => {
+      // 等待直到 signal 被 abort
+      if (options?.signal) {
+        return new Promise((_, reject) => {
+          options.signal.addEventListener('abort', () => {
+            const reason = options.signal.reason || new Error('Transcription timeout');
+            reject(reason);
+          });
+        });
+      }
+      return new Promise(() => {});
+    });
 
     const resultPromise = adapter.transcribe(createMockBlob());
 
-    await vi.advanceTimersByTimeAsync(1000);
+    // 推进时间触发超时
+    await vi.advanceTimersByTimeAsync(1100);
     await vi.runAllTimersAsync();
 
     await expect(resultPromise).rejects.toThrow("Transcription timeout (30s exceeded)");
@@ -243,6 +256,7 @@ describe("WhisperSTTAdapter", () => {
       ok: false,
       status: 401,
       text: () => Promise.resolve("Unauthorized"),
+      json: () => Promise.resolve({}),
     });
 
     await expect(adapter.transcribe(createMockBlob())).rejects.toThrow(
@@ -253,13 +267,28 @@ describe("WhisperSTTAdapter", () => {
   it("429 错误返回限流消息", async () => {
     adapter = new WhisperSTTAdapter();
 
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      status: 429,
-      text: () => Promise.resolve("Rate limit exceeded"),
-    });
+    // 429 是可重试错误，会重试 2 次，需要 mock 两次
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        text: () => Promise.resolve("Rate limit exceeded"),
+        json: () => Promise.resolve({}),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        text: () => Promise.resolve("Rate limit exceeded"),
+        json: () => Promise.resolve({}),
+      });
 
-    await expect(adapter.transcribe(createMockBlob())).rejects.toThrow(
+    const resultPromise = adapter.transcribe(createMockBlob());
+    
+    // 推进时间以完成重试延迟
+    await vi.advanceTimersByTimeAsync(3000);
+    await vi.runAllTimersAsync();
+
+    await expect(resultPromise).rejects.toThrow(
       "Rate limit exceeded. Please try again later."
     );
   });
@@ -267,13 +296,28 @@ describe("WhisperSTTAdapter", () => {
   it("5xx 错误返回服务器错误消息", async () => {
     adapter = new WhisperSTTAdapter();
 
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      status: 500,
-      text: () => Promise.resolve("Internal server error"),
-    });
+    // 5xx 是可重试错误，会重试 2 次，需要 mock 两次
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        text: () => Promise.resolve("Internal server error"),
+        json: () => Promise.resolve({}),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        text: () => Promise.resolve("Internal server error"),
+        json: () => Promise.resolve({}),
+      });
 
-    await expect(adapter.transcribe(createMockBlob())).rejects.toThrow(
+    const resultPromise = adapter.transcribe(createMockBlob());
+    
+    // 推进时间以完成重试延迟
+    await vi.advanceTimersByTimeAsync(5000);
+    await vi.runAllTimersAsync();
+
+    await expect(resultPromise).rejects.toThrow(
       "Server error (500)"
     );
   });
@@ -283,9 +327,18 @@ describe("WhisperSTTAdapter", () => {
   it("cancel() 中止当前请求", async () => {
     adapter = new WhisperSTTAdapter();
 
-    mockFetch.mockImplementation(
-      () => new Promise((resolve) => setTimeout(resolve, 5000))
-    );
+    // mock fetch 模拟一个永远不会完成的请求
+    mockFetch.mockImplementation(async (url, options) => {
+      if (options?.signal) {
+        return new Promise((_, reject) => {
+          options.signal.addEventListener('abort', () => {
+            const reason = options.signal.reason || new Error('Transcription canceled');
+            reject(reason);
+          });
+        });
+      }
+      return new Promise(() => {});
+    });
 
     const resultPromise = adapter.transcribe(createMockBlob());
 
@@ -294,7 +347,7 @@ describe("WhisperSTTAdapter", () => {
 
     await vi.runAllTimersAsync();
 
-    await expect(resultPromise).rejects.toThrow("Transcription timeout (30s exceeded)");
+    await expect(resultPromise).rejects.toThrow("Transcription canceled");
     expect(adapter.getState()).toBe(WHISPER_STT_STATE.IDLE);
   });
 

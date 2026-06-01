@@ -78,10 +78,15 @@ export function useVoiceVAD(options: UseVoiceVADOptions = {}) {
       return;
     }
 
+    // enabled 变为 true 时自动启动 VAD
+    start().catch((err) => {
+      console.error('[useVoiceVAD] auto-start failed:', err);
+    });
+
     return () => {
       stop();
     };
-  }, [enabled, stop]);
+  }, [enabled, start, stop]);
 
   return { start, stop };
 }

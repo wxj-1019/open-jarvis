@@ -29,6 +29,7 @@ import tabStyles from '../Settings.module.css';
 import styles from './InterfaceTab.module.css';
 import registry from '../../../shared/theme-registry';
 import { EMOJI_STYLE_PRESETS, EMOJI_STYLE_IDS, getSavedEmojiStyle, saveEmojiStyle } from '../../../shared/emoji-styles';
+import { ThemeGallery } from './ThemeGallery';
 
 const platform = window.platform;
 const i18n = window.i18n;
@@ -339,28 +340,16 @@ export function InterfaceTab() {
 
         <SettingsSection title={t('settings.appearance.theme')} variant="flush">
           <SettingsSection.Note>{t('settings.interface.themeSectionNote')}</SettingsSection.Note>
-          <div className={styles.themeShell}>
-            <div className={tabStyles['theme-options']}>
-              {VALID_THEMES.map(theme => (
-                <button
-                  key={theme}
-                  type="button"
-                  className={`${tabStyles['theme-card']}${currentTheme === theme ? ` ${tabStyles.active}` : ''}`}
-                  data-theme={theme}
-                  aria-pressed={currentTheme === theme}
-                  onClick={() => {
-                    applyThemeSafely(theme);
-                    platform?.settingsChanged?.('theme-changed', { theme });
-                    syncAppearancePrefs({ theme });
-                    refreshAppearancePrefs();
-                  }}
-                >
-                  <div className={tabStyles['theme-card-name']}>{t(THEME_NAME_KEYS[theme])}</div>
-                  <div className={tabStyles['theme-card-mode']}>{t(THEME_MODE_KEYS[theme])}</div>
-                </button>
-              ))}
-            </div>
-          </div>
+          <ThemeGallery
+            currentTheme={currentTheme}
+            onThemeChange={(theme) => {
+              applyThemeSafely(theme);
+              platform?.settingsChanged?.('theme-changed', { theme });
+              syncAppearancePrefs({ theme });
+              refreshAppearancePrefs();
+            }}
+            t={t}
+          />
         </SettingsSection>
 
         <SettingsSection title={t('settings.appearance.title')}>

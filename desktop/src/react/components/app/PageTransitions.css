@@ -1,0 +1,64 @@
+/**
+ * 页面过渡动画系统
+ * 使用 CSS animation 实现页面切换的淡入淡出效果
+ */
+
+/* 页面淡入动画 */
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 页面淡出动画（用于卸载） */
+@keyframes page-fade-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+/* 页面容器基础样式 */
+.page-transition {
+  animation: page-fade-in var(--duration-slow) var(--ease-out) backwards;
+}
+
+/* 聊天页面 */
+.chat-page-transition {
+  animation: page-fade-in var(--duration-slow) var(--ease-out) backwards;
+}
+
+/* 语音页面 */
+.voice-page-transition {
+  animation: page-fade-in var(--duration-slow) var(--ease-spring-settle) backwards;
+}
+
+/* 频道页面 */
+.channel-page-transition {
+  animation: page-fade-in var(--duration-slow) var(--ease-out) backwards;
+}
+
+/* 插件页面 */
+.plugin-page-transition {
+  animation: page-fade-in var(--duration-slow) var(--ease-out) backwards;
+}
+
+/* 尊重用户的动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .page-transition,
+  .chat-page-transition,
+  .voice-page-transition,
+  .channel-page-transition,
+  .plugin-page-transition {
+    animation-duration: 0.01ms !important;
+  }
+}

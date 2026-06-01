@@ -910,17 +910,31 @@ export function createAgentsRoute(engine) {
   route.delete("/agents/:id/backups/:filename", async (c) => {
     const id = c.req.param("id");
     const filename = c.req.param("filename");
-    
+
     if (!validateId(id)) {
-      return c.json({ error: "无效的助手ID" }, 400);
+      return c.json({ error: "Invalid agent ID" }, 400);
+    }
+
+    if (!filename || filename.includes("..") || filename.includes("/") || filename.includes("\\") || filename.includes("\0")) {
+      return c.json({ error: "Invalid filename" }, 400);
+    }
+
+    const expectedPrefix = `agent-backup-${id}-`;
+    if (!filename.startsWith(expectedPrefix) || !filename.endsWith(".zip")) {
+      return c.json({ error: "Filename does not match expected pattern" }, 400);
     }
 
     try {
       const backupDir = path.join(engine.agentsDir, ".backups");
-      const fullPath = path.join(backupDir, filename);
-      
+      const fullPath = path.resolve(path.join(backupDir, filename));
+      const resolvedBackupDir = path.resolve(backupDir);
+
+      if (!fullPath.startsWith(resolvedBackupDir + path.sep)) {
+        return c.json({ error: "Invalid filename" }, 400);
+      }
+
       if (!fsSync.existsSync(fullPath)) {
-        return c.json({ error: "备份文件不存在" }, 404);
+        return c.json({ error: "Backup file not found" }, 404);
       }
 
       fsSync.unlinkSync(fullPath);

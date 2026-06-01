@@ -73,7 +73,7 @@ export const useStore = create<StoreState>()((set, _get, _api) => ({
   ...createComputerOverlaySlice(set),
   ...createScreenshotSlice(set),
   ...createGuiWhitelistSlice(set, _get, _api),
-  ...createPageModeSlice(set),
+  ...createPageModeSlice(set, _get),
 }));
 
 // Re-export slice types

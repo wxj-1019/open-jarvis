@@ -81,7 +81,8 @@
     "bridge": "Social Platforms",
     "toggle": "Sidebar",
     "bridgeShort": "Bridge",
-    "pinned": "Pinned"
+    "pinned": "Pinned",
+    "capabilities": "Capabilities"
   },
   "titlebar": {
     "currentChatTitle": "Current chat title"
@@ -2609,8 +2610,8 @@
     "goToSettings": "Go to Settings"
   },
   "pageMode": {
-    "chat": "Text Chat",
-    "voice": "Voice Chat",
+    "chat": "Text Mode",
+    "voice": "Voice Mode",
     "chatDesc": "Communicate with AI via text",
     "voiceDesc": "Communicate with AI via voice",
     "switching": "Switching...",
@@ -2618,6 +2619,157 @@
     "pausedDesc": "Switch back to voice mode to continue",
     "resume": "Resume conversation"
   },
+  "settingsTabs": {
+    "agent": "Assistant",
+    "me": "Me",
+    "interface": "Interface",
+    "work": "Workspace",
+    "computer": "Computer Use",
+    "skills": "Skills",
+    "bridge": "Social",
+    "providers": "Providers",
+    "media": "Media",
+    "voice": "Voice",
+    "sharing": "Sharing",
+    "access": "Access & Devices",
+    "plugins": "Plugins",
+    "pluginMarketplace": "Plugin Store",
+    "security": "Security",
+    "about": "About",
+    "backup": "Backup & Restore"
+  },
+  "voiceOverlay": {
+    "idle": "Tap to start",
+    "listening": "Listening...",
+    "processing": "Thinking...",
+    "speaking": "Speaking...",
+    "paused": "Paused",
+    "error": "Error",
+    "aiReply": "AI Reply",
+    "youSaid": "You said",
+    "resume": "Resume",
+    "pause": "Pause",
+    "stop": "Stop",
+    "closeVoice": "Close voice chat",
+    "resumeConversation": "Resume conversation",
+    "pauseConversation": "Pause conversation",
+    "stopConversation": "Stop conversation"
+  },
+  "voiceButton": {
+    "idle": "Start",
+    "listening": "Listening...",
+    "processing": "Thinking...",
+    "speaking": "Speaking...",
+    "paused": "Paused",
+    "error": "Error",
+    "resumeConversation": "Resume conversation",
+    "pauseConversation": "Pause conversation"
+  },
+  "voiceInput": {
+    "notAvailable": "Voice input unavailable (browser does not support recording)",
+    "recording": "Recording... release to send",
+    "recognizing": "Recognizing...",
+    "error": "Voice recognition error",
+    "holdToTalk": "Hold to talk"
+  },
+  "voiceStatus": {
+    "listening": "Listening...",
+    "speaking": "Speaking...",
+    "thinking": "Thinking...",
+    "idle": "Ready"
+  },
+  "capabilities": {
+    "title": "Capabilities",
+    "close": "Close",
+    "skills": "Skills",
+    "loading": "Loading...",
+    "noSkills": "No skills loaded",
+    "noSkillsHint": "Add skill folders in Workspace settings",
+    "viewSkill": "View skill",
+    "connectors": "Connectors",
+    "noConnectors": "No connectors active",
+    "noConnectorsHint": "Configure MCP connectors in Settings",
+    "tools": "tools",
+    "toolsCount": "{{count}} tools",
+    "running": "Running",
+    "stopped": "Stopped"
+  },
+  "skillBundle": {
+    "newBundle": "New Bundle",
+    "newSkillBundle": "New Skill Bundle",
+    "collapse": "Collapse Bundle",
+    "expand": "Expand Bundle",
+    "enableBundle": "Enable Bundle",
+    "disableBundle": "Disable Bundle",
+    "enableAll": "Enable entire Bundle",
+    "disableAll": "Disable entire Bundle",
+    "enable": "Enable {{name}}",
+    "disable": "Disable {{name}}",
+    "rename": "Rename {{name}}",
+    "renameBundle": "Rename Bundle",
+    "renameName": "Rename {{name}}",
+    "export": "Export {{name}}",
+    "exportBundle": "Export Skill Bundle",
+    "exportName": "Export {{name}}",
+    "dissolve": "Dissolve {{name}}",
+    "dissolveBundle": "Dissolve Bundle",
+    "dissolveName": "Dissolve {{name}}",
+    "emptyBundle": "Empty Bundle",
+    "skillNotFound": "This skill no longer exists",
+    "missingSkill": "This skill no longer exists",
+    "removeFromBundle": "Remove from Bundle",
+    "removeSkill": "Remove {{name}} from Bundle",
+    "removeSkillFromBundle": "Remove {{name}} from Bundle",
+    "noLooseSkills": "No loose skills"
+  },
+  "characterCard": {
+    "exportMemory": "Export Memory",
+    "importMemory": "Import Memory",
+    "noExportableMemory": "No memory to export",
+    "noImportableMemory": "No memory to import",
+    "exporting": "Exporting...",
+    "importing": "Importing...",
+    "confirm": "Confirm",
+    "noDescription": "No description provided.",
+    "noIshiki": "No Ishiki provided",
+    "noMemory": "No Memory",
+    "importantFacts": "Important Facts",
+    "today": "Today",
+    "earlierThisWeek": "Earlier This Week",
+    "longTerm": "Long Term",
+    "noIdentity": "No Identity provided",
+    "memoryCount": "{{count}} memory items, selectable...",
+    "none": "None",
+    "noSkills": "No Skills included",
+    "viewDetails": "View character card details",
+    "cancel": "Cancel"
+  },
+  "toolCard": {
+    "params": "Params",
+    "result": "Result",
+    "expandFull": "Expand",
+    "done": "Done"
+  },
+  "session": {
+    "takingOver": "{{platform}} taking over",
+    "feishu": "Feishu",
+    "wechat": "WeChat"
+  },
+  "agentCreate": {
+    "cardReadFailed": "Character card read failed: {{error}}",
+    "cardImportFailed": "Character card import failed: {{error}}",
+    "readingCard": "Reading character card",
+    "dropOrClick": "Drop character card or click to open"
+  },
+  "agentTab": {
+    "exportedTo": "Exported to {{path}}",
+    "generatingPreview": "Generating character card preview"
+  },
+  "agentCardStack": {
+    "generatingPreview": "Generating preview",
+    "exportAgent": "Export agent"
+  },
+  "settingsLoading": "Loading...",
   "emojiStyle": {
     "title": "Tool Icon Style",
     "description": "Choose the emoji style shown during tool calls",

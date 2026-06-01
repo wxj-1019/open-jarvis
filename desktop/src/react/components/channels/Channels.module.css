@@ -2,15 +2,15 @@
    Titlebar 标签组
    ======================================== */
 .tbTabs {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
+    position: relative;
+    left: auto;
+    transform: none;
     pointer-events: auto;
     -webkit-app-region: no-drag;
     display: flex;
     align-items: center;
     gap: 2px;
-    background: var(--overlay-light);
+    background: transparent;
     border-radius: var(--radius-md);
     padding: 2px;
 }
@@ -28,30 +28,47 @@
 }
 
 .tbTab {
-    position: relative;
-    z-index: 1;
-    padding: 4px 14px;
-    border: none;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    color: var(--text-muted);
-    font-family: var(--font-ui);
-    font-size: 0.78rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: color var(--duration-fast) var(--ease-out);
     display: flex;
     align-items: center;
     gap: 6px;
+    padding: 5px 12px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: var(--font-ui);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+    position: relative;
+    overflow: hidden;
     white-space: nowrap;
 }
 
 .tbTab:hover {
-    color: var(--text-light);
+    color: var(--text-primary);
+    background: rgba(var(--accent-rgb), 0.06);
+    transform: translateY(-1px);
+}
+
+.tbTab:active {
+    transform: scale(0.97) translateY(0);
+    transition-duration: var(--duration-instant);
 }
 
 .tbTabActive {
-    color: var(--text);
+    color: var(--text-primary);
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur-subtle));
+    -webkit-backdrop-filter: blur(var(--glass-blur-subtle));
+    box-shadow: var(--shadow-marshmallow-sm), inset 0 1px 0 var(--glass-highlight);
+    border: 1px solid var(--glass-border);
+}
+
+.tbTabActive:hover {
+    transform: none;
+    box-shadow: var(--shadow-sm), inset 0 1px 0 var(--glass-highlight);
 }
 
 .tbTabBadge {

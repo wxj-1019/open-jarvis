@@ -3,6 +3,8 @@ import { PhosphorIcon } from '../../ui/PhosphorIcon';
 import { CaretDown, CaretRight, CheckCircle, WarningCircle, Clock } from '@phosphor-icons/react';
 import styles from './ToolCallCard.module.css';
 
+declare function t(key: string, vars?: Record<string, string | number>): string;
+
 export interface ToolCallCardData {
   title: string;
   description?: string;
@@ -44,16 +46,16 @@ export function ToolCallCard({ data }: { data: ToolCallCardData }) {
           {data.description && <div className={styles.cardDesc}>{data.description}</div>}
           {data.params && Object.keys(data.params).length > 0 && (
             <div className={styles.cardSection}>
-              <div className={styles.cardSectionTitle}>Params</div>
+              <div className={styles.cardSectionTitle}>{t('toolCard.params')}</div>
               <pre className={styles.cardJson}>{JSON.stringify(data.params, null, 2)}</pre>
             </div>
           )}
           {data.error && (
             <div className={styles.cardSection}>
-              <div className={styles.cardSectionTitle}>Result</div>
+              <div className={styles.cardSectionTitle}>{t('toolCard.result')}</div>
               <div className={styles.cardResult}>{data.error.slice(0, 500)}</div>
               {data.error.length > 500 && (
-                <button className={styles.expandBtn} onClick={() => {}}>展开全文</button>
+                <button className={styles.expandBtn} onClick={() => {}}>{t('toolCard.expandFull')}</button>
               )}
             </div>
           )}
@@ -64,7 +66,7 @@ export function ToolCallCard({ data }: { data: ToolCallCardData }) {
               </span>
             )}
             <span className={styles.cardMeta}>
-              <PhosphorIcon icon={CheckCircle} size={12} className={styles.successIcon} /> Done
+              <PhosphorIcon icon={CheckCircle} size={12} className={styles.successIcon} /> {t('toolCard.done')}
             </span>
           </div>
         </div>
