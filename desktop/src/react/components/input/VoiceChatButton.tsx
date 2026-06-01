@@ -8,11 +8,10 @@
 import { useState, useEffect, useCallback, memo } from 'react';
 import { Microphone, MicrophoneSlash, Pause, Play, Spinner } from '@phosphor-icons/react';
 import { PhosphorIcon } from '../../ui/PhosphorIcon';
+import { formatDuration, type VoiceState } from '../../utils/voice-helpers';
 import styles from './InputArea.module.css';
 
-declare function t(key: string, vars?: Record<string, string | number>): string;
-
-type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking' | 'paused' | 'error';
+const t = (key: string, vars?: Record<string, string | number>): string => window.t?.(key, vars) ?? key;
 
 interface VoiceChatButtonProps {
   /** 状态变化时回调 */
@@ -72,47 +71,47 @@ export const VoiceChatButton = memo(function VoiceChatButton({
   const handleToggle = useCallback(async () => {
     if (disabled) return;
 
-    const hana = (window as any).hana;
+    const hana = window.hana;
     if (!hana) return;
 
     if (state === 'idle' || state === 'error') {
-      await hana.startVoiceConversation({});
+      await hana.startVoiceConversation?.({});
     } else if (state === 'paused') {
-      hana.resumeVoiceConversation();
+      hana.resumeVoiceConversation?.();
     } else {
-      await hana.stopVoiceConversation();
+      await hana.stopVoiceConversation?.();
     }
   }, [state, disabled]);
 
   const handlePauseResume = useCallback(() => {
     if (disabled) return;
 
-    const hana = (window as any).hana;
+    const hana = window.hana;
     if (!hana) return;
 
     if (state === 'paused') {
-      hana.resumeVoiceConversation();
+      hana.resumeVoiceConversation?.();
     } else if (state !== 'idle' && state !== 'error') {
-      hana.pauseVoiceConversation();
+      hana.pauseVoiceConversation?.();
     }
   }, [state, disabled]);
 
   useEffect(() => {
-    const hana = (window as any).hana;
+    const hana = window.hana;
     if (!hana?.onVoiceStateChange) return;
 
     // 初始化时尝试获取当前状态（如果 API 可用）
     if (hana.getVoiceState) {
       const currentState = hana.getVoiceState();
       if (currentState) {
-        setState(currentState);
-        onStateChange?.(currentState);
+        setState(currentState as VoiceState);
+        onStateChange?.(currentState as VoiceState);
       }
     }
 
-    const cleanup = hana.onVoiceStateChange((newState: VoiceState) => {
-      setState(newState);
-      onStateChange?.(newState);
+    const cleanup = hana.onVoiceStateChange((newState: string) => {
+      setState(newState as VoiceState);
+      onStateChange?.(newState as VoiceState);
     });
     return cleanup;
   }, [onStateChange]);
@@ -126,12 +125,6 @@ export const VoiceChatButton = memo(function VoiceChatButton({
   }, [state]);
 
   const config = getStateConfig()[state];
-
-  const formatDuration = (s: number) => {
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
-  };
 
   const renderIcon = () => {
     const iconSize = 16;

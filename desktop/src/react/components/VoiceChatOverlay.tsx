@@ -9,14 +9,13 @@
  * - 使用 CSS 动画提供视觉反馈
  */
 
-import { useState, useEffect, useCallback, memo, useRef } from 'react';
+import { useState, useEffect, useCallback, memo, useRef, useMemo } from 'react';
 import { X, Microphone, Lightbulb, SpeakerHigh, Pause, Play, Stop } from '@phosphor-icons/react';
 import { PhosphorIcon } from '../ui/PhosphorIcon';
+import { formatDuration, type VoiceState } from '../utils/voice-helpers';
 import styles from './VoiceChatOverlay.module.css';
 
-declare function t(key: string, vars?: Record<string, string | number>): string;
-
-type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking' | 'paused' | 'error';
+const t = (key: string, vars?: Record<string, string | number>): string => window.t?.(key, vars) ?? key;
 
 interface VoiceChatOverlayProps {
   /** 是否打开浮层 */
@@ -27,50 +26,32 @@ interface VoiceChatOverlayProps {
   onStateChange?: (state: VoiceState) => void;
 }
 
-function getStateConfig(): Record<VoiceState, {
-  emoji: string;
-  label: string;
-  color: string;
-  icon: React.ReactNode;
-}> {
-  return {
-    idle: {
-      emoji: '🤖',
-      label: t('voiceOverlay.idle'),
-      color: 'var(--accent, #537d96)',
-      icon: <PhosphorIcon icon={Microphone} size={48} weight="light" />,
-    },
-    listening: {
-      emoji: '🎤',
-      label: t('voiceOverlay.listening'),
-      color: 'var(--color-red-600, #dc2626)',
-      icon: <PhosphorIcon icon={Microphone} size={48} weight="fill" />,
-    },
-    processing: {
-      emoji: '🤔',
-      label: t('voiceOverlay.processing'),
-      color: 'var(--color-amber-600, #d97706)',
-      icon: <PhosphorIcon icon={Lightbulb} size={48} weight="fill" />,
-    },
-    speaking: {
-      emoji: '🔊',
-      label: t('voiceOverlay.speaking'),
-      color: 'var(--color-green-600, #16a34a)',
-      icon: <PhosphorIcon icon={SpeakerHigh} size={48} weight="fill" />,
-    },
-    paused: {
-      emoji: '⏸',
-      label: t('voiceOverlay.paused'),
-      color: 'var(--color-gray-600, #4b5563)',
-      icon: <PhosphorIcon icon={Pause} size={48} weight="fill" />,
-    },
-    error: {
-      emoji: '⚠️',
-      label: t('voiceOverlay.error'),
-      color: 'var(--color-red-800, #991b1b)',
-      icon: <PhosphorIcon icon={Lightbulb} size={48} weight="bold" />,
-    },
-  };
+const WAVEFORM_BARS = Array.from({ length: 24 }, (_, i) => i);
+
+function getStateLabel(state: VoiceState): string {
+  return t(`voiceOverlay.${state}`);
+}
+
+function getStateColor(state: VoiceState): string {
+  switch (state) {
+    case 'listening': return 'var(--color-red-600, #dc2626)';
+    case 'processing': return 'var(--color-amber-600, #d97706)';
+    case 'speaking': return 'var(--color-green-600, #16a34a)';
+    case 'paused': return 'var(--color-gray-600, #4b5563)';
+    case 'error': return 'var(--color-red-800, #991b1b)';
+    default: return 'var(--accent, #537d96)';
+  }
+}
+
+function getStateIcon(state: VoiceState): React.ReactNode {
+  switch (state) {
+    case 'listening': return <PhosphorIcon icon={Microphone} size={48} weight="fill" />;
+    case 'processing': return <PhosphorIcon icon={Lightbulb} size={48} weight="fill" />;
+    case 'speaking': return <PhosphorIcon icon={SpeakerHigh} size={48} weight="fill" />;
+    case 'paused': return <PhosphorIcon icon={Pause} size={48} weight="fill" />;
+    case 'error': return <PhosphorIcon icon={Lightbulb} size={48} weight="bold" />;
+    default: return <PhosphorIcon icon={Microphone} size={48} weight="light" />;
+  }
 }
 
 export const VoiceChatOverlay = memo(function VoiceChatOverlay({
@@ -97,12 +78,12 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
   useEffect(() => {
     if (!isOpen) return;
 
-    const hana = (window as any).hana;
+    const hana = window.hana;
     if (!hana) return;
 
-    const cleanupState = hana.onVoiceStateChange?.((newState: VoiceState) => {
-      setState(newState);
-      onStateChange?.(newState);
+    const cleanupState = hana.onVoiceStateChange?.((newState: string) => {
+      setState(newState as VoiceState);
+      onStateChange?.(newState as VoiceState);
 
       if (newState === 'listening' || newState === 'speaking') {
         setDuration(0);
@@ -113,7 +94,7 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
       if (newState === 'idle' && userTextRef.current && aiTextRef.current) {
         autoCloseTimerRef.current = setTimeout(() => {
           setIsAutoClosing(true);
-          setTimeout(onClose, 300);
+          autoCloseTimerRef.current = setTimeout(() => onClose(), 300);
         }, 3000);
       }
     });
@@ -147,7 +128,7 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
   }, [state]);
 
   const handleStop = useCallback(() => {
-    const hana = (window as any).hana;
+    const hana = window.hana;
     if (!hana) return;
     clearAutoCloseTimer();
     setIsAutoClosing(false);
@@ -155,7 +136,7 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
   }, [clearAutoCloseTimer]);
 
   const handlePauseResume = useCallback(() => {
-    const hana = (window as any).hana;
+    const hana = window.hana;
     if (!hana) return;
 
     if (state === 'paused') {
@@ -171,15 +152,8 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
     onClose();
   }, [onClose, clearAutoCloseTimer]);
 
-  const formatDuration = (s: number) => {
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
-  };
-
   if (!isOpen) return null;
 
-  const config = getStateConfig()[state];
   const isActive = state === 'listening' || state === 'speaking' || state === 'processing';
 
   return (
@@ -199,12 +173,12 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
 
       <div className={`${styles.content} ${isActive ? styles['content-active'] : ''}`}>
         <div className={`${styles['icon-wrapper']} ${styles[`state-${state}`]}`}>
-          {config.icon}
+          {getStateIcon(state)}
         </div>
 
         <h2 className={styles.title}>Jarvis</h2>
 
-        <p className={styles.status}>{config.label}</p>
+        <p className={styles.status}>{getStateLabel(state)}</p>
 
         {(state === 'listening' || state === 'speaking') && (
           <span className={styles.duration}>
@@ -214,7 +188,7 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
 
         {state === 'listening' && (
           <div className={styles.waveform}>
-            {Array.from({ length: 24 }).map((_, i) => (
+            {WAVEFORM_BARS.map((i) => (
               <div
                 key={i}
                 className={styles.waveformBar}

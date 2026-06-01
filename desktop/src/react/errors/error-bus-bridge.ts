@@ -5,12 +5,11 @@
  * ErrorBus subscriber to the toast slice.
  */
 
-// @ts-expect-error — shared JS module, no TS declarations
 import { errorBus } from '../../../../shared/error-bus.js';
 import { useStore } from '../stores';
 import type { ErrorRoute } from './types';
 
-declare function t(key: string, vars?: Record<string, string | number>): string;
+const t = (key: string, vars?: Record<string, string | number>): string => window.t?.(key, vars) ?? key;
 
 export function initErrorBusBridge(): void {
   errorBus.subscribe((entry: { error: { code: string; severity: string; userMessageKey: string; message?: string } }, route: ErrorRoute) => {
