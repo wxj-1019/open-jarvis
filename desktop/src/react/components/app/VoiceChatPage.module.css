@@ -8,14 +8,14 @@
   align-items: center;
   justify-content: center;
   animation: page-enter 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  /* 背景网格效果 */
   background-color: var(--bg, #FAF8F5);
+  overflow: hidden;
 }
 
 @keyframes page-enter {
   from {
     opacity: 0;
-    transform: scale(0.95);
+    transform: scale(0.97);
   }
   to {
     opacity: 1;
@@ -23,8 +23,23 @@
   }
 }
 
-/* 背景网格 */
+/* 微妙的径向渐变背景 */
 .page::before {
+  content: '';
+  position: absolute;
+  top: -20%;
+  left: -20%;
+  right: -20%;
+  bottom: -20%;
+  background:
+    radial-gradient(ellipse 50% 40% at 50% 45%, rgba(var(--accent-rgb, 83, 125, 150), 0.04), transparent),
+    radial-gradient(ellipse 80% 60% at 30% 70%, rgba(var(--accent-rgb, 83, 125, 150), 0.02), transparent);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 细网格背景 */
+.page::after {
   content: '';
   position: absolute;
   top: 0;
@@ -32,9 +47,11 @@
   right: 0;
   bottom: 0;
   background-image:
-    linear-gradient(rgba(83, 125, 150, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(83, 125, 150, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
+    linear-gradient(rgba(83, 125, 150, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(83, 125, 150, 0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black, transparent);
+  -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black, transparent);
   pointer-events: none;
   z-index: 0;
 }

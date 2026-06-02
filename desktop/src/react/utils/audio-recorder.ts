@@ -140,6 +140,17 @@ class AudioRecorder {
   }
 
   /**
+   * 将录制的 chunks 合并为 ArrayBuffer（IPC 可传输格式）
+   */
+  async getAudioArrayBuffer(): Promise<{ buffer: ArrayBuffer; mimeType: string } | null> {
+    if (this.chunks.length === 0) return null;
+    const mimeType = this.mediaRecorder?.mimeType || 'audio/webm';
+    const blob = new Blob(this.chunks, { type: mimeType });
+    const buffer = await blob.arrayBuffer();
+    return { buffer, mimeType };
+  }
+
+  /**
    * 取消录制（不触发 onData 回调）
    */
   cancel(): void {

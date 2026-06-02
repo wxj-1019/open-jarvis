@@ -594,7 +594,7 @@
     display: block;
 }
 
-/* ── Todo Bar（accent 标签，靠右贴底） ── */
+/* ── Todo Bar — 参考 AutomationPanel 浮动面板样式 ── */
 
 .todo-bar {
     position: relative;
@@ -604,24 +604,26 @@
     align-self: flex-end;
 }
 
+/* 折叠触发按钮 — 参考 autoItem 的卡片风格 */
 .todo-bar-trigger {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    padding: 0.3rem 0.55rem;
+    gap: 0.5rem;
+    padding: 0.55rem 0.7rem;
     font-family: inherit;
-    font-size: 0.72rem;
-    color: rgba(255, 255, 255, 0.9);
-    background: var(--accent);
-    border: none;
+    font-size: 0.78rem;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--overlay-light);
     border-radius: var(--radius-md);
     cursor: pointer;
-    transition: opacity var(--duration-fast);
+    transition: border-color var(--duration-fast);
     -webkit-app-region: no-drag;
+    box-sizing: border-box;
 }
 
 .todo-bar-trigger:hover {
-    opacity: 0.9;
+    border-color: var(--overlay-medium);
 }
 
 .todo-bar-icon {
@@ -635,26 +637,30 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 0.72rem;
+    font-size: 0.78rem;
     max-width: 180px;
+    color: var(--text);
 }
 
 .todo-bar-count {
-    font-size: 0.62rem;
-    opacity: 0.7;
+    font-size: 0.65rem;
+    color: var(--text-muted);
     flex-shrink: 0;
     margin-left: 0.3rem;
 }
 
-/* 展开列表 — 绝对定位向上弹出，白色卡片，和标签有间距；超 6 条滚动 */
+/* 展开列表 — 参考 automationList 的 flex-column + gap 布局 */
 .todo-bar-list {
     position: absolute;
     bottom: calc(100% + 6px);
     right: 0;
-    min-width: 240px;
-    max-width: 360px;
-    max-height: calc(6 * 1.5rem + var(--space-sm) * 2);
+    min-width: 260px;
+    max-width: 380px;
+    max-height: calc(6 * 2.2rem + var(--space-sm) * 2);
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
     padding: var(--space-sm);
     background: var(--bg-card);
     border: 1px solid var(--overlay-light);
@@ -667,11 +673,21 @@
     z-index: 10;
 }
 
+/* 列表项 — 参考 autoItem 的卡片行样式 */
 .todo-bar-item {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0.1rem 0;
+    gap: 0.5rem;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid var(--overlay-light);
+    border-radius: var(--radius-md);
+    background: var(--bg);
+    transition: border-color var(--duration-fast);
+    box-sizing: border-box;
+}
+
+.todo-bar-item:hover {
+    border-color: var(--overlay-medium);
 }
 
 .todo-bar-done {
@@ -689,27 +705,31 @@
     opacity: 0.5;
 }
 
+/* 全部完成按钮 — 参考 autoItemBtn 风格 */
 .todo-bar-complete-row {
     display: flex;
     align-items: center;
     gap: 0.4rem;
     width: 100%;
-    margin-top: 0.35rem;
-    padding: 0.42rem 0 0.08rem;
+    margin-top: 0.25rem;
+    padding: 0.42rem 0.7rem;
     font: inherit;
     font-size: 0.74rem;
     line-height: 1.5;
     color: var(--text-muted);
     text-align: left;
     background: transparent;
-    border: 0;
-    border-top: 1px solid var(--overlay-light);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
     cursor: pointer;
     -webkit-app-region: no-drag;
+    transition: color var(--duration-fast), background var(--duration-fast), border-color var(--duration-fast);
 }
 
 .todo-bar-complete-row:hover {
     color: var(--accent);
+    background: var(--overlay-light);
+    border-color: var(--overlay-light);
 }
 
 .todo-bar-complete-row:disabled {
@@ -723,7 +743,7 @@
     font-size: 0.7rem;
 }
 
-/* Three-state variants for Claude Code-aligned TodoWrite */
+/* Three-state variants — 参考 autoItemLabel / autoItemSchedule 的字体层次 */
 .todo-bar-pending {
     /* default (inherit from .todo-bar-item) */
 }

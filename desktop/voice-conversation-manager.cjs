@@ -329,11 +329,48 @@ function registerVoiceIPCHandlers() {
     voiceManager.processAudioEnergy(rms);
   });
 
-  // 处理音频 Blob
-  ipcMain.handle("voice:audioBlob", async (_event, audioBlob) => {
-    // TODO: 处理音频 Blob
-    console.log("[IPC] voice:audioBlob 收到音频数据");
-    return { success: true };
+  // 处理音频 Blob（渲染进程录音 → 主进程 Whisper 识别）
+  ipcMain.handle("voice:audioBlob", async (_event, arrayBuffer, mimeType) => {
+    try {
+      if (!arrayBuffer || !(arrayBuffer instanceof ArrayBuffer)) {
+        return { success: false, error: "Invalid audio data: expected ArrayBuffer" };
+      }
+
+      // ArrayBuffer → Blob
+      const blob = new Blob([arrayBuffer], { type: mimeType || "audio/webm" });
+
+      if (blob.size === 0) {
+        return { success: false, error: "Empty audio data" };
+      }
+
+      // 懒加载 WhisperSTTAdapter
+      if (!voiceManager._whisperSTT) {
+        return { success: false, error: "WhisperSTTAdapter not initialized" };
+      }
+
+      // 执行转录
+      const result = await voiceManager._whisperSTT.transcribe(blob);
+
+      return {
+        success: true,
+        text: result.text,
+        confidence: result.confidence,
+        language: result.language,
+      };
+    } catch (err) {
+      console.error("[IPC] voice:audioBlob 转录失败:", err.message);
+      return { success: false, error: err.message };
+    }
+  });
+
+  // 获取语音指标
+  ipcMain.handle("voice:getMetrics", () => {
+    if (!voiceManager._whisperSTT) {
+      return { stt: null, tts: null };
+    }
+    return {
+      stt: voiceManager._whisperSTT.getMetrics(),
+    };
   });
 
   // TTS 播放请求：广播给所有渲染窗口

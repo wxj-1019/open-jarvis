@@ -1132,6 +1132,7 @@
       "engineWhisper": "OpenAI Whisper",
       "engineMimo": "Xiaomi MiMo TTS",
       "engineWebSpeech": "浏览器内置 (Web Speech)",
+      "langAuto": "自动检测",
       "langZhCN": "中文 (简体)",
       "langZhTW": "中文 (繁体)",
       "langEnUS": "English (US)",

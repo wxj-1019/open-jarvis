@@ -8,9 +8,11 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background:
+        radial-gradient(ellipse 60% 50% at 50% 40%, rgba(var(--accent-rgb, 83, 125, 150), 0.08), transparent),
+        rgba(0, 0, 0, 0.88);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     animation: hana-fade-in var(--duration-slow) var(--ease-out);
     -webkit-app-region: no-drag;
 }
@@ -26,21 +28,22 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     padding: 0;
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.4);
     cursor: pointer;
     transition: all var(--duration-fast) var(--ease-out);
+    backdrop-filter: blur(8px);
 }
 
 .close-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    color: #fff;
-    transform: scale(1.05);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.8);
 }
 
 .content {
@@ -58,22 +61,25 @@
 }
 
 .title {
-    font-size: 2rem;
+    font-size: 1.75rem;
     font-weight: 600;
-    color: #fff;
+    color: rgba(255, 255, 255, 0.95);
     margin: 0;
+    letter-spacing: -0.01em;
 }
 
 .status {
-    font-size: 1.125rem;
-    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.5);
     margin: 0;
+    letter-spacing: 0.02em;
 }
 
 .duration {
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     font-family: var(--font-mono);
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(255, 255, 255, 0.35);
+    letter-spacing: 0.05em;
 }
 
 /* 图标包装器 */
@@ -81,31 +87,43 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 120px;
-    height: 120px;
+    width: 128px;
+    height: 128px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.05);
-    color: #fff;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1.5px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.8);
     transition: all var(--duration-slow) var(--ease-out);
+    box-shadow: 0 0 40px rgba(255, 255, 255, 0.02);
 }
 
 .icon-wrapper.state-listening {
     animation: hana-pulse-ring 2s ease-in-out infinite;
-    background: rgba(220, 38, 38, 0.1);
+    background: rgba(220, 38, 38, 0.08);
+    border-color: rgba(220, 38, 38, 0.25);
+    box-shadow: 0 0 60px rgba(220, 38, 38, 0.12), 0 0 120px rgba(220, 38, 38, 0.06);
+    color: #ef4444;
 }
 
 .icon-wrapper.state-speaking {
     animation: hana-pulse-ring 2s ease-in-out infinite;
-    background: rgba(22, 163, 74, 0.1);
+    background: rgba(22, 163, 74, 0.08);
+    border-color: rgba(22, 163, 74, 0.25);
+    box-shadow: 0 0 60px rgba(22, 163, 74, 0.12), 0 0 120px rgba(22, 163, 74, 0.06);
+    color: #22c55e;
 }
 
 .icon-wrapper.state-processing {
     animation: hana-spin 2s linear infinite;
-    background: rgba(217, 119, 6, 0.1);
+    background: rgba(217, 119, 6, 0.08);
+    border-color: rgba(217, 119, 6, 0.25);
+    box-shadow: 0 0 60px rgba(217, 119, 6, 0.1);
+    color: #f59e0b;
 }
 
 .icon-wrapper.state-paused {
-    opacity: 0.5;
+    opacity: 0.4;
+    border-color: rgba(255, 255, 255, 0.06);
 }
 
 /* 波形动画 */
@@ -114,26 +132,26 @@
     align-items: center;
     justify-content: center;
     gap: 3px;
-    height: 60px;
+    height: 56px;
     margin: var(--space-md) 0;
 }
 
 .waveformBar {
     width: 3px;
-    height: 20px;
-    background: rgba(255, 255, 255, 0.5);
+    height: 16px;
+    background: linear-gradient(to top, rgba(239, 68, 68, 0.4), rgba(239, 68, 68, 0.8));
     border-radius: 2px;
-    animation: hana-waveform-bar 1s ease-in-out infinite;
+    animation: hana-waveform-bar 1.2s ease-in-out infinite;
 }
 
 @keyframes hana-waveform-bar {
     0%, 100% {
-        height: 10px;
-        opacity: 0.3;
+        height: 8px;
+        opacity: 0.25;
     }
     50% {
-        height: 50px;
-        opacity: 0.8;
+        height: 44px;
+        opacity: 0.9;
     }
 }
 
@@ -142,79 +160,86 @@
     width: 100%;
     padding: var(--space-md) var(--space-lg);
     border-radius: var(--radius-lg);
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     text-align: left;
     animation: hana-scale-in var(--duration-slow) var(--ease-out);
+    backdrop-filter: blur(8px);
 }
 
 .textCardLabel {
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.5);
-    margin: 0 0 var(--space-sm);
+    font-size: 0.68rem;
+    color: rgba(255, 255, 255, 0.35);
+    margin: 0 0 var(--space-xs);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
+    font-weight: 500;
 }
 
 .textCardContent {
-    font-size: 1rem;
-    color: #fff;
+    font-size: 0.9375rem;
+    color: rgba(255, 255, 255, 0.85);
     margin: 0;
-    line-height: 1.6;
+    line-height: 1.65;
 }
 
 .ai-card {
-    border-left: 3px solid var(--color-green-600, #16a34a);
+    border-left: 2px solid rgba(34, 197, 94, 0.5);
 }
 
 .user-card {
-    border-left: 3px solid var(--color-blue-600, #2563eb);
+    border-left: 2px solid rgba(59, 130, 246, 0.5);
 }
 
 /* 控制按钮 */
 .controls {
     display: flex;
-    gap: var(--space-md);
-    margin-top: var(--space-md);
+    gap: var(--space-sm);
+    margin-top: var(--space-lg);
 }
 
 .controlBtn {
     display: flex;
     align-items: center;
     gap: var(--space-sm);
-    padding: var(--space-sm) var(--space-lg);
-    border: none;
+    padding: 0.5rem 1.25rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--radius-md);
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     font-weight: 500;
-    color: #fff;
+    color: rgba(255, 255, 255, 0.7);
     cursor: pointer;
     transition: all var(--duration-fast) var(--ease-out);
+    background: rgba(255, 255, 255, 0.04);
 }
 
 .controlBtn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.08);
 }
 
 .controlBtn:active {
-    transform: translateY(0);
+    transform: scale(0.97);
 }
 
 .pause-btn {
-    background: rgba(255, 255, 255, 0.15);
+    /* inherits base style */
 }
 
 .pause-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.2);
 }
 
 .stop-btn {
-    background: rgba(220, 38, 38, 0.8);
+    border-color: rgba(220, 38, 38, 0.2);
+    color: rgba(239, 68, 68, 0.7);
 }
 
 .stop-btn:hover {
-    background: rgba(220, 38, 38, 1);
+    background: rgba(220, 38, 38, 0.12);
+    border-color: rgba(220, 38, 38, 0.35);
+    color: #ef4444;
 }
 
 /* 权限引导界面 */
@@ -224,41 +249,48 @@
     align-items: center;
     justify-content: center;
     gap: var(--space-lg);
-    max-width: min(480px, calc(100vw - 48px));
+    max-width: min(420px, calc(100vw - 48px));
     padding: var(--space-xl);
     text-align: center;
     flex: 1;
 }
 
 .permission-guide .icon-wrapper {
-    background: rgba(83, 125, 150, 0.15);
+    background: rgba(83, 125, 150, 0.08);
+    border-color: rgba(83, 125, 150, 0.2);
     color: var(--accent, #537D96);
 }
 
 .permission-guide .title {
-    color: #fff;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.375rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
 }
 
 .permission-guide .desc {
-    font-size: 0.9375rem;
-    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.45);
     margin: 0;
-    line-height: 1.6;
+    line-height: 1.65;
 }
 
 .permission-guide .actions {
     display: flex;
-    gap: var(--space-md);
+    gap: var(--space-sm);
     margin-top: var(--space-sm);
 }
 
 .permission-guide .primary-btn {
-    padding: var(--space-sm) var(--space-xl);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: 0.55rem 1.5rem;
     border: none;
     border-radius: var(--radius-md);
     background: var(--accent, #537D96);
     color: #fff;
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
     transition: all var(--duration-fast) var(--ease-out);
@@ -266,24 +298,24 @@
 
 .permission-guide .primary-btn:hover {
     background: var(--accent-hover, #6a9ab5);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(83, 125, 150, 0.3);
+    box-shadow: 0 4px 16px rgba(83, 125, 150, 0.25);
 }
 
 .permission-guide .secondary-btn {
-    padding: var(--space-sm) var(--space-xl);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 0.55rem 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: var(--radius-md);
-    background: transparent;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.9375rem;
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.875rem;
     cursor: pointer;
     transition: all var(--duration-fast) var(--ease-out);
 }
 
 .permission-guide .secondary-btn:hover {
-    border-color: rgba(255, 255, 255, 0.4);
-    color: #fff;
+    border-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.06);
 }
 
 /* 减少动画偏好 */

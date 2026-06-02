@@ -167,28 +167,39 @@ export function VoiceTab() {
         return;
       }
 
-      const res = await hanaFetch('/api/tts/synthesize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: t('settings.voice.testPhrase'),
-          engine: config.tts.engine,
-          model: config.tts.model,
-          speed: config.tts.speed,
-        }),
-      });
+      // MiMo 引擎：调用后端 API
+      if (config.tts.engine === 'mimo') {
+        const res = await hanaFetch('/api/tts/synthesize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: t('settings.voice.testPhrase'),
+            engine: 'mimo',
+            model: config.tts.model,
+            speed: config.tts.speed,
+          }),
+        });
 
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || t('settings.voice.testFailed'));
+        if (!res.ok) {
+          const error = await res.json().catch(() => ({}));
+          throw new Error(error.error || t('settings.voice.testFailed'));
+        }
+
+        const audioBlob = await res.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        audio.onended = () => URL.revokeObjectURL(audioUrl);
+        audio.onerror = () => {
+          URL.revokeObjectURL(audioUrl);
+          throw new Error(t('settings.voice.testFailed'));
+        };
+        await audio.play();
+        showToast(t('settings.voice.testSuccess'), 'success');
+        return;
       }
 
-      const audioBlob = await res.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
-      const audio = new Audio(audioUrl);
-      await audio.play();
-      URL.revokeObjectURL(audioUrl);
-
+      // 未知引擎 fallback
+      await testWebSpeech();
       showToast(t('settings.voice.testSuccess'), 'success');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('settings.voice.testFailed');
@@ -236,6 +247,7 @@ export function VoiceTab() {
                 value={config.stt.language}
                 onChange={(language) => patchConfig({ stt: { ...config.stt, language } })}
                 options={[
+                  { value: 'auto', label: t('settings.voice.langAuto') },
                   { value: 'zh-CN', label: t('settings.voice.langZhCN') },
                   { value: 'zh-TW', label: t('settings.voice.langZhTW') },
                   { value: 'en-US', label: t('settings.voice.langEnUS') },

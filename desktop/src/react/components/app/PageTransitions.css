@@ -35,6 +35,11 @@
 /* 聊天页面 */
 .chat-page-transition {
   animation: page-fade-in var(--duration-slow) var(--ease-out) backwards;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  justify-content: center;
 }
 
 /* 语音页面 */
