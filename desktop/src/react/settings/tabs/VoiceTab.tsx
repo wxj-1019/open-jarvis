@@ -111,7 +111,20 @@ export function VoiceTab() {
   const [ttsStatus, setTtsStatus] = useState<{ configured: boolean; error?: string }>({ configured: false });
   const [sttStatus, setSttStatus] = useState<{ configured: boolean; error?: string }>({ configured: false });
   const [testing, setTesting] = useState(false);
+  const [metrics, setMetrics] = useState<any>({});
   const showToast = useSettingsStore(s => s.showToast);
+
+  useEffect(() => {
+    const refreshMetrics = async () => {
+      try {
+        const result = await (window as any).hana?.invokeGetVoiceMetrics?.();
+        if (result) setMetrics(result);
+      } catch {}
+    };
+    refreshMetrics();
+    const interval = setInterval(refreshMetrics, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const loadConfig = useCallback(async () => {
     try {
@@ -351,6 +364,27 @@ export function VoiceTab() {
               </button>
             }
           />
+        </SettingsSection>
+
+        <SettingsSection title={t('settings.voice.metricsSection')}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '14px' }}>
+            <div style={{ padding: '8px 12px', background: 'var(--settings-bg-secondary)', borderRadius: '8px' }}>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{t('settings.voice.sttLatencyP50')}</div>
+              <div style={{ fontWeight: 600, fontSize: '18px' }}>{metrics.stt?.p50 ? `${metrics.stt.p50.toFixed(0)} ms` : '—'}</div>
+            </div>
+            <div style={{ padding: '8px 12px', background: 'var(--settings-bg-secondary)', borderRadius: '8px' }}>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{t('settings.voice.sttLatencyP95')}</div>
+              <div style={{ fontWeight: 600, fontSize: '18px' }}>{metrics.stt?.p95 ? `${metrics.stt.p95.toFixed(0)} ms` : '—'}</div>
+            </div>
+            <div style={{ padding: '8px 12px', background: 'var(--settings-bg-secondary)', borderRadius: '8px' }}>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{t('settings.voice.sttCount')}</div>
+              <div style={{ fontWeight: 600, fontSize: '18px' }}>{metrics.stt?.count ?? 0}</div>
+            </div>
+            <div style={{ padding: '8px 12px', background: 'var(--settings-bg-secondary)', borderRadius: '8px' }}>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{t('settings.voice.errorCount')}</div>
+              <div style={{ fontWeight: 600, fontSize: '18px', color: metrics.stt?.errorCount > 0 ? 'var(--color-error)' : 'inherit' }}>{metrics.stt?.errorCount ?? 0}</div>
+            </div>
+          </div>
         </SettingsSection>
 
         <SettingsSection title={t('settings.voice.helpSection')}>
