@@ -50,6 +50,7 @@ node_modules/
 
 # 项目私有文件
 CLAUDE.md
+.jarvis/
 
 # 临时文件
 tmp/

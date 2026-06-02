@@ -1,3 +1,20 @@
+/**
+ * VoiceTab.tsx — 语音配置设置页面
+ *
+ * 配置项：
+ * - STT: Whisper 引擎 + 语言选择
+ * - TTS: Mimo / WebSpeech 引擎 + 模型/语速/音调/音量
+ *
+ * 架构说明：
+ * - 主进程使用 WhisperSTTAdapter 调用 OpenAI/本地 Whisper API
+ * - API Key 存储在 added-models.yaml 中（非 .env）
+ * - 渲染进程使用 Web Speech API 作为 fallback
+ *
+ * 性能监控：
+ * - VoiceMetricsCollector 记录 STT/TTS 延迟（p50/p95）
+ * - VoiceErrorTracker 捕获错误并上报 Sentry
+ */
+
 import { useState, useCallback, useEffect } from 'react';
 import { Play } from '@phosphor-icons/react';
 import { useSettingsStore } from '../store';

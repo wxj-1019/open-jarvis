@@ -8,17 +8,15 @@
  */
 
 import { memo, useCallback } from 'react';
-import { useStore } from '../../stores';
+import { switchTab } from '../channels/ChannelTabBar';
 import { VoiceChatOverlay } from '../VoiceChatOverlay';
 import { RegionalErrorBoundary } from '../RegionalErrorBoundary';
 import styles from './VoiceChatPage.module.css';
 
 export const VoiceChatPage = memo(function VoiceChatPage() {
-  const setPageMode = useStore((s) => s.setPageMode);
-
   const handleClose = useCallback(() => {
-    setPageMode('chat');
-  }, [setPageMode]);
+    switchTab('chat');
+  }, []);
 
   return (
     <div className={styles.page} role="region" aria-label="Voice chat">

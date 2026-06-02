@@ -2,7 +2,6 @@ import type { MouseEventHandler } from 'react';
 import { SidebarSimple, Plus, FileText } from '@phosphor-icons/react';
 import { PhosphorIcon } from '../../ui/PhosphorIcon';
 import { ChannelTabBar } from '../channels/ChannelTabBar';
-import { PageModeTabs } from '../PageModeTabs';
 import { WidgetButtons } from '../plugin/WidgetButtons';
 import { WindowControls } from '../WindowControls';
 
@@ -17,7 +16,6 @@ interface AppTitlebarProps {
   centerTitle?: string | null;
   showNewSessionButton?: boolean;
   showPreviewToggle?: boolean;
-  showChannelTabs?: boolean;
   showWidgetButtons?: boolean;
   currentTab?: string;
   onLeftMouseEnter?: MouseEventHandler<HTMLButtonElement>;
@@ -36,7 +34,6 @@ export function AppTitlebar({
   centerTitle = null,
   showNewSessionButton = false,
   showPreviewToggle = false,
-  showChannelTabs = true,
   showWidgetButtons = true,
   currentTab,
   onLeftMouseEnter,
@@ -79,8 +76,7 @@ export function AppTitlebar({
             <span>{centerTitle}</span>
           </div>
         )}
-        {showChannelTabs && <ChannelTabBar />}
-        {currentTab === 'chat' && <PageModeTabs />}
+        <ChannelTabBar />
       </div>
       <div className="tb-right-group">
         {showWidgetButtons && <WidgetButtons />}

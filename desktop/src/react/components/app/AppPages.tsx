@@ -5,7 +5,6 @@ import { AutomationPanel } from '../AutomationPanel';
 import { BridgePanel } from '../BridgePanel';
 import { FloatingCapabilitiesPanel } from '../FloatingCapabilitiesPanel';
 import { PreviewPanel } from '../PreviewPanel';
-import { PluginPageView } from '../plugin/PluginPageView';
 import { ChannelMessages, ChannelMembers, ChannelInput, ChannelReadonly, ChannelAgentActivityPanel, ChannelAgentSettingsPanel } from '../ChannelsPanel';
 import { ChannelHeader } from '../channels/ChannelHeader';
 import { MainContent } from '../../MainContent';
@@ -119,46 +118,26 @@ function ChannelPage() {
   );
 }
 
-function PluginPage({ pluginId }: { pluginId: string }) {
-  return (
-    <div className="plugin-page-shell">
-      <PluginPageView pluginId={pluginId} />
-    </div>
-  );
-}
-
-const PLUGIN_PREFIX = 'plugin:' as const;
-
 export function AppPages() {
   const currentTab = useStore(s => s.currentTab);
   const currentPage = useStore(s => s.currentPage);
-  const isPluginTab = typeof currentTab === 'string' && currentTab.startsWith(PLUGIN_PREFIX);
 
   return (
     <>
       <MainContent>
         {currentTab === 'chat' && (
-          <>
-            {currentPage === 'chat' && (
-              <div className="chat-page-transition" key="chat">
-                <ChatPage />
-              </div>
-            )}
-            {currentPage === 'voice' && (
-              <div className="voice-page-transition" key="voice">
-                <VoiceChatPage />
-              </div>
-            )}
-          </>
+          <div className="chat-page-transition" key="chat">
+            <ChatPage />
+          </div>
         )}
         {currentTab === 'channels' && (
           <div className="channel-page-transition" key="channels">
             <ChannelPage />
           </div>
         )}
-        {isPluginTab && (
-          <div className="plugin-page-transition" key={`plugin-${currentTab}`}>
-            <PluginPage pluginId={currentTab.slice(PLUGIN_PREFIX.length)} />
+        {currentTab === 'voice' && (
+          <div className="voice-page-transition" key="voice">
+            <VoiceChatPage />
           </div>
         )}
         <ActivityPanel />
