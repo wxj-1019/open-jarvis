@@ -19,11 +19,22 @@ describe('page-mode-slice', () => {
     expect(store.getState().currentPage).toBe('voice');
   });
 
-  it('should toggle between chat and voice', () => {
+  it('should toggle through all three modes', () => {
     const store = createStore();
+    
+    store.getState().togglePageMode();
+    expect(store.getState().currentPage).toBe('channels');
+    
     store.getState().togglePageMode();
     expect(store.getState().currentPage).toBe('voice');
+    
     store.getState().togglePageMode();
     expect(store.getState().currentPage).toBe('chat');
+  });
+
+  it('should set page mode to channels', () => {
+    const store = createStore();
+    store.getState().setPageMode('channels');
+    expect(store.getState().currentPage).toBe('channels');
   });
 });

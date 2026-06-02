@@ -1,4 +1,4 @@
-export type PageMode = 'chat' | 'voice';
+export type PageMode = 'chat' | 'channels' | 'voice';
 
 export interface PageModeSlice {
   currentPage: PageMode;
@@ -14,6 +14,9 @@ export const createPageModeSlice = (
   setPageMode: (mode) => set({ currentPage: mode }),
   togglePageMode: () => {
     const state = get();
-    set({ currentPage: state.currentPage === 'chat' ? 'voice' : 'chat' });
+    const modes: PageMode[] = ['chat', 'channels', 'voice'];
+    const currentIndex = modes.indexOf(state.currentPage);
+    const nextIndex = (currentIndex + 1) % modes.length;
+    set({ currentPage: modes[nextIndex] });
   },
 });

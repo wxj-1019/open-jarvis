@@ -1,5 +1,5 @@
 import { memo, useCallback } from 'react';
-import { ChatCircle, Microphone } from '@phosphor-icons/react';
+import { ChatCircle, Broadcast, Microphone } from '@phosphor-icons/react';
 import { PhosphorIcon } from '../ui/PhosphorIcon';
 import { useStore } from '../stores';
 import styles from './PageModeTabs.module.css';
@@ -12,7 +12,7 @@ export const PageModeTabs = memo(function PageModeTabs() {
     if (e.repeat) return;
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       e.preventDefault();
-      const modes: Array<'chat' | 'voice'> = ['chat', 'voice'];
+      const modes: Array<'chat' | 'channels' | 'voice'> = ['chat', 'channels', 'voice'];
       const currentIndex = modes.indexOf(currentPage);
       if (currentIndex === -1) {
         if (process.env.NODE_ENV === 'development') {
@@ -44,6 +44,18 @@ export const PageModeTabs = memo(function PageModeTabs() {
       >
         <PhosphorIcon icon={ChatCircle} size={16} />
         <span>{window.t?.('pageMode.chat') ?? '文字对话'}</span>
+      </button>
+
+      <button
+        role="tab"
+        id="tab-channels"
+        aria-selected={currentPage === 'channels'}
+        aria-controls="panel-channels"
+        className={`${styles.tab} ${currentPage === 'channels' ? styles.active : ''}`}
+        onClick={() => setPageMode('channels')}
+      >
+        <PhosphorIcon icon={Broadcast} size={16} />
+        <span>{window.t?.('pageMode.channels') ?? '频道'}</span>
       </button>
 
       <button
