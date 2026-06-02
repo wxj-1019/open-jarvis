@@ -62,6 +62,17 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
       clearTimeout(autoCloseTimerRef.current);
       autoCloseTimerRef.current = null;
     }
+    setIsAutoClosing(false);
+  }, []);
+
+  // 组件卸载时清理定时器
+  useEffect(() => {
+    return () => {
+      if (autoCloseTimerRef.current) {
+        clearTimeout(autoCloseTimerRef.current);
+        autoCloseTimerRef.current = null;
+      }
+    };
   }, []);
 
   const handleUserText = useCallback(() => {
