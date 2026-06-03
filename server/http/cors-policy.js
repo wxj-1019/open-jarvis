@@ -1,5 +1,5 @@
 const DEFAULT_LOOPBACK_WEB_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
-const ELECTRON_FILE_ORIGINS = new Set(["file://", "file:///"]);
+const ELECTRON_FILE_ORIGINS = new Set(["file://", "file:///", "null"]);
 
 export function isCorsOriginAllowed({
   origin,

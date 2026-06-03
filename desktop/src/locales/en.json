@@ -1095,6 +1095,7 @@
       "verifyConnection": "Verify Connection",
       "verifySuccess": "Connection verified",
       "verifyFailed": "Verification failed",
+      "networkErrorHint": "Network unreachable, config saved",
       "setupHint": "Enter API Key to activate this provider",
       "configInvalid": "This provider config is damaged and has been skipped temporarily. Save the config again, or delete and recreate it.",
       "configIncomplete": "This provider config is incomplete. Fill API Key, Base URL, and add or fetch models.",

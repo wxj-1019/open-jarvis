@@ -1095,6 +1095,7 @@
       "verifyConnection": "验证连接",
       "verifySuccess": "验证通过",
       "verifyFailed": "验证失败",
+      "networkErrorHint": "网络不可达，配置已保存",
       "setupHint": "输入 API Key 以启用此供应商",
       "configInvalid": "该供应商配置损坏，已被暂时跳过。请重新保存配置，或删除后重建。",
       "configIncomplete": "该供应商配置不完整，请补全 API Key、Base URL，并添加或读取模型。",

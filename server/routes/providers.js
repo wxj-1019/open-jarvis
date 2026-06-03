@@ -110,7 +110,15 @@ export function createProvidersRoute(engine) {
         if (!p.base_url) missingFields.push("base_url");
         if (!hasCredentials) missingFields.push("api_key");
       }
-      if (rawModels.length === 0 && customModels.length === 0) missingFields.push("models");
+      // media-only provider（如 mimo-tts）的模型通过 capabilities.media 声明，
+      // 不需要 added-models.yaml 中的 models 列表
+      const hasMediaModels = (() => {
+        const entry = provRegistry.get(name);
+        const media = entry?.capabilities?.media;
+        if (!media) return false;
+        return Object.values(media).some(cap => Array.isArray(cap?.models) && cap.models.length > 0);
+      })();
+      if (rawModels.length === 0 && customModels.length === 0 && !hasMediaModels) missingFields.push("models");
 
       result[name] = {
         type: isOAuth ? "oauth" : "api-key",
@@ -168,6 +176,12 @@ export function createProvidersRoute(engine) {
       for (const [id, entry] of provRegistry.getAll()) {
         if (result[id]) continue;
         if (entry.authType === "oauth") continue; // OAuth provider 走上面的白名单逻辑
+        // media-only provider 的模型通过 capabilities.media 声明
+        const hasBuiltInMediaModels = (() => {
+          const media = entry.capabilities?.media;
+          if (!media) return false;
+          return Object.values(media).some(cap => Array.isArray(cap?.models) && cap.models.length > 0);
+        })();
         result[id] = {
           type: "api-key",
           auth_type: entry.authType,
@@ -187,7 +201,7 @@ export function createProvidersRoute(engine) {
           config_error: null,
           missing_fields: [
             ...(entry.authType === "none" ? [] : ["api_key"]),
-            "models",
+            ...(hasBuiltInMediaModels ? [] : ["models"]),
           ],
         };
       }
@@ -250,6 +264,25 @@ export function createProvidersRoute(engine) {
     emitAppEvent(engine, "models-changed", { agentId: engine.currentAgentId || null });
   }
 
+  /** 从 provider registry 的 media capabilities 提取模型列表 */
+  function getMediaCapabilityModels(name) {
+    const entry = engine.providerRegistry?.get(name);
+    if (!entry?.capabilities?.media) return [];
+    const models = [];
+    for (const cap of Object.values(entry.capabilities.media)) {
+      if (!cap || typeof cap !== "object" || !Array.isArray(cap.models)) continue;
+      for (const m of cap.models) {
+        models.push({
+          id: m.id,
+          name: m.displayName || m.name || m.id,
+          context: null,
+          maxOutput: null,
+        });
+      }
+    }
+    return models;
+  }
+
   /** Registry → defaults 两级 fallback，fetch-models 和 Anthropic 路径共用 */
   function registryOrDefaultsFallback(name) {
     if (!name) {
@@ -283,6 +316,13 @@ export function createProvidersRoute(engine) {
       const payload = filterProviderModels(name, builtinModels);
       saveToCache(name, payload.models);
       return { source: "builtin", ...payload };
+    }
+
+    // 回退到 provider media capabilities（如 mimo-tts 等纯 media provider）
+    const mediaModels = getMediaCapabilityModels(name);
+    if (mediaModels.length > 0) {
+      saveToCache(name, mediaModels);
+      return { source: "builtin", models: mediaModels };
     }
 
     return { error: `No models found for provider "${name}"`, models: [] };
@@ -355,8 +395,11 @@ export function createProvidersRoute(engine) {
               ignoredModels,
             });
           }
-          saveToCache(name, models);
-          return c.json(ignoredModels.length > 0 ? { models, ignoredModels } : { models });
+          if (models.length > 0) {
+            saveToCache(name, models);
+            return c.json(ignoredModels.length > 0 ? { models, ignoredModels } : { models });
+          }
+          // 远程返回 200 但解析出 0 个模型 → fallback 到 registry / defaults
         }
 
         // 404 / 其他 → 进入 step 3

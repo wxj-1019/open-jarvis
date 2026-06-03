@@ -61,8 +61,14 @@ export function ApiKeyCredentials({ providerId, summary, providerConfig, isPrese
         });
         const testData = await testRes.json();
         if (!testData.ok) {
-          showToast(t('settings.providers.verifyFailed'), 'error');
-          return;
+          // fetch failed = 网络不可达，不一定是 Key 错误；允许继续保存
+          const isNetworkError = testData.error === 'fetch failed' || (typeof testData.error === 'string' && testData.error.includes('fetch failed'));
+          if (!isNetworkError) {
+            showToast(t('settings.providers.verifyFailed'), 'error');
+            return;
+          }
+          // 网络错误时提示但仍继续保存
+          showToast(t('settings.providers.verifyFailed') + ' (' + t('settings.providers.networkErrorHint') + ')', 'error');
         }
       }
       await hanaFetch('/api/config', {
