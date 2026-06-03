@@ -37,3 +37,26 @@ declare module 'markdown-it-task-lists' {
   const taskLists: MarkdownIt.PluginWithOptions<TaskListsOptions>;
   export default taskLists;
 }
+
+// Silero VAD — 库未安装时的本地类型声明
+declare module '@ricky0123/vad-web' {
+  export interface MicVADInstance {
+    start(): void;
+    pause(): void;
+    destroy(): void;
+  }
+  export interface MicVADOptions {
+    onSpeechStart?: () => void;
+    onSpeechEnd?: () => void;
+    onFrameProcessed?: (probabilities: number[]) => void;
+    model?: string;
+    positiveSpeechThreshold?: number;
+    negativeSpeechThreshold?: number;
+    minSpeechFrames?: number;
+    redemptionFrames?: number;
+    preSpeechPadFrames?: number;
+    suppressNonSpeech?: boolean;
+  }
+  // 异步构造器：new 返回 Promise
+  export const MicVAD: new (options: MicVADOptions) => Promise<MicVADInstance>;
+}
