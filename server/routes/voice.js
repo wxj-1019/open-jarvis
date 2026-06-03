@@ -197,3 +197,5 @@ export function createVoiceRoute(engine) {
 
   return route;
 }
+
+export { createVoiceStreamingRoute } from "./voice-streaming.js";

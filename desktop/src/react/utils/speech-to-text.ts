@@ -7,13 +7,14 @@
  */
 
 import { hanaFetch } from '../hooks/use-hana-fetch';
+import { WhisperStreamingClient } from './whisper-streaming';
 
 export interface SpeechToTextResult {
   text: string;
   confidence?: number;
 }
 
-export type SpeechBackend = 'webkit' | 'whisper';
+export type SpeechBackend = 'webkit' | 'whisper' | 'whisper-stream';
 
 interface SpeechToTextOptions {
   /** 语言 */
@@ -22,6 +23,10 @@ interface SpeechToTextOptions {
   backend?: SpeechBackend;
   /** 超时时间（毫秒） */
   timeoutMs?: number;
+  /** 流式传输客户端 (仅 whisper-stream 后端) */
+  streamClient?: WhisperStreamingClient;
+  /** 音频块大小 (用于流式传输) */
+  chunkSize?: number;
 }
 
 /**
@@ -138,6 +143,78 @@ export async function recognizeWithWhisper(
 }
 
 /**
+ * Stream audio transcription via WebSocket
+ */
+async function streamTranscription(
+  client: WhisperStreamingClient,
+  audioBlob: Blob,
+  options: { chunkSize?: number } = {}
+): Promise<SpeechToTextResult> {
+  const chunkSize = options.chunkSize || 4096;
+
+  return new Promise<SpeechToTextResult>((resolve, reject) => {
+    let finalText = '';
+
+    const onFinal = (text: string) => {
+      finalText = text;
+      resolve({ text: finalText.trim() });
+    };
+
+    const onError = (error: Error) => {
+      reject(error);
+    };
+
+    // Store original callbacks to restore later
+    const origOnFinal = (client as any)._origOnFinal;
+    const origOnError = (client as any)._origOnError;
+
+    (client as any)._origOnFinal = client['options']?.onFinalResult;
+    (client as any)._origOnError = client['options']?.onError;
+
+    // Temporarily override callbacks
+    if (client['options']) {
+      client['options'].onFinalResult = onFinal;
+      client['options'].onError = onError;
+    }
+
+    // Convert Blob to ArrayBuffer, then to Float32Array chunks
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const arrayBuffer = reader.result as ArrayBuffer;
+        const dataView = new DataView(arrayBuffer);
+
+        // Decode WebM/OGG to raw PCM via AudioContext
+        const audioContext = new AudioContext({ sampleRate: 16000 });
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
+
+        // Get channel 0 data
+        const channelData = audioBuffer.getChannelData(0);
+        const sampleRate = audioBuffer.sampleRate;
+
+        // Send in chunks
+        let offset = 0;
+        while (offset < channelData.length) {
+          const end = Math.min(offset + chunkSize, channelData.length);
+          const chunk = channelData.slice(offset, end);
+          client.sendChunk(chunk, sampleRate);
+          offset = end;
+        }
+
+        // Signal end of audio
+        client.finish();
+      } catch (err) {
+        reject(err instanceof Error ? err : new Error(String(err)));
+      }
+    };
+    reader.onerror = () => {
+      reject(new Error('Failed to read audio blob'));
+    };
+    reader.readAsArrayBuffer(audioBlob);
+  });
+}
+
+/**
  * 自动选择最佳后端进行语音识别
  */
 export async function speechToText(
@@ -147,6 +224,18 @@ export async function speechToText(
 
   if (backend === 'webkit') {
     return recognizeWithWebSpeech(options);
+  }
+
+  if (backend === 'whisper-stream') {
+    if (!options.streamClient) {
+      throw new Error('whisper-stream backend requires streamClient');
+    }
+    if (!options.audioBlob) {
+      throw new Error('whisper-stream backend requires audioBlob');
+    }
+    return streamTranscription(options.streamClient, options.audioBlob, {
+      chunkSize: options.chunkSize,
+    });
   }
 
   if (!options.audioBlob) {
