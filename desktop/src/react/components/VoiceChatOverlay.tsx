@@ -14,11 +14,12 @@
  */
 
 import { useState, useEffect, useCallback, memo, useRef } from 'react';
-import { X, Microphone, MicrophoneSlash, Lightbulb, SpeakerHigh, Pause, Play, Stop, Gear } from '@phosphor-icons/react';
+import { X, Microphone, MicrophoneSlash, Lightbulb, SpeakerHigh, Pause, Play, Stop, Gear, Clock } from '@phosphor-icons/react';
 import { PhosphorIcon } from '../ui/PhosphorIcon';
 import { formatDuration } from '../utils/voice-helpers';
 import { useVoiceConversation, type VoiceConversationState } from '../hooks/useVoiceConversation';
 import { openSettingsModal } from '../stores/settings-modal-actions';
+import VoiceHistory from './voice/VoiceHistory';
 import styles from './VoiceChatOverlay.module.css';
 
 const t = (key: string, vars?: Record<string, string | number>): string => window.t?.(key, vars) ?? key;
@@ -54,6 +55,8 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
   const [duration, setDuration] = useState(0);
   const [isAutoClosing, setIsAutoClosing] = useState(false);
   const [permissionDenied, setPermissionDenied] = useState(false);
+  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
+  const [showHistory, setShowHistory] = useState(false);
   const autoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasRequestedPermission = useRef(false);
 
@@ -149,6 +152,18 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
       return () => clearInterval(timer);
     }
   }, [state]);
+
+  // 监听网络状态
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const handleStop = useCallback(() => {
     clearAutoCloseTimer();
@@ -252,6 +267,25 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
         <PhosphorIcon icon={X} size={24} weight="regular" />
       </button>
 
+      {/* 网络状态指示器 */}
+      <div className={styles['status-indicators']}>
+        <span
+          className={styles['network-dot']}
+          title={isOnline ? t('voiceOverlay.online') : t('voiceOverlay.offline')}
+        />
+        {/* 历史记录按钮 */}
+        {!showHistory && (
+          <button
+            className={styles['icon-btn']}
+            onClick={() => setShowHistory(true)}
+            aria-label={t('voiceOverlay.history')}
+            title={t('voiceOverlay.history')}
+          >
+            <PhosphorIcon icon={Clock} size={18} weight="regular" />
+          </button>
+        )}
+      </div>
+
       <div className={`${styles.content} ${isActive ? styles['content-active'] : ''}`}>
         <div className={`${styles['icon-wrapper']} ${styles[`state-${state}`]}`}>
           {getStateIcon(state)}
@@ -268,6 +302,16 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
         {state === 'error' && (
           <div className={styles['permission-guide']} style={{ gap: 'var(--space-sm)' }}>
             <p className={styles.desc}>{t('voiceOverlay.networkErrorDesc')}</p>
+            {!isOnline && (
+              <p className={styles.desc} style={{ color: 'rgba(239, 68, 68, 0.8)' }}>
+                {t('voiceOverlay.networkOffline')}
+              </p>
+            )}
+            {isOnline && (
+              <p className={styles.desc} style={{ color: 'rgba(245, 158, 11, 0.8)' }}>
+                {t('voiceOverlay.reconnecting')}
+              </p>
+            )}
             <button className={styles['primary-btn']} onClick={() => { start(); }}>
               {t('voiceOverlay.retry')}
             </button>
@@ -332,6 +376,25 @@ export const VoiceChatOverlay = memo(function VoiceChatOverlay({
           </div>
         )}
       </div>
+
+      {/* 历史记录侧边栏 */}
+      {showHistory && (
+        <div className={styles['history-sidebar']}>
+          <div className={styles['history-header']}>
+            <h3 className={styles['history-title']}>{t('voiceOverlay.history')}</h3>
+            <button
+              className={styles['icon-btn']}
+              onClick={() => setShowHistory(false)}
+              aria-label={t('common.close')}
+            >
+              <PhosphorIcon icon={X} size={18} weight="regular" />
+            </button>
+          </div>
+          <div className={styles['history-content']}>
+            <VoiceHistory />
+          </div>
+        </div>
+      )}
     </div>
   );
 });

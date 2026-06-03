@@ -173,4 +173,16 @@ contextBridge.exposeInMainWorld("hana", {
     ipcRenderer.on("voice:ttsSpeak", handler);
     return () => ipcRenderer.removeListener("voice:ttsSpeak", handler);
   },
+
+  // VAD 能量上报已由 sendAudioEnergy 提供（见上方）
+
+  // 语音历史
+  getVoiceHistory: (query) => ipcRenderer.invoke("get-voice-history", query),
+  saveVoiceHistory: (entry) => ipcRenderer.invoke("save-voice-history", entry),
+  deleteVoiceHistory: (id) => ipcRenderer.invoke("delete-voice-history", id),
+  clearVoiceHistory: () => ipcRenderer.invoke("clear-voice-history"),
+
+  // TTS 缓存统计
+  getTTSCacheStats: () => ipcRenderer.invoke("get-tts-cache-stats"),
+  clearTTSCache: () => ipcRenderer.invoke("clear-tts-cache"),
 });

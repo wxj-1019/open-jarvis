@@ -16,7 +16,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { Play } from '@phosphor-icons/react';
+import { Play, Trash } from '@phosphor-icons/react';
 import { useSettingsStore } from '../store';
 import { hanaFetch } from '../api';
 import { t } from '../helpers';
@@ -24,6 +24,7 @@ import { SettingsSection } from '../components/SettingsSection';
 import { SettingsRow } from '../components/SettingsRow';
 import { SelectWidget } from '@/ui';
 import { PhosphorIcon } from '../../ui/PhosphorIcon';
+import { Toggle } from '../widgets/Toggle';
 import tabStyles from '../Settings.module.css';
 import styles from './VoiceTab.module.css';
 
@@ -41,9 +42,40 @@ interface STTConfig {
   language: string;
 }
 
+interface VADConfig {
+  mode: 'rms' | 'hybrid' | 'silero';
+  strictness: 'strict' | 'normal' | 'loose';
+}
+
+interface StreamingConfig {
+  enabled: boolean;
+}
+
+interface AudioPreprocessingConfig {
+  noiseReduction: boolean;
+  autoGainControl: boolean;
+  noiseProfile: 'adaptive' | 'office' | 'outdoor';
+}
+
+interface TTSCacheStats {
+  hitRate: number;
+  size: string;
+  hitCount: number;
+  missCount: number;
+}
+
+interface ErrorRecoveryConfig {
+  enabled: boolean;
+  maxRetries: number;
+}
+
 interface VoiceConfig {
   tts: TTSConfig;
   stt: STTConfig;
+  vad: VADConfig;
+  streaming: StreamingConfig;
+  audioPreprocessing: AudioPreprocessingConfig;
+  errorRecovery: ErrorRecoveryConfig;
 }
 
 const TTS_MODELS = [
@@ -107,11 +139,29 @@ export function VoiceTab() {
       engine: 'whisper',
       language: 'zh-CN',
     },
+    vad: {
+      mode: 'hybrid',
+      strictness: 'normal',
+    },
+    streaming: {
+      enabled: true,
+    },
+    audioPreprocessing: {
+      noiseReduction: true,
+      autoGainControl: true,
+      noiseProfile: 'adaptive',
+    },
+    errorRecovery: {
+      enabled: true,
+      maxRetries: 3,
+    },
   });
   const [ttsStatus, setTtsStatus] = useState<{ configured: boolean; error?: string }>({ configured: false });
   const [sttStatus, setSttStatus] = useState<{ configured: boolean; error?: string }>({ configured: false });
   const [testing, setTesting] = useState(false);
   const [metrics, setMetrics] = useState<any>({});
+  const [ttsCacheStats, setTtsCacheStats] = useState<TTSCacheStats>({ hitRate: 0, size: '0 KB', hitCount: 0, missCount: 0 });
+  const [recoveryState, setRecoveryState] = useState<string>('idle');
   const showToast = useSettingsStore(s => s.showToast);
 
   useEffect(() => {
@@ -123,6 +173,18 @@ export function VoiceTab() {
     };
     refreshMetrics();
     const interval = setInterval(refreshMetrics, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const loadTTSCacheStats = async () => {
+      try {
+        const stats = await (window as any).hana?.getTTSCacheStats?.();
+        if (stats) setTtsCacheStats(stats);
+      } catch {}
+    };
+    loadTTSCacheStats();
+    const interval = setInterval(loadTTSCacheStats, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -151,7 +213,21 @@ export function VoiceTab() {
       ...updates,
       tts: updates.tts ? { ...prev.tts, ...updates.tts } : prev.tts,
       stt: updates.stt ? { ...prev.stt, ...updates.stt } : prev.stt,
+      vad: updates.vad ? { ...prev.vad, ...updates.vad } : prev.vad,
+      streaming: updates.streaming ? { ...prev.streaming, ...updates.streaming } : prev.streaming,
+      audioPreprocessing: updates.audioPreprocessing ? { ...prev.audioPreprocessing, ...updates.audioPreprocessing } : prev.audioPreprocessing,
+      errorRecovery: updates.errorRecovery ? { ...prev.errorRecovery, ...updates.errorRecovery } : prev.errorRecovery,
     }));
+  };
+
+  const handleClearTTSCache = async () => {
+    try {
+      await (window as any).hana?.clearTTSCache?.();
+      setTtsCacheStats({ hitRate: 0, size: '0 KB', hitCount: 0, missCount: 0 });
+      showToast(t('settings.voice.cacheCleared'), 'success');
+    } catch {
+      showToast(t('settings.voice.cacheClearFailed'), 'error');
+    }
   };
 
   const testWebSpeech = (): Promise<void> =>
@@ -385,6 +461,157 @@ export function VoiceTab() {
               <div style={{ fontWeight: 600, fontSize: '18px', color: metrics.stt?.errorCount > 0 ? 'var(--color-error)' : 'inherit' }}>{metrics.stt?.errorCount ?? 0}</div>
             </div>
           </div>
+        </SettingsSection>
+
+        <SettingsSection title={t('settings.voice.vadSection')}>
+          <SettingsRow
+            label={t('settings.voice.vadMode')}
+            control={
+              <SelectWidget
+                value={config.vad.mode}
+                onChange={(mode) => patchConfig({ vad: { ...config.vad, mode: mode as VADConfig['mode'] } })}
+                options={[
+                  { value: 'rms', label: t('settings.voice.vadModeRms') },
+                  { value: 'hybrid', label: t('settings.voice.vadModeHybrid') },
+                  { value: 'silero', label: t('settings.voice.vadModeSilero') },
+                ]}
+              />
+            }
+          />
+          <SettingsRow
+            label={t('settings.voice.vadStrictness')}
+            control={
+              <SelectWidget
+                value={config.vad.strictness}
+                onChange={(strictness) => patchConfig({ vad: { ...config.vad, strictness: strictness as VADConfig['strictness'] } })}
+                options={[
+                  { value: 'strict', label: t('settings.voice.vadStrict') },
+                  { value: 'normal', label: t('settings.voice.vadNormal') },
+                  { value: 'loose', label: t('settings.voice.vadLoose') },
+                ]}
+              />
+            }
+          />
+        </SettingsSection>
+
+        <SettingsSection title={t('settings.voice.streamingSection')}>
+          <SettingsRow
+            label={t('settings.voice.enableStreaming')}
+            hint={t('settings.voice.enableStreamingHint')}
+            control={
+              <Toggle
+                on={config.streaming.enabled}
+                onChange={(enabled) => patchConfig({ streaming: { enabled } })}
+              />
+            }
+          />
+        </SettingsSection>
+
+        <SettingsSection title={t('settings.voice.audioPreprocessingSection')}>
+          <SettingsRow
+            label={t('settings.voice.noiseReduction')}
+            control={
+              <Toggle
+                on={config.audioPreprocessing.noiseReduction}
+                onChange={(noiseReduction) => patchConfig({ audioPreprocessing: { ...config.audioPreprocessing, noiseReduction } })}
+              />
+            }
+          />
+          <SettingsRow
+            label={t('settings.voice.autoGainControl')}
+            control={
+              <Toggle
+                on={config.audioPreprocessing.autoGainControl}
+                onChange={(autoGainControl) => patchConfig({ audioPreprocessing: { ...config.audioPreprocessing, autoGainControl } })}
+              />
+            }
+          />
+          <SettingsRow
+            label={t('settings.voice.noiseProfile')}
+            control={
+              <SelectWidget
+                value={config.audioPreprocessing.noiseProfile}
+                onChange={(noiseProfile) => patchConfig({ audioPreprocessing: { ...config.audioPreprocessing, noiseProfile: noiseProfile as AudioPreprocessingConfig['noiseProfile'] } })}
+                options={[
+                  { value: 'adaptive', label: t('settings.voice.noiseProfileAdaptive') },
+                  { value: 'office', label: t('settings.voice.noiseProfileOffice') },
+                  { value: 'outdoor', label: t('settings.voice.noiseProfileOutdoor') },
+                ]}
+              />
+            }
+          />
+        </SettingsSection>
+
+        <SettingsSection title={t('settings.voice.ttsCacheSection')}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px', fontSize: '14px', marginBottom: '12px' }}>
+            <div style={{ padding: '8px 12px', background: 'var(--settings-bg-secondary)', borderRadius: '8px' }}>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{t('settings.voice.cacheHitRate')}</div>
+              <div style={{ fontWeight: 600, fontSize: '18px' }}>{ttsCacheStats.hitRate ? `${ttsCacheStats.hitRate.toFixed(0)}%` : '—'}</div>
+            </div>
+            <div style={{ padding: '8px 12px', background: 'var(--settings-bg-secondary)', borderRadius: '8px' }}>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{t('settings.voice.cacheSize')}</div>
+              <div style={{ fontWeight: 600, fontSize: '18px' }}>{ttsCacheStats.size}</div>
+            </div>
+            <div style={{ padding: '8px 12px', background: 'var(--settings-bg-secondary)', borderRadius: '8px' }}>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{t('settings.voice.cacheHits')}</div>
+              <div style={{ fontWeight: 600, fontSize: '18px' }}>{ttsCacheStats.hitCount ?? 0}</div>
+            </div>
+            <div style={{ padding: '8px 12px', background: 'var(--settings-bg-secondary)', borderRadius: '8px' }}>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{t('settings.voice.cacheMisses')}</div>
+              <div style={{ fontWeight: 600, fontSize: '18px' }}>{ttsCacheStats.missCount ?? 0}</div>
+            </div>
+          </div>
+          <SettingsRow
+            label={t('settings.voice.clearCache')}
+            control={
+              <button
+                type="button"
+                className={tabStyles['settings-btn-secondary']}
+                onClick={handleClearTTSCache}
+              >
+                <PhosphorIcon icon={Trash} size={14} />
+                {t('settings.voice.clearCache')}
+              </button>
+            }
+          />
+        </SettingsSection>
+
+        <SettingsSection title={t('settings.voice.errorRecoverySection')}>
+          <SettingsRow
+            label={t('settings.voice.enableAutoRecovery')}
+            control={
+              <Toggle
+                on={config.errorRecovery.enabled}
+                onChange={(enabled) => patchConfig({ errorRecovery: { ...config.errorRecovery, enabled } })}
+              />
+            }
+          />
+          <SettingsRow
+            label={t('settings.voice.maxRetries')}
+            control={
+              <input
+                type="number"
+                min={1}
+                max={10}
+                value={config.errorRecovery.maxRetries}
+                onChange={(e) => {
+                  const val = Math.min(10, Math.max(1, parseInt(e.target.value) || 1));
+                  patchConfig({ errorRecovery: { ...config.errorRecovery, maxRetries: val } });
+                }}
+                className={tabStyles['settings-input']}
+                style={{ width: '80px', textAlign: 'center' }}
+              />
+            }
+          />
+          <SettingsRow
+            label={t('settings.voice.recoveryState')}
+            control={
+              <span className={styles.statusPill}>
+                <span className={`${styles.statusDot} ${recoveryState === 'idle' ? styles.statusOnline : styles.statusOffline}`} />
+                {t(`settings.voice.recoveryState.${recoveryState}`)}
+              </span>
+            }
+          />
         </SettingsSection>
 
         <SettingsSection title={t('settings.voice.helpSection')}>
