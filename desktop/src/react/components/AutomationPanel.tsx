@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, PencilSimple, Trash } from '@phosphor-icons/react';
+import { X, PencilSimple, Trash, Play, Clock, CaretDown, CaretUp } from '@phosphor-icons/react';
 import { PhosphorIcon } from '../ui/PhosphorIcon';
 import { useStore } from '../stores';
 import { usePanel } from '../hooks/use-panel';
@@ -37,6 +37,9 @@ export function AutomationPanel() {
 
   const [jobs, setJobs] = useState<CronJob[]>([]);
   const [availableModels, setAvailableModels] = useState<ModelOption[]>([]);
+  const [expandedRuns, setExpandedRuns] = useState<string | null>(null);
+  const [runHistories, setRunHistories] = useState<Record<string, any[]>>({});
+  const [runningJobs, setRunningJobs] = useState<Set<string>>(new Set());
 
   const loadData = useCallback(async () => {
     try {
@@ -92,6 +95,57 @@ export function AutomationPanel() {
     }
   }, [loadData]);
 
+  const runJob = useCallback(async (jobId: string) => {
+    setRunningJobs(prev => new Set(prev).add(jobId));
+    try {
+      const res = await hanaFetch('/api/desk/cron', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'run', id: jobId }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        console.error('[automation] run failed:', data.error);
+      }
+    } catch (err) {
+      console.error('[automation] run failed:', err);
+    } finally {
+      setRunningJobs(prev => {
+        const next = new Set(prev);
+        next.delete(jobId);
+        return next;
+      });
+      await loadData();
+    }
+  }, [loadData]);
+
+  const fetchRuns = useCallback(async (jobId: string) => {
+    try {
+      const res = await hanaFetch('/api/desk/cron', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'runs', id: jobId, limit: 20 }),
+      });
+      const data = await res.json();
+      if (data.ok && data.runs) {
+        setRunHistories(prev => ({ ...prev, [jobId]: data.runs }));
+      }
+    } catch (err) {
+      console.error('[automation] fetch runs failed:', err);
+    }
+  }, []);
+
+  const toggleRuns = useCallback((jobId: string | null) => {
+    setExpandedRuns(prev => {
+      const next = prev === jobId ? null : jobId;
+      // 展开时自动拉取历史
+      if (next && !(runHistories as Record<string, any[]>)[next]) {
+        fetchRuns(next);
+      }
+      return next;
+    });
+  }, [fetchRuns, runHistories]);
+
   const updateJob = useCallback(async (jobId: string, fields: Record<string, unknown>) => {
     try {
       await hanaFetch('/api/desk/cron', {
@@ -134,6 +188,11 @@ export function AutomationPanel() {
                   onToggle={toggleJob}
                   onRemove={removeJob}
                   onUpdate={updateJob}
+                  onRun={runJob}
+                  expandedRuns={expandedRuns}
+                  runHistories={runHistories}
+                  onToggleRuns={toggleRuns}
+                  runningJobs={runningJobs}
                 />
               ))
             )}
@@ -176,6 +235,11 @@ function AutomationItem({
   onToggle,
   onRemove,
   onUpdate,
+  onRun,
+  expandedRuns,
+  runHistories,
+  onToggleRuns,
+  runningJobs,
 }: {
   job: CronJob;
   availableModels: ModelOption[];
@@ -187,6 +251,11 @@ function AutomationItem({
   onToggle: (id: string) => void;
   onRemove: (id: string) => void;
   onUpdate: (id: string, fields: Record<string, unknown>) => void;
+  onRun: (id: string) => void;
+  expandedRuns: string | null;
+  runHistories: Record<string, any[]>;
+  onToggleRuns: (id: string) => void;
+  runningJobs: Set<string>;
 }) {
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
@@ -344,6 +413,14 @@ function AutomationItem({
         </div>
       </div>
       <div className={fp.autoItemActions}>
+        <button
+          className={`${fp.autoItemBtn}${(runningJobs?.has(job.id) || false) ? ` ${fp.autoItemBtnActive}` : ''}`}
+          title={(window.t ?? ((p: string) => p))('automation.run')}
+          onClick={() => onRun(job.id)}
+          disabled={(runningJobs?.has(job.id) || false)}
+        >
+          <PhosphorIcon icon={Play} size={13} />
+        </button>
         <button className={fp.autoItemBtn} title={(window.t ?? ((p: string) => p))('automation.edit')} onClick={startEdit}>
           <PhosphorIcon icon={PencilSimple} size={13} />
         </button>
@@ -351,6 +428,42 @@ function AutomationItem({
           <PhosphorIcon icon={Trash} size={13} />
         </button>
       </div>
+      {/* 运行历史 - 放在 autoItem 内部 */}
+      {expandedRuns === job.id && runHistories[job.id] && (
+        <div className={fp.autoItemRuns}>
+          <div className={fp.autoItemRunsHeader}>
+            <span>{(window.t ?? ((p: string) => p))('automation.runHistory')}</span>
+            <button className={fp.autoItemRunsClose} onClick={() => onToggleRuns(null)}>
+              <PhosphorIcon icon={CaretUp} size={12} />
+            </button>
+          </div>
+          <div className={fp.autoItemRunsList}>
+            {(runHistories[job.id] || []).map((run: any, idx: number) => (
+              <div key={idx} className={`${fp.autoItemRunRow}${run.status === 'error' ? ` ${fp.autoItemRunError}` : run.status === 'success' ? ` ${fp.autoItemRunSuccess}` : ''}`}>
+                <span className={fp.autoItemRunStatus}>
+                  {run.status === 'error' ? '❌' : run.status === 'success' ? '✅' : '⏳'}
+                </span>
+                <span className={fp.autoItemRunTime}>
+                  {run.timestamp ? new Date(run.timestamp).toLocaleString() : (run.startedAt ? new Date(run.startedAt).toLocaleString() : '')}
+                </span>
+                {run.error && <span className={fp.autoItemRunErrorMsg}>{run.error}</span>}
+              </div>
+            ))}
+            {(!(runHistories[job.id] || []).length) && (
+              <div className={fp.autoItemRunsEmpty}>{(window.t ?? ((p: string) => p))('automation.noRuns')}</div>
+            )}
+          </div>
+        </div>
+      )}
+      {/* 展开历史按钮（未展开时显示） */}
+      {expandedRuns !== job.id && (
+        <button className={fp.autoItemRunsToggle} onClick={() => {
+          if (expandedRuns === job.id) { onToggleRuns(null); } else { onToggleRuns(job.id); }
+        }}>
+          <PhosphorIcon icon={Clock} size={12} />
+          <span>{(window.t ?? ((p: string) => p))('automation.viewRuns')}</span>
+        </button>
+      )}
     </div>
   );
 }

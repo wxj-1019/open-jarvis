@@ -467,6 +467,33 @@ export function createDeskRoute(engine, hub) {
         return c.json({ ok: true, job, jobs: store.listJobs() });
       }
 
+      case "run": {
+        if (!params.id) return c.json({ error: "id required" });
+        const runJob = store.getJob(params.id);
+        if (!runJob) return c.json({ error: "not found" }, 404);
+        try {
+          const result = await engine.executeCronJob?.(params.id) ?? null;
+          store.markRun(params.id, { success: true });
+          return c.json({ ok: true, result });
+        } catch (err) {
+          store.markRun(params.id, { success: false });
+          store.logRun(params.id, {
+            status: "error",
+            error: err.message,
+            startedAt: new Date().toISOString(),
+            finishedAt: new Date().toISOString(),
+          });
+          return c.json({ ok: false, error: err.message });
+        }
+      }
+
+      case "runs": {
+        if (!params.id) return c.json({ error: "id required" });
+        const limit = Number.isFinite(Number(params.limit)) ? Number(params.limit) : 20;
+        const history = store.getRunHistory(params.id, limit);
+        return c.json({ ok: true, id: params.id, runs: history });
+      }
+
       default:
         return c.json({ error: `unknown action: ${action}` });
     }

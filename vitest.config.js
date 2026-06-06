@@ -23,7 +23,7 @@ export default defineConfig({
     ],
     testTimeout: 5_000,
     hookTimeout: 5_000,
-    setupFiles: ["./tests/setup-auto-updater.js"],
+    setupFiles: ["./tests/_setup/setup-auto-updater.js"],
     pool: 'threads',
     poolOptions: {
       threads: {
