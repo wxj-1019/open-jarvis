@@ -62,6 +62,22 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}) 
       && (!!(window as any).webkitSpeechRecognition || !!(window as any).SpeechRecognition);
   }, []);
 
+  // 通过 IPC 调用主进程 Whisper STT
+  const transcribeViaIPC = useCallback(async (blob: Blob): Promise<string> => {
+    try {
+      const arrayBuffer = await blob.arrayBuffer();
+      const result = await (window as any).hana?.invokeVoiceTranscribe?.(arrayBuffer, blob.type);
+      if (result?.success && result.text) {
+        return result.text;
+      }
+      console.warn('[VoiceConversation] IPC STT failed, falling back to Web Speech:', result?.error);
+      return '';
+    } catch (err) {
+      console.warn('[VoiceConversation] IPC STT error, falling back to Web Speech:', err);
+      return '';
+    }
+  }, []);
+
   // 停止识别
   const stopRecognition = useCallback(() => {
     if (recognitionRef.current) {
@@ -209,75 +225,112 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}) 
     setAiText('');
     onUserText?.('');
 
-    const SpeechRecognitionCtor = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-    if (!SpeechRecognitionCtor) {
-      updateState('error');
-      return;
-    }
-
     let recognizedText = '';
 
-    try {
-      recognizedText = await new Promise<string>((resolve, reject) => {
-        const recognition = new SpeechRecognitionCtor();
-        recognition.continuous = false;
-        recognition.interimResults = true;
-        recognition.lang = lang;
-        recognitionRef.current = recognition;
-        stoppingRef.current = false;
+    // ── STT 路径 A: IPC + Whisper（优先） ──
+    const ipcAvailable = !!(window as any).hana?.invokeVoiceTranscribe;
 
-        let finalText = '';
+    if (ipcAvailable) {
+      try {
+        const { AudioRecorder } = await import('../utils/audio-recorder');
+        const recorder = new AudioRecorder({ sampleRate: 16000, maxDurationMs: 30000 });
 
-        recognition.onresult = (event: any) => {
-          let interim = '';
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            const transcript = event.results[i][0].transcript;
-            if (event.results[i].isFinal) {
-              finalText += transcript;
-            } else {
-              interim += transcript;
+        recognizedText = await new Promise<string>((resolve, reject) => {
+          recorder.setCallbacks({
+            onData: async (result: { blob: Blob }) => {
+              try {
+                const text = await transcribeViaIPC(result.blob);
+                resolve(text);
+              } catch (err) {
+                reject(err);
+              }
+            },
+            onError: (err: Error) => reject(err),
+          });
+          recorder.start();
+
+          // 超时兜底
+          setTimeout(() => {
+            if (recorder.getState() === 'recording') {
+              recorder.stop();
             }
-          }
-          const displayText = finalText + interim;
-          setUserText(displayText);
-          onUserText?.(displayText);
-        };
-
-        recognition.onend = () => {
-          if (stoppingRef.current) {
-            resolve('');
-          } else {
-            resolve(finalText.trim());
-          }
-        };
-
-        recognition.onerror = (event: any) => {
-          if (event.error === 'aborted' || event.error === 'no-speech') {
-            resolve(finalText.trim());
-          } else {
-            reject(new Error(`Speech recognition error: ${event.error}`));
-          }
-        };
-
-        try {
-          recognition.start();
-        } catch (err) {
-          reject(err);
-        }
-      });
-    } catch (err) {
-      console.error('[VoiceConversation] STT error:', err);
-      if (activeRef.current && !stoppingRef.current) {
-        updateState('error');
-        // 错误后短暂等待再重试
-        setTimeout(() => {
-          if (activeRef.current && continuous) {
-            updateState('idle');
-            startConversationTurn();
-          }
-        }, 2000);
+          }, 30000);
+        });
+      } catch (err) {
+        console.warn('[VoiceConversation] IPC STT path failed:', err);
+        recognizedText = '';
       }
-      return;
+    }
+
+    // ── STT 路径 B: Web Speech API（Fallback） ──
+    if (!recognizedText && !ipcAvailable) {
+      const SpeechRecognitionCtor = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+      if (!SpeechRecognitionCtor) {
+        updateState('error');
+        return;
+      }
+
+      try {
+        recognizedText = await new Promise<string>((resolve, reject) => {
+          const recognition = new SpeechRecognitionCtor();
+          recognition.continuous = false;
+          recognition.interimResults = true;
+          recognition.lang = lang;
+          recognitionRef.current = recognition;
+          stoppingRef.current = false;
+
+          let finalText = '';
+
+          recognition.onresult = (event: any) => {
+            let interim = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+              const transcript = event.results[i][0].transcript;
+              if (event.results[i].isFinal) {
+                finalText += transcript;
+              } else {
+                interim += transcript;
+              }
+            }
+            const displayText = finalText + interim;
+            setUserText(displayText);
+            onUserText?.(displayText);
+          };
+
+          recognition.onend = () => {
+            if (stoppingRef.current) {
+              resolve('');
+            } else {
+              resolve(finalText.trim());
+            }
+          };
+
+          recognition.onerror = (event: any) => {
+            if (event.error === 'aborted' || event.error === 'no-speech') {
+              resolve(finalText.trim());
+            } else {
+              reject(new Error(`Speech recognition error: ${event.error}`));
+            }
+          };
+
+          try {
+            recognition.start();
+          } catch (err) {
+            reject(err);
+          }
+        });
+      } catch (err) {
+        console.error('[VoiceConversation] Web Speech STT error:', err);
+        if (activeRef.current && !stoppingRef.current) {
+          updateState('error');
+          setTimeout(() => {
+            if (activeRef.current && continuous) {
+              updateState('idle');
+              startConversationTurn();
+            }
+          }, 2000);
+        }
+        return;
+      }
     }
 
     recognitionRef.current = null;

@@ -2,7 +2,7 @@
  * ChannelTabBar — top tab bar (chat / channels / voice)
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useStore } from '../../stores';
 import type { TabType } from '../../types';
 import { toggleSidebar } from '../SidebarLayout';
