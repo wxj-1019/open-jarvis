@@ -383,6 +383,19 @@ function registerVoiceIPCHandlers() {
     return { success: true };
   });
 
+  // TTS 缓存统计
+  ipcMain.handle("get-tts-cache-stats", () => {
+    const stats = voiceManager._tts?.getCacheStats?.();
+    return stats || { size: 0, maxSize: 0, hitCount: 0, missCount: 0, hitRate: 0 };
+  });
+
+  ipcMain.handle("clear-tts-cache", () => {
+    if (voiceManager._tts?._cache) {
+      voiceManager._tts._cache.clear();
+    }
+    return { ok: true };
+  });
+
   console.log("[VoiceConversationManager] IPC 处理已注册");
 }
 
