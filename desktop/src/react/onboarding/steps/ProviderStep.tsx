@@ -2,8 +2,8 @@
  * ProviderStep.tsx — Step 2: Provider configuration + connection test
  */
 
-import { useState, useCallback } from 'react';
-import { Eye, EyeSlash, CaretDown } from '@phosphor-icons/react';
+import { useState, useCallback, useEffect } from 'react';
+import { Eye, EyeSlash, CaretDown, CheckCircle, Warning } from '@phosphor-icons/react';
 import { PhosphorIcon } from '../../ui/PhosphorIcon';
 import { PROVIDER_PRESETS } from '../constants';
 import type { ProviderPreset } from '../constants';
@@ -36,6 +36,24 @@ export function ProviderStep({
   const [showKey, setShowKey] = useState(false);
   const [providerMenuOpen, setProviderMenuOpen] = useState(false);
   const [providerSearch, setProviderSearch] = useState('');
+
+  // ── Ollama auto-detect ──
+  const [ollamaDetected, setOllamaDetected] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('http://localhost:11434/v1/models', { method: 'GET' } as RequestInit)
+      .then(res => {
+        if (cancelled) return;
+        if (res.ok) {
+          setOllamaDetected(true);
+          const preset = PROVIDER_PRESETS.find(p => p.value === 'ollama');
+          if (preset) selectPreset(preset);
+        }
+      })
+      .catch(() => { /* ignore – Ollama not running */ });
+    return () => { cancelled = true; };
+  }, [selectPreset]);
 
   // ── Custom provider fields ──
   const [customName, setCustomName] = useState('');
@@ -72,8 +90,8 @@ export function ProviderStep({
       setProviderName(preset.value);
       setProviderUrl(preset.url);
       setProviderApi(preset.api);
-      setIsLocalProvider(!!preset.local);
-      if (preset.local) setApiKey('');
+      setIsLocalProvider(!!preset.local || preset.value === 'demo');
+      if (preset.local || preset.value === 'demo') setApiKey('');
     }
   }, [customName, customUrl, customApi]);
 
@@ -182,6 +200,20 @@ export function ProviderStep({
           </div>
         )}
       </div>
+
+      {ollamaDetected && selectedPreset === 'ollama' && (
+        <div className="ob-olloma-hint">
+          <PhosphorIcon icon={CheckCircle} size={16} />
+          <span>{t('onboarding.provider.ollamaDetected')}</span>
+        </div>
+      )}
+
+      {selectedPreset === 'demo' && (
+        <div className="ob-demo-hint">
+          <PhosphorIcon icon={Warning} size={16} />
+          <span>{t('onboarding.provider.demoHint')}</span>
+        </div>
+      )}
 
       {/* Custom provider fields */}
       {selectedPreset === '_custom' && (

@@ -22,15 +22,9 @@ const log = createModuleLogger("voice");
 function getOpenAIKey(engine) {
   try {
     // 尝试从 provider credentials 获取
-    const credentials = engine.getProviderCredentials?.("openai");
+    const credentials = engine?.providerRegistry?.getCredentials?.("openai");
     if (credentials?.apiKey) {
       return credentials.apiKey;
-    }
-
-    // 尝试从配置获取
-    const config = engine.getConfig?.();
-    if (config?.providers?.openai?.apiKey) {
-      return config.providers.openai.apiKey;
     }
   } catch (err) {
     log?.warn?.("Failed to get OpenAI credentials:", err.message);

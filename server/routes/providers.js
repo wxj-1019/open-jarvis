@@ -349,6 +349,15 @@ export function createProvidersRoute(engine) {
       return c.json({ error: "name or base_url is required" }, 400);
     }
 
+    // Demo mode: return mock models immediately
+    const demoApi = explicitApi || (name ? engine.resolveProviderCredentials?.(name)?.api : "");
+    if (demoApi === "demo" || explicitApi === "demo") {
+      const demoModels = [
+        { id: "demo-model", name: "Demo Model (No API Key needed)", context: 4096, maxOutput: 1024 },
+      ];
+      return c.json({ models: demoModels, source: "builtin" });
+    }
+
     // ── 1. 凭证解析：请求体 > resolveProviderCredentials（统一路径） ──
     const saved = name ? engine.resolveProviderCredentials(name) : { api_key: "", base_url: "", api: "" };
 
@@ -439,13 +448,15 @@ export function createProvidersRoute(engine) {
     if (scopeDenied) return scopeDenied;
     const secretDenied = denySecretMutationWithoutScope(c, collectSecretPatchPaths(body, ["api_key"]));
     if (secretDenied) return secretDenied;
+
+    // Demo mode: always succeed
+    if (body.api === "demo") {
+      return c.json({ ok: true });
+    }
+
     const { name } = body;
-    // 清洗 API key：去除非 ASCII 字符（防止粘贴时输入法带入中文）
     const bodyKey = (body.api_key || "").replace(/[^\x20-\x7E]/g, "").trim();
-
-    // ── 凭证解析：请求体 > resolveProviderCredentials（统一路径） ──
     const saved = name ? engine.resolveProviderCredentials(name) : { api_key: "", base_url: "", api: "" };
-
     const api_key = bodyKey
       ? (isMaskedSecretValue(bodyKey) ? saved.api_key || "" : bodyKey)
       : saved.api_key || "";

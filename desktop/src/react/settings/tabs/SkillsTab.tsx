@@ -467,6 +467,14 @@ export function SkillsTab() {
     <div className={`${tabStyles['settings-tab-content']} ${tabStyles['active']}`} data-tab="skills">
       <div className={styles.root}>
         <p className={styles.intro}>{t('settings.skills.pageDesc')}</p>
+        <button
+          type="button"
+          className={tabStyles['settings-save-btn-sm']}
+          onClick={() => useSettingsStore.getState().set({ activeTab: 'skills-marketplace' })}
+          style={{ marginBottom: 12 }}
+        >
+          浏览技能市场
+        </button>
 
       <SettingsSection
         title={t('settings.skills.manageTitle')}

@@ -98,7 +98,10 @@ export function SettingsNav({ onTabChange }: SettingsNavProps) {
   );
   const set = useSettingsStore(s => s.set);
   const navItems = buildNavItems(pluginSettingsTabs || [], platformName);
-  const activeNavTab = activeTab === 'plugin-marketplace' ? 'plugins' : activeTab;
+  const activeNavTab = activeTab === 'plugin-marketplace' ? 'plugins'
+    : activeTab === 'skills-marketplace' ? 'skills'
+    : activeTab === 'experts-marketplace' ? 'agent'
+    : activeTab;
 
   return (
     <nav className={styles['settings-nav']} data-ui-scale-wheel="ignore">

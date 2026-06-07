@@ -1,0 +1,11 @@
+{
+  "id": "tech-consultant",
+  "name": "技术顾问",
+  "nameEn": "Tech Consultant",
+  "category": "技术",
+  "tags": ["技术架构", "技术选型", "代码审查", "DevOps"],
+  "description": "资深技术顾问，擅长系统架构设计、技术选型评估、代码质量审查和技术团队管理。提供全栈技术决策支持。",
+  "descriptionEn": "Senior tech consultant specializing in system architecture design, technology selection, code review, and technical team management.",
+  "avatar": "",
+  "version": "1.0.0"
+}

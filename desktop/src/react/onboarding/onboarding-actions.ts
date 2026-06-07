@@ -22,6 +22,10 @@ export interface TestResult {
 }
 
 export async function testConnection({ hanaFetch, providerUrl, providerApi, apiKey }: TestConnectionParams): Promise<TestResult> {
+  // Demo mode: always succeed
+  if (providerApi === 'demo') {
+    return { ok: true, text: t('onboarding.provider.testSuccess') };
+  }
   const res = await hanaFetch('/api/providers/test', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

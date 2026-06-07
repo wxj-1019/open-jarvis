@@ -3373,22 +3373,57 @@ html[data-platform="linux"] .onboarding {
     border-radius: var(--radius-md, 8px);
     border: none;
     cursor: pointer;
-    transition: all var(--duration-fast);
+    min-height: var(--touch-target-min, 32px);
+    min-width: var(--touch-target-min, 32px);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--duration-fast, 0.15s),
+                transform var(--duration-instant, 0.12s),
+                box-shadow var(--duration-fast, 0.15s),
+                opacity var(--duration-fast, 0.15s);
+    user-select: none;
+    position: relative;
+}
+.ob-btn:active {
+    transform: scale(0.97);
+}
+.ob-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
 }
 .ob-btn-primary {
     background: var(--accent);
     color: white;
 }
-.ob-btn-primary:hover { opacity: 0.9; }
+.ob-btn-primary:hover {
+    opacity: 0.92;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.ob-btn-primary:active {
+    transform: translateY(0) scale(0.97);
+}
 .ob-btn-primary:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 .ob-btn-secondary {
     background: none;
     color: var(--text-light);
+    border: 0.5px solid color-mix(in srgb, var(--text) 12%, transparent);
 }
-.ob-btn-secondary:hover { color: var(--text); }
+.ob-btn-secondary:hover {
+    color: var(--text);
+    background: color-mix(in srgb, var(--text) 5%, transparent);
+    border-color: color-mix(in srgb, var(--text) 20%, transparent);
+}
+.ob-btn-secondary:active {
+    transform: scale(0.97);
+    background: color-mix(in srgb, var(--text) 8%, transparent);
+}
 
 /* ── Input ── */
 .ob-input {
@@ -3400,12 +3435,18 @@ html[data-platform="linux"] .onboarding {
     background-color: var(--bg-card);
     color: var(--text);
     outline: none;
-    transition: border-color var(--duration-fast);
+    transition: border-color var(--duration-fast),
+                box-shadow var(--duration-fast),
+                background var(--duration-fast);
     width: 100%;
     box-sizing: border-box;
 }
+.ob-input:hover {
+    border-color: color-mix(in srgb, var(--text) 22%, transparent);
+}
 .ob-input:focus {
     border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
 }
 .ob-input::placeholder {
     color: var(--text-muted);
@@ -3599,6 +3640,26 @@ html[data-platform="linux"] .onboarding {
 .ob-status.success { color: var(--green, #6b9); }
 .ob-status.error { color: var(--coral, #c66); }
 .ob-status.loading { color: var(--text-muted); }
+
+/* ── Ollama / Demo hints ── */
+.ob-olloma-hint,
+.ob-demo-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm, 6px);
+    font-size: 0.78rem;
+}
+.ob-olloma-hint {
+    background: rgba(52, 168, 83, 0.1);
+    color: var(--green, #6b9);
+}
+.ob-demo-hint {
+    background: rgba(255, 179, 0, 0.1);
+    color: var(--amber, #b76);
+}
 
 /* ── Model list ── */
 .ob-model-search {
@@ -4434,4 +4495,54 @@ html[data-platform="linux"] .onboarding {
     margin: 0;
     font-size: 0.8rem;
     color: var(--text-muted, #6b7280);
+}
+
+/* ── 全局骨架屏闪烁（加载占位） ── */
+.hana-skeleton {
+    background: linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--text) 6%, transparent) 0%,
+        color-mix(in srgb, var(--text) 12%, transparent) 40%,
+        color-mix(in srgb, var(--text) 6%, transparent) 80%
+    );
+    background-size: 200% 100%;
+    animation: hana-skeleton-shimmer 1.8s ease-in-out infinite;
+    border-radius: var(--radius-sm, 6px);
+    pointer-events: none;
+    user-select: none;
+}
+
+.hana-skeleton-text {
+    height: 0.9em;
+    margin-bottom: 0.5em;
+    composes: hana-skeleton from global;
+}
+
+.hana-skeleton-text:last-child {
+    width: 60%;
+}
+
+.hana-skeleton-block {
+    height: 80px;
+    width: 100%;
+    composes: hana-skeleton from global;
+}
+
+.hana-skeleton-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    composes: hana-skeleton from global;
+}
+
+@keyframes hana-skeleton-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hana-skeleton {
+        animation: none;
+        background: color-mix(in srgb, var(--text) 6%, transparent);
+    }
 }

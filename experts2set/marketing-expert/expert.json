@@ -1,0 +1,11 @@
+{
+  "id": "marketing-expert",
+  "name": "市场营销专家",
+  "nameEn": "Marketing Expert",
+  "category": "市场营销",
+  "tags": ["品牌策划", "数字营销", "用户增长", "市场分析"],
+  "description": "资深市场营销专家，擅长品牌策略、数字营销、用户增长和市场数据分析。帮助企业提升品牌影响力和市场竞争力。",
+  "descriptionEn": "Senior marketing expert specializing in brand strategy, digital marketing, user growth, and market data analysis.",
+  "avatar": "",
+  "version": "1.0.0"
+}

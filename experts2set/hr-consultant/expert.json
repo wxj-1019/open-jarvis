@@ -1,0 +1,11 @@
+{
+  "id": "hr-consultant",
+  "name": "人力资源顾问",
+  "nameEn": "HR Consultant",
+  "category": "人力资源",
+  "tags": ["招聘", "绩效管理", "员工关系", "薪酬福利"],
+  "description": "资深人力资源顾问，擅长招聘策略、绩效体系设计、员工关系管理和薪酬福利规划。提供全流程 HR 解决方案。",
+  "descriptionEn": "Senior HR consultant specializing in recruitment strategy, performance systems, employee relations, and compensation planning. Provides end-to-end HR solutions.",
+  "avatar": "",
+  "version": "1.0.0"
+}

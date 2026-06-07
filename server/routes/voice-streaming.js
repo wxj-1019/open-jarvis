@@ -19,13 +19,9 @@ const log = createModuleLogger("voice-streaming");
 // Reuse helpers from voice.js pattern
 function getOpenAIKey(engine) {
   try {
-    const credentials = engine.getProviderCredentials?.("openai");
+    const credentials = engine?.providerRegistry?.getCredentials?.("openai");
     if (credentials?.apiKey) {
       return credentials.apiKey;
-    }
-    const config = engine.getConfig?.();
-    if (config?.providers?.openai?.apiKey) {
-      return config.providers.openai.apiKey;
     }
   } catch (err) {
     log?.warn?.("Failed to get OpenAI credentials:", err.message);

@@ -21,7 +21,9 @@ describe("voice route", () => {
     // 模拟 engine 对象
     mockEngine = {
       hanakoHome: tmpDir,
-      getProviderCredentials: vi.fn(),
+      providerRegistry: {
+        getCredentials: vi.fn(),
+      },
       getConfig: vi.fn(),
     };
 
@@ -43,7 +45,7 @@ describe("voice route", () => {
 
   describe("GET /api/voice/config", () => {
     it("returns configured: true when API key is available", async () => {
-      mockEngine.getProviderCredentials.mockReturnValue({ apiKey: "sk-test-key" });
+      mockEngine.providerRegistry.getCredentials.mockReturnValue({ apiKey: "sk-test-key" });
 
       const res = await app.request("/api/voice/config");
       expect(res.status).toBe(200);
@@ -57,7 +59,7 @@ describe("voice route", () => {
     });
 
     it("returns configured: false when API key is missing", async () => {
-      mockEngine.getProviderCredentials.mockReturnValue(null);
+      mockEngine.providerRegistry.getCredentials.mockReturnValue(null);
       mockEngine.getConfig.mockReturnValue({});
 
       const res = await app.request("/api/voice/config");
@@ -72,7 +74,7 @@ describe("voice route", () => {
     });
 
     it("returns custom baseUrl when configured", async () => {
-      mockEngine.getProviderCredentials.mockReturnValue({ apiKey: "sk-test-key" });
+      mockEngine.providerRegistry.getCredentials.mockReturnValue({ apiKey: "sk-test-key" });
       mockEngine.getConfig.mockReturnValue({
         voice: { whisperBaseUrl: "http://localhost:8080/v1" },
       });
@@ -87,16 +89,18 @@ describe("voice route", () => {
       });
     });
 
-    it("falls back to getConfig when getProviderCredentials unavailable", async () => {
-      mockEngine.getProviderCredentials.mockReturnValue(null);
-      mockEngine.getConfig.mockReturnValue({
-        providers: { openai: { apiKey: "sk-from-config" } },
-      });
+    it("falls back to environment variable when provider credentials unavailable", async () => {
+      mockEngine.providerRegistry.getCredentials.mockReturnValue(null);
+      mockEngine.getConfig.mockReturnValue({});
+      // 设置环境变量作为后备
+      process.env.OPENAI_API_KEY = "sk-from-env";
 
       const res = await app.request("/api/voice/config");
       const data = await res.json();
 
       expect(data.configured).toBe(true);
+
+      delete process.env.OPENAI_API_KEY;
     });
   });
 
@@ -104,7 +108,7 @@ describe("voice route", () => {
 
   describe("POST /api/voice/transcribe", () => {
     it("rejects missing audio file", async () => {
-      mockEngine.getProviderCredentials.mockReturnValue({ apiKey: "sk-test-key" });
+      mockEngine.providerRegistry.getCredentials.mockReturnValue({ apiKey: "sk-test-key" });
 
       const formData = new FormData();
       const res = await app.request("/api/voice/transcribe", {
@@ -118,7 +122,7 @@ describe("voice route", () => {
     });
 
     it("rejects unsupported audio format", async () => {
-      mockEngine.getProviderCredentials.mockReturnValue({ apiKey: "sk-test-key" });
+      mockEngine.providerRegistry.getCredentials.mockReturnValue({ apiKey: "sk-test-key" });
 
       const formData = new FormData();
       const file = new File(["test"], "audio.exe", { type: "application/octet-stream" });
@@ -135,7 +139,7 @@ describe("voice route", () => {
     });
 
     it("rejects empty audio file", async () => {
-      mockEngine.getProviderCredentials.mockReturnValue({ apiKey: "sk-test-key" });
+      mockEngine.providerRegistry.getCredentials.mockReturnValue({ apiKey: "sk-test-key" });
 
       const formData = new FormData();
       const file = new File([], "audio.webm", { type: "audio/webm" });
@@ -152,7 +156,7 @@ describe("voice route", () => {
     });
 
     it("rejects when API key is not configured", async () => {
-      mockEngine.getProviderCredentials.mockReturnValue(null);
+      mockEngine.providerRegistry.getCredentials.mockReturnValue(null);
       mockEngine.getConfig.mockReturnValue({});
 
       const formData = new FormData();
@@ -171,7 +175,7 @@ describe("voice route", () => {
     });
 
     it("rejects file too large (>25MB)", async () => {
-      mockEngine.getProviderCredentials.mockReturnValue({ apiKey: "sk-test-key" });
+      mockEngine.providerRegistry.getCredentials.mockReturnValue({ apiKey: "sk-test-key" });
 
       const formData = new FormData();
       // Create a blob larger than 25MB
@@ -190,7 +194,7 @@ describe("voice route", () => {
     });
 
     it("calls Whisper API with correct parameters", async () => {
-      mockEngine.getProviderCredentials.mockReturnValue({ apiKey: "sk-test-key" });
+      mockEngine.providerRegistry.getCredentials.mockReturnValue({ apiKey: "sk-test-key" });
 
       // Mock fetch for Whisper API
       const mockFetch = vi.fn().mockResolvedValue(
@@ -237,7 +241,7 @@ describe("voice route", () => {
     });
 
     it("handles Whisper API errors gracefully", async () => {
-      mockEngine.getProviderCredentials.mockReturnValue({ apiKey: "sk-test-key" });
+      mockEngine.providerRegistry.getCredentials.mockReturnValue({ apiKey: "sk-test-key" });
 
       // Mock fetch to return 401 error
       const mockFetch = vi.fn().mockResolvedValue(
@@ -266,7 +270,7 @@ describe("voice route", () => {
     });
 
     it("handles rate limit errors (429)", async () => {
-      mockEngine.getProviderCredentials.mockReturnValue({ apiKey: "sk-test-key" });
+      mockEngine.providerRegistry.getCredentials.mockReturnValue({ apiKey: "sk-test-key" });
 
       const mockFetch = vi.fn().mockResolvedValue(
         new Response("Rate limit exceeded", {
@@ -300,7 +304,7 @@ describe("voice route", () => {
       ];
 
       for (const format of formats) {
-        mockEngine.getProviderCredentials.mockReturnValue({ apiKey: "sk-test-key" });
+        mockEngine.providerRegistry.getCredentials.mockReturnValue({ apiKey: "sk-test-key" });
 
         const mockFetch = vi.fn().mockResolvedValue(
           new Response(JSON.stringify({ text: "Test" }), {
@@ -327,7 +331,7 @@ describe("voice route", () => {
     });
 
     it("uses custom whisperBaseUrl when configured", async () => {
-      mockEngine.getProviderCredentials.mockReturnValue({ apiKey: "sk-test-key" });
+      mockEngine.providerRegistry.getCredentials.mockReturnValue({ apiKey: "sk-test-key" });
       mockEngine.getConfig.mockReturnValue({
         voice: { whisperBaseUrl: "http://localhost:8080/v1" },
       });

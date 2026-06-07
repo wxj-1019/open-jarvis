@@ -1732,6 +1732,8 @@
       "testing": "连接中...",
       "testSuccess": "连接成功 ✿",
       "testFailed": "连接失败",
+      "ollamaDetected": "已检测到本地 Ollama，已自动选中",
+      "demoHint": "演示模式：无需 API Key，可先体验界面",
       "back": "上一步",
       "next": "下一步"
     },
@@ -1793,6 +1795,36 @@
       "skills": {
         "title": "技能",
         "desc": "我可以读写文件、执行命令、搜索网页。在设置中可以管理更多技能。"
+      },
+      "experts": {
+        "marketplaceHint": "浏览并安装专家角色模板，快速创建专业领域助手",
+        "marketplaceCount": "共 {count} 个专家角色",
+        "marketplaceNoSource": "专家市场目录未找到",
+        "marketplaceEmpty": "暂无专家角色模板",
+        "marketLoading": "加载中...",
+        "marketLoadError": "加载专家市场失败",
+        "marketBack": "返回 Agent 设置",
+        "marketInstall": "安装",
+        "marketInstalled": "已安装",
+        "installing": "安装中...",
+        "installSuccess": "专家「{name}」安装成功",
+        "installError": "安装失败",
+        "marketSelectExpert": "请在左侧选择专家角色"
+      },
+      "cloud": {
+        "title": "云端沙箱",
+        "description": "让 Agent 在云端执行任务，即使电脑关机也能工作。",
+        "enable": "启用云端沙箱（MVP）",
+        "endpoint": "云端 API 地址",
+        "apiKeyPlaceholder": "可选，取决于云端服务商",
+        "testTask": "提交测试任务",
+        "promptPlaceholder": "输入任务描述…",
+        "submit": "提交任务",
+        "status": "状态",
+        "taskSubmitted": "任务已提交，ID：{taskId}",
+        "taskRunning": "任务执行中…",
+        "taskDone": "任务完成",
+        "taskError": "任务失败：{error}"
       },
       "workspace": {
         "title": "工作台",
@@ -2601,7 +2633,9 @@
     "work": "工作台",
     "computer": "使用电脑",
     "skills": "技能",
+    "skillsMarketplace": "技能市场",
     "bridge": "社交平台",
+    "cloud": "云端沙箱",
     "providers": "供应商",
     "media": "多媒体",
     "voice": "语音",
@@ -2609,6 +2643,7 @@
     "access": "访问与设备",
     "plugins": "插件",
     "pluginMarketplace": "插件市场",
+    "expertsMarketplace": "专家市场",
     "security": "安全",
     "about": "关于",
     "backup": "备份与恢复"

@@ -10,6 +10,7 @@ export interface ProviderPreset {
 
 export const API_PROVIDER_PRESETS: ProviderPreset[] = [
   { value: 'ollama',      label: 'Ollama (Local)',       labelZh: 'Ollama (本地)',       url: 'http://localhost:11434/v1', api: 'openai-completions', local: true },
+  { value: 'demo',        label: 'Demo Mode (No API Key)', labelZh: '演示模式（无需 API Key）', url: '', api: 'demo', local: true },
   { value: 'dashscope',   label: 'DashScope (Qwen)',     url: 'https://dashscope.aliyuncs.com/compatible-mode/v1', api: 'openai-completions' },
   { value: 'openai',      label: 'OpenAI',               url: 'https://api.openai.com/v1', api: 'openai-completions' },
   { value: 'gemini',      label: 'Google Gemini',        url: 'https://generativelanguage.googleapis.com/v1beta', api: 'google-generative-ai' },

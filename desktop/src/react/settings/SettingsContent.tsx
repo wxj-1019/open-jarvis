@@ -36,6 +36,9 @@ import { SecurityTab } from './tabs/SecurityTab';
 import { SharingTab } from './tabs/SharingTab';
 import { AccessTab } from './tabs/AccessTab';
 import { BackupTab } from './tabs/BackupTab';
+import { SkillsMarketplaceTab } from './tabs/SkillsMarketplaceTab';
+import { ExpertsMarketplaceTab } from './tabs/ExpertsMarketplaceTab';
+import { CloudTab } from './tabs/CloudTab';
 import { getNativeSettingsTabComponent } from './native-settings-tabs';
 import { CropOverlay } from './overlays/CropOverlay';
 import { AgentCreateOverlay } from './overlays/AgentCreateOverlay';
@@ -56,6 +59,7 @@ const TAB_COMPONENTS: Record<string, React.ComponentType> = {
   work: WorkTab,
   computer: ComputerUseTab,
   skills: SkillsTab,
+  'skills-marketplace': SkillsMarketplaceTab,
   mcp: McpTab,
   bridge: BridgeTab,
   providers: ProvidersTab,
@@ -65,6 +69,8 @@ const TAB_COMPONENTS: Record<string, React.ComponentType> = {
   access: AccessTab,
   plugins: PluginsTab,
   'plugin-marketplace': PluginMarketplaceTab,
+  'experts-marketplace': ExpertsMarketplaceTab,
+  cloud: CloudTab,
   security: SecurityTab,
   about: AboutTab,
   backup: BackupTab,
@@ -96,6 +102,7 @@ function getTabTitle(tab: string): string {
     work: t('settingsTabs.work'),
     computer: t('settingsTabs.computer'),
     skills: t('settingsTabs.skills'),
+    'skills-marketplace': t('settingsTabs.skillsMarketplace'),
     bridge: t('settingsTabs.bridge'),
     providers: t('settingsTabs.providers'),
     media: t('settingsTabs.media'),
@@ -104,6 +111,8 @@ function getTabTitle(tab: string): string {
     access: t('settingsTabs.access'),
     plugins: t('settingsTabs.plugins'),
     'plugin-marketplace': t('settingsTabs.pluginMarketplace'),
+    'experts-marketplace': t('settingsTabs.expertsMarketplace'),
+    cloud: t('settingsTabs.cloud'),
     security: t('settingsTabs.security'),
     about: t('settingsTabs.about'),
     backup: t('settingsTabs.backup'),

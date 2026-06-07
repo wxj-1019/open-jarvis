@@ -1,0 +1,11 @@
+{
+  "id": "legal-advisor",
+  "name": "法律顾问",
+  "nameEn": "Legal Advisor",
+  "category": "法律",
+  "tags": ["合同审查", "法律咨询", "合规审查", "风险评估"],
+  "description": "专业法律顾问，擅长合同审查、法律风险评估、合规咨询和企业法务支持。基于中国法律法规提供专业建议。",
+  "descriptionEn": "Professional legal advisor specializing in contract review, legal risk assessment, compliance consulting, and corporate legal support. Provides advice based on Chinese laws and regulations.",
+  "avatar": "",
+  "version": "1.0.0"
+}

@@ -944,5 +944,133 @@ export function createAgentsRoute(engine) {
     }
   });
 
+  // ── 专家市场 ──
+  // 返回 experts2set/ 内置专家角色列表
+  route.get("/agents/marketplace", async (c) => {
+    try {
+      const rootDir = path.resolve(path.join(path.dirname(new URL(import.meta.url).pathname), "../.."));
+      const marketplaceDir = path.join(rootDir, "experts2set");
+      if (!fs.existsSync(marketplaceDir)) {
+        return c.json({ experts: [], warnings: [`experts marketplace directory not found: ${marketplaceDir}`] });
+      }
+
+      const entries = fs.readdirSync(marketplaceDir, { withFileTypes: true })
+        .filter(e => e.isDirectory())
+        .map(e => e.name);
+
+      const existingAgentIds = new Set();
+      if (fs.existsSync(engine.agentsDir)) {
+        for (const e of fs.readdirSync(engine.agentsDir, { withFileTypes: true })) {
+          if (e.isDirectory()) existingAgentIds.add(e.name);
+        }
+      }
+
+      const experts = [];
+      for (const id of entries) {
+        const expertDir = path.join(marketplaceDir, id);
+        const expertJsonPath = path.join(expertDir, "expert.json");
+        if (!fs.existsSync(expertJsonPath)) continue;
+
+        let meta = {};
+        try {
+          const raw = fs.readFileSync(expertJsonPath, "utf-8");
+          meta = JSON.parse(raw);
+        } catch { /* ignore */ }
+
+        const identityPath = path.join(expertDir, "identity.md");
+        let description = meta.description || "";
+        if (!description && fs.existsSync(identityPath)) {
+          try {
+            const content = fs.readFileSync(identityPath, "utf-8");
+            const lines = content.split("\n").slice(1).filter(l => l.trim() && !l.startsWith("#"));
+            description = lines.slice(0, 3).join(" ").slice(0, 120);
+          } catch { /* ignore */ }
+        }
+
+        const installed = existingAgentIds.has(id);
+        experts.push({
+          id,
+          name: meta.name || id,
+          nameEn: meta.nameEn || "",
+          category: meta.category || "other",
+          tags: Array.isArray(meta.tags) ? meta.tags : [],
+          description,
+          descriptionEn: meta.descriptionEn || "",
+          version: meta.version || "1.0.0",
+          installed,
+          installable: !installed,
+        });
+      }
+
+      return c.json({ experts, source: { kind: "builtin", path: marketplaceDir } });
+    } catch (err) {
+      return c.json({ error: err.message }, 500);
+    }
+  });
+
+  // 从市场安装专家角色（基于模板创建新 Agent）
+  route.post("/agents/marketplace/:id/install", async (c) => {
+    try {
+      const expertId = c.req.param("id");
+      const body = await c.req.json().catch(() => ({}));
+      const customName = body.name || "";
+      const customAgentId = body.agentId || "";
+
+      const rootDir = path.resolve(path.join(path.dirname(new URL(import.meta.url).pathname), "../.."));
+      const srcDir = path.join(rootDir, "experts2set", expertId);
+      if (!fs.existsSync(srcDir)) {
+        return c.json({ error: `expert not found in marketplace: ${expertId}` }, 404);
+      }
+
+      const agentId = customAgentId || expertId;
+      const dstDir = path.join(engine.agentsDir, agentId);
+      if (fs.existsSync(dstDir)) {
+        return c.json({ error: `agent already exists: ${agentId}` }, 409);
+      }
+
+      fs.mkdirSync(dstDir, { recursive: true });
+
+      // 复制模板文件
+      for (const file of ["identity.md", "ishiki.md", "config.yaml"]) {
+        const srcFile = path.join(srcDir, file);
+        if (fs.existsSync(srcFile)) {
+          let content = fs.readFileSync(srcFile, "utf-8");
+          // 如果 customName 存在，替换 config.yaml 中的 name（如果有）
+          if (file === "config.yaml" && customName) {
+            // yaml 里不保证有 name 字段，跳过
+          }
+          fs.writeFileSync(path.join(dstDir, file), content, "utf-8");
+        }
+      }
+
+      // 初始化记忆目录
+      const memoryDir = path.join(dstDir, "memory");
+      fs.mkdirSync(memoryDir, { recursive: true });
+      fs.writeFileSync(path.join(memoryDir, "today.md"), "", "utf-8");
+      fs.writeFileSync(path.join(memoryDir, "week.md"), "", "utf-8");
+      fs.writeFileSync(path.join(memoryDir, "longterm.md"), "", "utf-8");
+
+      // 如果 customName 存在，更新 config.yaml 里的别名（如有 yuan 字段保留）
+      if (customName && fs.existsSync(path.join(dstDir, "config.yaml"))) {
+        try {
+          const { loadConfig, saveConfig } = await import("../../lib/memory/config-loader.js");
+          const cfg = loadConfig(path.join(dstDir, "config.yaml"));
+          // config.yaml 没有 name 字段， Agent 名称由前端/调用方决定
+          saveConfig(path.join(dstDir, "config.yaml"), cfg);
+        } catch { /* ignore */ }
+      }
+
+      // 通知引擎刷新 agent 列表
+      if (engine.agentManager) {
+        try { await engine.agentManager.loadAgents?.(); } catch {}
+      }
+
+      emitAppEvent(engine, "agents-changed", { agentId });
+      return c.json({ ok: true, agentId, name: customName || expertId });
+    } catch (err) {
+      return c.json({ error: err.message }, 500);
+    }
+  });
+
   return route;
 }

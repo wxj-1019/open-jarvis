@@ -1,0 +1,17 @@
+yuan: hanako
+memoryEnabled: true
+experienceEnabled: false
+tools:
+  enabled:
+    - memory_search
+    - web_search
+    - think
+    - bash
+    - python
+    - list_files
+    - read_file
+    - write_file
+    - edit_file
+    - grep_search
+    - pdf
+    - xlsx

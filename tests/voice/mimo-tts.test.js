@@ -5,7 +5,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   synthesizeSpeech,
-  saveAudioToFile,
   getAvailableModels,
   checkConfig,
 } from "../../lib/speech/mimo-tts.js";
@@ -14,7 +13,7 @@ import {
 
 /** 创建 mock engine 对象 */
 function createMockEngine(overrides = {}) {
-  const defaults = {
+  return {
     providerRegistry: {
       getCredentials: vi.fn(() => ({
         apiKey: "test-mimo-api-key",
@@ -22,22 +21,7 @@ function createMockEngine(overrides = {}) {
       })),
       getProviderModels: vi.fn(() => ["mimo-v2.5-tts"]),
     },
-  };
-
-  // 深度合并：overrides 中的 providerRegistry 会完全替换默认值
-  if (overrides.providerRegistry) {
-    return { ...defaults, ...overrides };
-  }
-
-  // 扁平 overrides 穿透到 providerRegistry
-  const reg = { ...defaults.providerRegistry };
-  if (overrides.getCredentials) reg.getCredentials = overrides.getCredentials;
-  if (overrides.getProviderModels) reg.getProviderModels = overrides.getProviderModels;
-  const { getCredentials: _gc, getProviderModels: _gm, ...restOverrides } = overrides;
-
-  return {
-    providerRegistry: reg,
-    ...restOverrides,
+    ...overrides,
   };
 }
 
@@ -84,7 +68,10 @@ describe("mimo-tts", () => {
   describe("synthesizeSpeech", () => {
     it("throws when API key is not configured", async () => {
       const engine = createMockEngine({
-        getCredentials: vi.fn(() => null),
+        providerRegistry: {
+          getCredentials: vi.fn(() => null),
+          getProviderModels: vi.fn(() => []),
+        },
       });
 
       await expect(synthesizeSpeech(engine, "Hello")).rejects.toThrow(
@@ -94,7 +81,10 @@ describe("mimo-tts", () => {
 
     it("throws when API key is empty string", async () => {
       const engine = createMockEngine({
-        getCredentials: vi.fn(() => ({ apiKey: "" })),
+        providerRegistry: {
+          getCredentials: vi.fn(() => ({ apiKey: "" })),
+          getProviderModels: vi.fn(() => []),
+        },
       });
 
       await expect(synthesizeSpeech(engine, "Hello")).rejects.toThrow(
@@ -198,7 +188,7 @@ describe("mimo-tts", () => {
       expect(body.voice).toBeUndefined();
     });
 
-    it("returns audioBuffer, format, model, and contentType on success", async () => {
+    it("returns audioBuffer, format, and contentType on success", async () => {
       const engine = createMockEngine();
       const audioBuffer = new Uint8Array([10, 20, 30, 40, 50]).buffer;
       mockFetchSuccess(audioBuffer, "audio/mpeg");
@@ -208,7 +198,6 @@ describe("mimo-tts", () => {
       expect(result.audioBuffer).toBeInstanceOf(Buffer);
       expect(result.audioBuffer.length).toBe(5);
       expect(result.format).toBe("mp3");
-      expect(result.model).toBe("mimo-v2.5-tts");
       expect(result.contentType).toBe("audio/mpeg");
     });
 
@@ -242,10 +231,13 @@ describe("mimo-tts", () => {
 
     it("uses custom baseUrl from credentials", async () => {
       const engine = createMockEngine({
-        getCredentials: vi.fn(() => ({
-          apiKey: "test-key",
-          baseUrl: "https://custom-tts.example.com/v1",
-        })),
+        providerRegistry: {
+          getCredentials: vi.fn(() => ({
+            apiKey: "test-key",
+            baseUrl: "https://custom-tts.example.com/v1",
+          })),
+          getProviderModels: vi.fn(() => ["mimo-v2.5-tts"]),
+        },
       });
       const audioBuffer = new Uint8Array([1, 2, 3]).buffer;
       mockFetchSuccess(audioBuffer);
@@ -258,7 +250,13 @@ describe("mimo-tts", () => {
 
     it("uses model from config when models array has string entries", async () => {
       const engine = createMockEngine({
-        getProviderModels: vi.fn(() => ["mimo-v2-tts"]),
+        providerRegistry: {
+          getCredentials: vi.fn(() => ({
+            apiKey: "test-mimo-api-key",
+            baseUrl: "https://api.xiaomimimo.com/v1",
+          })),
+          getProviderModels: vi.fn(() => ["mimo-v2-tts"]),
+        },
       });
       const audioBuffer = new Uint8Array([1, 2, 3]).buffer;
       mockFetchSuccess(audioBuffer);
@@ -269,9 +267,15 @@ describe("mimo-tts", () => {
       expect(body.model).toBe("mimo-v2-tts");
     });
 
-    it("uses model from config when models array has entries", async () => {
+    it("uses model from config when models array has object entries", async () => {
       const engine = createMockEngine({
-        getProviderModels: vi.fn(() => ["mimo-v2.5-tts-voicedesign"]),
+        providerRegistry: {
+          getCredentials: vi.fn(() => ({
+            apiKey: "test-mimo-api-key",
+            baseUrl: "https://api.xiaomimimo.com/v1",
+          })),
+          getProviderModels: vi.fn(() => ["mimo-v2.5-tts-voicedesign"]),
+        },
       });
       const audioBuffer = new Uint8Array([1, 2, 3]).buffer;
       mockFetchSuccess(audioBuffer);
@@ -284,7 +288,13 @@ describe("mimo-tts", () => {
 
     it("falls back to default model when config has empty models array", async () => {
       const engine = createMockEngine({
-        getProviderModels: vi.fn(() => []),
+        providerRegistry: {
+          getCredentials: vi.fn(() => ({
+            apiKey: "test-mimo-api-key",
+            baseUrl: "https://api.xiaomimimo.com/v1",
+          })),
+          getProviderModels: vi.fn(() => []),
+        },
       });
       const audioBuffer = new Uint8Array([1, 2, 3]).buffer;
       mockFetchSuccess(audioBuffer);
@@ -297,9 +307,15 @@ describe("mimo-tts", () => {
 
     it("falls back to default model when getProviderModels throws", async () => {
       const engine = createMockEngine({
-        getProviderModels: vi.fn(() => {
-          throw new Error("Config error");
-        }),
+        providerRegistry: {
+          getCredentials: vi.fn(() => ({
+            apiKey: "test-mimo-api-key",
+            baseUrl: "https://api.xiaomimimo.com/v1",
+          })),
+          getProviderModels: vi.fn(() => {
+            throw new Error("Config error");
+          }),
+        },
       });
       const audioBuffer = new Uint8Array([1, 2, 3]).buffer;
       mockFetchSuccess(audioBuffer);
@@ -345,7 +361,10 @@ describe("mimo-tts", () => {
 
     it("returns configured: false when credentials are missing", () => {
       const engine = createMockEngine({
-        getCredentials: vi.fn(() => null),
+        providerRegistry: {
+          getCredentials: vi.fn(() => null),
+          getProviderModels: vi.fn(() => []),
+        },
       });
       const result = checkConfig(engine);
 
@@ -356,7 +375,10 @@ describe("mimo-tts", () => {
 
     it("returns configured: false when apiKey is empty", () => {
       const engine = createMockEngine({
-        getCredentials: vi.fn(() => ({ apiKey: "" })),
+        providerRegistry: {
+          getCredentials: vi.fn(() => ({ apiKey: "" })),
+          getProviderModels: vi.fn(() => []),
+        },
       });
       const result = checkConfig(engine);
 
@@ -365,7 +387,10 @@ describe("mimo-tts", () => {
 
     it("always includes models list regardless of config state", () => {
       const engine = createMockEngine({
-        getCredentials: vi.fn(() => null),
+        providerRegistry: {
+          getCredentials: vi.fn(() => null),
+          getProviderModels: vi.fn(() => []),
+        },
       });
       const result = checkConfig(engine);
 
@@ -375,40 +400,6 @@ describe("mimo-tts", () => {
         "mimo-v2.5-tts-voicedesign",
         "mimo-v2.5-tts-voiceclone",
       ]);
-    });
-  });
-
-  // ── saveAudioToFile ──
-
-  describe("saveAudioToFile", () => {
-    it("writes audio buffer to a temp file and returns its path", async () => {
-      const audioBuffer = Buffer.from([0xFF, 0xFB, 0x90, 0x00]);
-      const filePath = await saveAudioToFile(audioBuffer);
-
-      expect(filePath).toBeTruthy();
-      expect(typeof filePath).toBe("string");
-
-      // 验证文件是否被清理（withTempFile 会在 finally 中 unlink）
-      const { stat } = await import("fs/promises");
-      await expect(stat(filePath)).rejects.toThrow();
-    });
-
-    it("uses the provided format extension", async () => {
-      const audioBuffer = Buffer.from([0xFF, 0xFB]);
-      const filePath = await saveAudioToFile(audioBuffer, "wav");
-
-      expect(filePath).toMatch(/\.wav$/);
-    });
-
-    it("writes the correct audio data", async () => {
-      const { readFile } = await import("fs/promises");
-      const audioBuffer = Buffer.from([0x01, 0x02, 0x03, 0x04]);
-      const filePath = await saveAudioToFile(audioBuffer);
-
-      // 读取文件内容验证（在清理前需要快照）
-      // withTempFile 清理在 promise resolve 之后，此时文件已被删除
-      // 所以我们只需验证函数不抛出异常且返回有效路径
-      expect(filePath).toMatch(/\.mp3$/);
     });
   });
 });

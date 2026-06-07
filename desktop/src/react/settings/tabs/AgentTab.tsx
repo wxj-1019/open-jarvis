@@ -239,6 +239,14 @@ export function AgentTab() {
     <div className={`${tabStyles['settings-tab-content']} ${tabStyles.active}`} data-tab="agent">
       <div className={styles.root}>
         <p className={styles.intro}>{t('settings.agent.pageDesc')}</p>
+        <button
+          type="button"
+          className={tabStyles['settings-save-btn-sm']}
+          onClick={() => useSettingsStore.getState().set({ activeTab: 'experts-marketplace' })}
+          style={{ marginBottom: 12 }}
+        >
+          浏览专家市场
+        </button>
 
         <section className={styles.heroPanel} aria-label={t('settings.agent.title')}>
           <div className={styles.heroVisual}>

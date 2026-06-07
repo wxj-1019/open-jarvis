@@ -119,6 +119,18 @@ export function classifyHttpRoute({ method = "GET", path = "" } = {}) {
     return scoped("chat");
   }
 
+  // Cloud API — 小程序云端任务
+  if (routePath === "/api/cloud/tasks") {
+    if (verb === "POST") return scoped("cloud.submit");
+    if (verb === "GET")  return scoped("cloud.read");
+    return LOCAL_ONLY;
+  }
+  if (/^\/api\/cloud\/tasks\/[^/]+$/.test(routePath)) {
+    if (verb === "GET")    return scoped("cloud.read");
+    if (verb === "PATCH") return LOCAL_ONLY; // 内部 CloudExecutor 回调
+    return LOCAL_ONLY;
+  }
+
   return LOCAL_ONLY;
 }
 

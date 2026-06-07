@@ -270,6 +270,115 @@ export function createSkillsRoute(engine) {
     }
   });
 
+  // ── Skills 市场 ──
+  // 返回 skills2set/ 内置技能列表（含安装状态）
+  route.get("/skills/marketplace", async (c) => {
+    try {
+      const agentId = c.req.query("agentId") || "";
+      // skills2set 目录：与 server 目录同级（项目根目录）
+      const rootDir = path.resolve(path.join(path.dirname(new URL(import.meta.url).pathname), "../.."));
+      const marketplaceDir = path.join(rootDir, "skills2set");
+      if (!fs.existsSync(marketplaceDir)) {
+        return c.json({ skills: [], warnings: [`marketplace directory not found: ${marketplaceDir}`] });
+      }
+
+      const entries = fs.readdirSync(marketplaceDir, { withFileTypes: true })
+        .filter(e => e.isDirectory())
+        .map(e => e.name);
+
+      const installedNames = new Set();
+      if (agentId && validateId(agentId) && agentExists(engine, agentId)) {
+        const installed = engine.getAllSkills(agentId) || [];
+        for (const s of installed) installedNames.add(s.name);
+      } else {
+        // 无 agentId 时，检查用户 skills 目录
+        const userDir = engine.userSkillsDir || engine.skillsDir;
+        if (userDir && fs.existsSync(userDir)) {
+          for (const e of fs.readdirSync(userDir, { withFileTypes: true })) {
+            if (e.isDirectory() && fs.existsSync(path.join(userDir, e.name, "SKILL.md"))) {
+              installedNames.add(e.name);
+            }
+          }
+        }
+      }
+
+      const skills = [];
+      for (const name of entries) {
+        const skillDir = path.join(marketplaceDir, name);
+        const skillMdPath = path.join(skillDir, "SKILL.md");
+        if (!fs.existsSync(skillMdPath)) continue;
+
+        let description = "";
+        try {
+          const content = fs.readFileSync(skillMdPath, "utf-8");
+          const { parseSkillMetadata } = await import("../../lib/skills/skill-metadata.js");
+          const meta = parseSkillMetadata(content, name);
+          description = meta.description || "";
+        } catch { /* ignore */ }
+
+        skills.push({
+          id: name,
+          name,
+          description,
+          source: "builtin",
+          installed: installedNames.has(name),
+          installable: !installedNames.has(name),
+        });
+      }
+
+      return c.json({ skills, source: { kind: "builtin", path: marketplaceDir } });
+    } catch (err) {
+      return c.json({ error: err.message }, 500);
+    }
+  });
+
+  // 从市场安装 skill（复制 skills2set/ 到用户 skills 目录）
+  route.post("/skills/marketplace/:id/install", async (c) => {
+    return withInstallLock(async () => {
+    try {
+      const skillId = c.req.param("id");
+      const body = await c.req.json().catch(() => ({}));
+      const agentId = body.agentId || c.req.query("agentId") || "";
+
+      const rootDir = path.resolve(path.join(path.dirname(new URL(import.meta.url).pathname), "../.."));
+      const srcDir = path.join(rootDir, "skills2set", skillId);
+      if (!fs.existsSync(srcDir)) {
+        return c.json({ error: `skill not found in marketplace: ${skillId}` }, 404);
+      }
+
+      const userDir = engine.userSkillsDir || engine.skillsDir;
+      if (!userDir) return c.json({ error: "user skills directory not configured" }, 500);
+      if (!fs.existsSync(userDir)) fs.mkdirSync(userDir, { recursive: true });
+
+      const dstDir = path.join(userDir, skillId);
+      if (fs.existsSync(dstDir)) {
+        return c.json({ error: `skill already installed: ${skillId}` }, 409);
+      }
+
+      safeCopyDir(srcDir, dstDir);
+
+      await engine.reloadSkills();
+
+      // 如果传了 agentId，自动加入 enabled 列表
+      if (agentId && validateId(agentId) && agentExists(engine, agentId)) {
+        try {
+          const configPath = path.join(engine.agentsDir, agentId, "config.yaml");
+          const { loadConfig } = await import("../../lib/memory/config-loader.js");
+          const cfg = loadConfig(configPath);
+          const enabled = new Set(cfg?.skills?.enabled || []);
+          enabled.add(skillId);
+          await engine.updateConfig({ skills: { enabled: [...enabled] } }, { agentId });
+        } catch { /* ignore */ }
+      }
+
+      emitAppEvent(engine, "skills-changed", { agentId: agentId || null });
+      return c.json({ ok: true, name: skillId, installed: true });
+    } catch (err) {
+      return c.json({ error: err.message }, 500);
+    }
+    });
+  });
+
   route.get("/skills", async (c) => {
     try {
       const agentId = c.req.query("agentId");

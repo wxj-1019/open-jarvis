@@ -712,6 +712,21 @@
       "requestPermissionsFailed": "Failed to request permissions",
       "refresh": "Refresh"
     },
+    "cloud": {
+      "title": "Cloud Sandbox",
+      "description": "Let the Agent run tasks in a cloud sandbox, even when your computer is off.",
+      "enable": "Enable Cloud Sandbox (MVP)",
+      "endpoint": "Cloud API Endpoint",
+      "apiKeyPlaceholder": "Optional",
+      "testTask": "Submit a test task",
+      "promptPlaceholder": "Enter task description...",
+      "submit": "Submit Task",
+      "status": "Status",
+      "taskSubmitted": "Task submitted, ID: {taskId}",
+      "taskRunning": "Task running...",
+      "taskDone": "Task completed",
+      "taskError": "Task failed: {error}"
+    },
     "backup": {
       "title": "Backup & Restore",
       "pageDesc": "Export or restore an agent's chats, config, and skills. Regular backups help before migrations or accidental deletes.",
@@ -1726,6 +1741,8 @@
       "testing": "Connecting...",
       "testSuccess": "Connected ✿",
       "testFailed": "Connection failed",
+      "ollamaDetected": "Ollama detected on this computer, automatically selected",
+      "demoHint": "Demo Mode: No API Key needed, you can explore the interface first",
       "back": "Back",
       "next": "Next"
     },

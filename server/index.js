@@ -82,6 +82,7 @@ import { createAccessRoute } from "./routes/access.js";
 import { createGuiWhitelistRoute } from "./routes/gui-whitelist.js";
 import { createVoiceRoute } from "./routes/voice.js";
 import { createTTSRoute } from "./routes/tts.js";
+import { createCloudRoute } from "./routes/cloud.js";
 import { configureProcessPiSdkEnv, ensureHanaPiSdkDirs, resolveHanakoHome } from "../shared/hana-runtime-paths.js";
 import { startAutoBackupScheduler, loadBackupConfig, saveBackupConfig } from "../lib/backup/auto-backup-scheduler.js";
 // internal-browser WS is handled directly via raw ws.WebSocketServer in the
@@ -94,6 +95,7 @@ import { createDeferredResultExtension } from "../lib/extensions/deferred-result
 import { createCompactionGuardExtension } from "../lib/extensions/compaction-guard-ext.js";
 import { Hub } from "../hub/index.js";
 import { startCLI } from "./cli.js";
+import { CloudExecutor } from "./services/cloud-executor.js";
 import { fromRoot } from "../shared/hana-root.js";
 
 const productDir = fromRoot("lib");
@@ -302,6 +304,19 @@ if (mcpPlugin?.ctx?._mcpRuntime) {
 
 // 启动 Hub 调度器（Scheduler + ChannelRouter）
 await hub.initSchedulers();
+
+// 启动云端任务执行引擎（CloudExecutor）
+const cloudExecutor = new CloudExecutor({
+  engine: engine,
+  db: engine.serverDb,
+  onLog: (msg) => log.info(msg),
+});
+cloudExecutor.start();
+
+// 在进程退出时停止 CloudExecutor
+process.on('beforeExit', () => cloudExecutor.stop());
+process.on('SIGINT', () => { cloudExecutor.stop(); process.exit(0); });
+process.on('SIGTERM', () => { cloudExecutor.stop(); process.exit(0); });
 
 engine.cleanupCheckpoints().catch(err => {
   checkpointLog.warn(`startup cleanup failed: ${err.message}`);
@@ -659,6 +674,7 @@ app.route("/api", createTTSRoute(engine));
 app.route("/api/proactive", createProactiveRulesRoute(engine, hub));
   app.route("/api/deep-context", createDeepContextRoute(engine, hub));
   app.route("/api/productivity", createProductivityRoute(engine, hub));
+  app.route("/api", createCloudRoute(engine));
 app.route("/api", createServerIdentityRoute({
   hanakoHome: engine.hanakoHome,
   appVersion,

@@ -1,0 +1,11 @@
+{
+  "id": "finance-advisor",
+  "name": "财务顾问",
+  "nameEn": "Finance Advisor",
+  "category": "财务",
+  "tags": ["财务分析", "预算管理", "税务筹划", "投资决策"],
+  "description": "专业财务顾问，擅长财务分析、预算规划、税务优化和企业投资决策支持。帮助企业实现财务健康和可持续发展。",
+  "descriptionEn": "Professional finance advisor specializing in financial analysis, budget planning, tax optimization, and corporate investment decision support.",
+  "avatar": "",
+  "version": "1.0.0"
+}
