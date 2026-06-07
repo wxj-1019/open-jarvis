@@ -13,17 +13,13 @@ describe("tts route", () => {
 
   beforeEach(() => {
     mockEngine = {
-      getProviderCredentials: vi.fn(() => ({
-        apiKey: "test-mimo-key",
-        baseUrl: "https://api.xiaomimimo.com/v1",
-      })),
-      getConfig: vi.fn(() => ({
-        providers: {
-          "mimo-tts": {
-            models: ["mimo-v2.5-tts"],
-          },
-        },
-      })),
+      providerRegistry: {
+        getCredentials: vi.fn(() => ({
+          apiKey: "test-mimo-key",
+          baseUrl: "https://api.xiaomimimo.com/v1",
+        })),
+        getProviderModels: vi.fn(() => ["mimo-v2.5-tts"]),
+      },
     };
 
     app = new Hono();
@@ -48,7 +44,7 @@ describe("tts route", () => {
     });
 
     it("returns mimo unconfigured when API key is missing", async () => {
-      mockEngine.getProviderCredentials.mockReturnValue(null);
+      mockEngine.providerRegistry.getCredentials.mockReturnValue(null);
 
       const res = await app.request("/api/tts/config");
       expect(res.status).toBe(200);
@@ -153,7 +149,7 @@ describe("tts route", () => {
     });
 
     it("returns 401 when Mimo is not configured", async () => {
-      mockEngine.getProviderCredentials.mockReturnValue(null);
+      mockEngine.providerRegistry.getCredentials.mockReturnValue(null);
 
       const res = await app.request("/api/tts/synthesize", {
         method: "POST",
@@ -187,7 +183,7 @@ describe("tts route", () => {
       expect(res.status).toBe(200);
       expect(res.headers.get("Content-Type")).toBe("audio/mpeg");
       expect(res.headers.get("X-TTS-Engine")).toBe("mimo");
-      expect(res.headers.get("X-TTS-Model")).toBeTruthy();
+      expect(res.headers.get("X-TTS-Model")).toBe("mimo-v2.5-tts");
 
       const body = await res.arrayBuffer();
       expect(body.byteLength).toBeGreaterThan(0);

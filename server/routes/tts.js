@@ -129,7 +129,7 @@ async function handleMimoTTS(c, engine, text, options) {
     headers: {
       "Content-Type": result.contentType || `audio/${options.format || "mp3"}`,
       "Content-Length": result.audioBuffer.length.toString(),
-      "X-TTS-Model": options.model || process.env.MIMO_TTS_MODEL || "mimo-v2.5-tts",
+      "X-TTS-Model": result.model || options.model || process.env.MIMO_TTS_MODEL || "mimo-v2.5-tts",
       "X-TTS-Engine": "mimo",
     },
   });
