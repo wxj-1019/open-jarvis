@@ -30,6 +30,16 @@ dist-server-bundle/
 dist-computer-use/
 desktop/main.bundle.cjs
 desktop/preload.bundle.cjs
+main.obj
+# Vite hash-suffixed build duplicates
+desktop/debug-log-[A-Za-z0-9_]*.cjs
+desktop/main-[A-Za-z0-9_]*.cjs
+desktop/stt-engine-[A-Za-z0-9_]*.cjs
+desktop/tts-engine-[A-Za-z0-9_]*.cjs
+desktop/vad-service-[A-Za-z0-9_]*.cjs
+desktop/voice-agent-router-[A-Za-z0-9_]*.cjs
+desktop/voice-conversation-loop-[A-Za-z0-9_]*.cjs
+desktop/whisper-stt-adapter-[A-Za-z0-9_]*.cjs
 .cache/
 desktop/dist-renderer/
 desktop/native/**/.build/
@@ -57,6 +67,8 @@ tmp/
 test-results/
 __pycache__/
 *.pyc
+nul
+coverage/
 /index.html
 homepage/
 
@@ -94,8 +106,4 @@ reviews/
 node-v22.14.0-win-x64/
 node-v22.14.0-win-x64.zip
 node-setup.msi
-nul
-node-v22.14.0-win-x64.zip
-node-setup.msi
-nul
 .qoder
