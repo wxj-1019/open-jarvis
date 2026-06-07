@@ -284,8 +284,8 @@ describe("VectorSearchEngine", () => {
       engine.storeEmbedding(2, embedding, { time: "2026-05-15T10:00:00Z" });
 
       const ftsResults = [
-        { id: 1, fact: "january fact", rank: 1 },
-        { id: 2, fact: "may fact", rank: 2 },
+        { id: 1, fact: "january fact", rank: 1, time: "2026-01-15T10:00:00Z" },
+        { id: 2, fact: "may fact", rank: 2, time: "2026-05-15T10:00:00Z" },
       ];
 
       const results = engine.hybridSearch(embedding, ftsResults, 10, {
